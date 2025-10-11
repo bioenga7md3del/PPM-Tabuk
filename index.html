@@ -1,1 +1,31 @@
-<!doctype html><meta charset="utf-8"/><script>location.href="login.html"</script>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8"/>
+<title>PPM Tabuk • Bootstrap</title>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+
+  // نفس الإعدادات الموجودة في firebase.js (أو استورد firebase.js لو تفضل)
+  const firebaseConfig = {
+    apiKey: "AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
+    authDomain: "pmqrtabuk.firebaseapp.com",
+    projectId: "pmqrtabuk",
+    storageBucket: "pmqrtabuk.firebasestorage.app",
+    messagingSenderId: "305570616285",
+    appId: "1:305570616285:web:4f6839fd08b8b5aa131c34"
+  };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, (user)=>{
+    if (user) {
+      // مستخدم مسجّل دخول
+      location.replace("modules/dashboard/index.html");
+    } else {
+      // غير مسجل → روح للّوج إن
+      location.replace("login.html");
+    }
+  });
+</script>
