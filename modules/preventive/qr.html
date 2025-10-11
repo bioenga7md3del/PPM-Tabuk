@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>طباعة أكواد QR — A4 (Single / Dept / Custom)</title>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<style>
+  :root{ --ink:#0f172a; --line:#e5e7eb; }
+  body{ background:#f8fafc; color:var(--ink); }
+  .card{ background:#fff; border:1px solid var(--line); border-radius:12px; }
+  .mono{ font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+
+  .sheet{ margin:16px auto; box-shadow:0 10px 30px rgba(0,0,0,.08); background:#fff; }
+  .page{ position:relative; background:#fff; overflow:hidden; page-break-after:always; }
+  .grid{ display:grid; page-break-inside:avoid; }
+
+  .label{
+    border:1px dashed rgba(15,23,42,.15);
+    border-radius:4px;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    page-break-inside:avoid;
+  }
+  .l-ctrl{ font-weight:900; line-height:1.1; text-align:center; }
+  .l-title{ font-weight:800; text-align:center; }
+
+  /* الطباعة: اخفِ الواجهة (#.no-print) واطبع الشبكة فقط */
+  @media print{
+    @page{ size:A4; margin:0 }
+    body{ background:#fff; margin:0; padding:0 }
+    .no-print{ display:none !important; }
+    .sheet{ margin:0 !important; box-shadow:none !important; }
+    .page{ page-break-after:always; }
+    .label{ border:0; }
+  }
+</style>
+  <link rel="stylesheet" href="../css/theme-light.css">
+</head>
+<body>
+<header class="no-print sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-slate-200">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+    <h1 class="font-extrabold text-lg">طباعة أكواد QR — A4</h1>
+    <div class="flex items-center gap-2">
+      <button id="btnBuild" class="px-3 py-2 rounded bg-emerald-600 text-white font-bold">⚙️ تجهيز الصفحات</button>
+      <button id="btnPrint" class="px-3 py-2 rounded bg-sky-600 text-white font-bold">🖨️ طباعة</button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-6">
+  <!-- اختيار الوضع -->
+  <section class="card p-4 mb-4 no-print">
+    <div class="grid md:grid-cols-3 gap-3">
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">الوضع</label>
+        <select id="mode" class="w-full px-3 py-2 border rounded">
+          <option value="single" selected>مفرد (Control واحد)</option>
+          <option value="dept">قسم كامل (من Firestore)</option>
+          <option value="custom">قائمة مخصصة</option>
+        </select>
+      </div>
+
+      <!-- مفرد -->
+      <div id="singleBox" class="grid grid-cols-2 md:col-span-2 gap-3">
+        <div class="col-span-2">
+          <label class="block text-sm text-slate-600 mb-1">Control Number</label>
+          <input id="singleControl" class="w-full px-3 py-2 border rounded mono" placeholder="مثال: AS-0001"/>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">عنوان أعلى</label>
+          <input id="titleSingle" class="w-full px-3 py-2 border rounded" value="الصيانة الوقائية">
+        </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">حجم QR (مم)</label>
+          <input id="qrSingle" type="number" class="w-full px-3 py-2 border rounded" value="60">
+        </div>
+      </div>
+
+      <!-- قسم -->
+      <div id="deptBox" class="hidden md:col-span-2 grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Site</label>
+          <select id="siteSel" class="w-full px-3 py-2 border rounded"><option value="">— اختيار —</option></select>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Department</label>
+          <select id="deptSel" class="w-full px-3 py-2 border rounded"><option value="">— اختيار —</option></select>
+        </div>
+      </div>
+
+      <!-- مخصص -->
+      <div id="customBox" class="hidden md:col-span-2">
+        <label class="block text-sm text-slate-600 mb-1">قائمة Control (كل رقم في سطر)</label>
+        <textarea id="controls" class="w-full h-40 px-3 py-2 border rounded mono" placeholder="AS-0001&#10;AS-0002"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- إعدادات عامة -->
+  <section class="card p-4 mb-6 no-print">
+    <div class="grid md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">الاتجاه</label>
+        <select id="orientation" class="w-full px-3 py-2 border rounded">
+          <option value="portrait" selected>A4 طولي (210×297)</option>
+          <option value="landscape">A4 عرضي (297×210)</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">هامش الصفحة (مم)</label>
+        <input id="marginMM" type="number" class="w-full px-3 py-2 border rounded" value="10">
+      </div>
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">عنوان أعلى كل لابل</label>
+        <input id="title" class="w-full px-3 py-2 border rounded" value="الصيانة الوقائية">
+      </div>
+
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">عرض اللابل (مم)</label>
+        <input id="lw" type="number" class="w-full px-3 py-2 border rounded" value="50">
+      </div>
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">ارتفاع اللابل (مم)</label>
+        <input id="lh" type="number" class="w-full px-3 py-2 border rounded" value="25">
+      </div>
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">حشو داخلي (مم)</label>
+        <input id="padMM" type="number" class="w-full px-3 py-2 border rounded" value="2">
+      </div>
+
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">حجم الـQR (مم)</label>
+        <input id="qrMM" type="number" class="w-full px-3 py-2 border rounded" value="22">
+      </div>
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">حجم النص (pt)</label>
+        <input id="fontPt" type="number" class="w-full px-3 py-2 border rounded" value="10">
+      </div>
+
+      <div class="flex items-center gap-2">
+        <input id="showTitle" type="checkbox" class="w-4 h-4" checked>
+        <label for="showTitle" class="text-sm text-slate-700">إظهار العنوان</label>
+      </div>
+      <div class="flex items-center gap-2">
+        <input id="showCtrl" type="checkbox" class="w-4 h-4" checked>
+        <label for="showCtrl" class="text-sm text-slate-700">إظهار رقم الـControl</label>
+      </div>
+    </div>
+
+    <div class="flex gap-2 flex-wrap mt-3">
+      <button id="preset_5x2_5" class="px-2 py-1 rounded border">Preset: 50×25 مم</button>
+      <button id="preset_38x19" class="px-2 py-1 rounded border">Preset: 38×19 مم</button>
+      <button id="preset_60x40" class="px-2 py-1 rounded border">Preset: 60×40 مم</button>
+    </div>
+  </section>
+
+  <!-- صفحات A4 الناتجة (دي اللي بتتطبع) -->
+  <section id="sheets" class="sheet"></section>
+</main>
+
+<!-- Firestore لوضع القسم -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+  // Firebase config (مشروعك)
+  const firebaseConfig = {
+    apiKey: "AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
+    authDomain: "pmqrtabuk.firebaseapp.com",
+    projectId: "pmqrtabuk",
+    storageBucket: "pmqrtabuk.firebasestorage.app",
+    messagingSenderId: "305570616285",
+    appId: "1:305570616285:web:4f6839fd08b8b5aa131c34"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  // ===== Helpers =====
+  const $ = s => document.querySelector(s);
+  const mm = v => `${v}mm`;
+  const pt = v => `${v}pt`;
+  const mmToPx = v => Math.round(v * 11.8);
+
+  const buildQRPayload = (control)=>{
+    const stickerAbs = new URL('sticker.html', location.href).toString();
+    return `${stickerAbs}#view/${encodeURIComponent(control)}`;
+  };
+  async function toQR(text, sizePx){
+    try{ return await QRCode.toDataURL(text,{ width:sizePx, margin:0, errorCorrectionLevel:'M' }); }
+    catch{ return 'https://chart.googleapis.com/chart?cht=qr&chs='+sizePx+'x'+sizePx+'&chl='+encodeURIComponent(text); }
+  }
+
+  function switchMode(m){
+    $('#singleBox').classList.toggle('hidden', m!=='single');
+    $('#deptBox').classList.toggle('hidden',   m!=='dept');
+    $('#customBox').classList.toggle('hidden', m!=='custom');
+  }
+  $('#mode').addEventListener('change', e=> switchMode(e.target.value));
+
+  async function loadSitesDepts(){
+    const qs = await getDocs(query(collection(db,'assets'), orderBy('site')));
+    const arr = qs.docs.map(d=> d.data());
+    const sites = [...new Set(arr.map(x=>x.site).filter(Boolean))].sort();
+    const depts = [...new Set(arr.map(x=>x.department).filter(Boolean))].sort();
+    $('#siteSel').innerHTML = '<option value="">— أي موقع —</option>' + sites.map(s=>`<option>${s}</option>`).join('');
+    $('#deptSel').innerHTML = '<option value="">— أي قسم —</option>' + depts.map(s=>`<option>${s}</option>`).join('');
+  }
+
+  // صفحة Grid
+  async function buildPage(controls, pageW, pageH, margin, gapX, gapY, labelW, labelH, padMM, qrMM, fontPt, titleText, showTitle, showCtrl){
+    const cols = Math.max(1, Math.floor((pageW - 2*margin + gapX) / (labelW + gapX)));
+    const rows = Math.max(1, Math.floor((pageH - 2*margin + gapY) / (labelH + gapY)));
+    const perPage = cols * rows;
+
+    const page = document.createElement('div');
+    page.className = 'page';
+    page.style.width  = mm(pageW);
+    page.style.height = mm(pageH);
+
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    grid.style.position = 'absolute';
+    grid.style.left   = mm(margin);
+    grid.style.top    = mm(margin);
+    grid.style.right  = mm(margin);
+    grid.style.bottom = mm(margin);
+    grid.style.gridTemplateColumns = `repeat(${cols}, ${mm(labelW)})`;
+    grid.style.gridAutoRows        = mm(labelH);
+    grid.style.columnGap = mm(gapX);
+    grid.style.rowGap    = mm(gapY);
+
+    const need = Math.min(perPage, controls.length);
+    const qrPx = Math.max(300, mmToPx(qrMM) * 2);
+    const pending = [];
+
+    for(let i=0;i<need;i++){
+      const control = controls[i];
+
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.style.width  = mm(labelW);
+      label.style.height = mm(labelH);
+      label.style.padding = mm(padMM);
+
+      if(showTitle){
+        const title = document.createElement('div');
+        title.className = 'l-title';
+        title.textContent = titleText || '';
+        title.style.fontSize = pt(Math.max(7, Math.round(fontPt*0.9)));
+        title.style.marginBottom = mm(1);
+        label.appendChild(title);
+      }
+
+      const img = document.createElement('img');
+      img.alt = 'QR';
+      img.style.display = 'block';
+      img.style.width   = mm(qrMM);
+      img.style.height  = mm(qrMM);
+      img.style.objectFit='contain';
+      img.style.margin  = '0 auto';
+      label.appendChild(img);
+
+      if(showCtrl){
+        const ctrl = document.createElement('div');
+        ctrl.className = 'l-ctrl mono';
+        ctrl.textContent = control;
+        ctrl.style.fontSize = pt(fontPt);
+        ctrl.style.marginTop = mm(1.2);
+        label.appendChild(ctrl);
+      }
+
+      grid.appendChild(label);
+
+      const payload = buildQRPayload(control);
+      pending.push( toQR(payload, qrPx).then(url => { img.src = url; }) );
+    }
+
+    page.appendChild(grid);
+    return { page, perPage, pending };
+  }
+
+  // مفرد: يبدأ من أعلى الصفحة بهامش
+  async function buildSingle(control, titleText, qrMM, showTitle, showCtrl){
+    const orient = $('#orientation').value;
+    const pageW = orient==='portrait' ? 210 : 297;
+    const pageH = orient==='portrait' ? 297 : 210;
+    const pageMargin = parseFloat($('#marginMM').value || '10');
+
+    const page = document.createElement('div');
+    page.className = 'page';
+    page.style.width  = mm(pageW);
+    page.style.height = mm(pageH);
+
+    const wrap = document.createElement('div');
+    wrap.style.position='absolute';
+    wrap.style.inset='0';
+    wrap.style.display='flex';
+    wrap.style.alignItems='flex-start';
+    wrap.style.justifyContent='flex-start';
+    wrap.style.padding = mm(pageMargin);
+
+    const label = document.createElement('div');
+    label.className = 'label';
+    const padMM = 3;
+    label.style.width  = mm(Math.min(120, pageW - pageMargin*2));
+    label.style.height = mm(Math.min(80,  pageH - pageMargin*2));
+    label.style.padding= mm(padMM);
+
+    if(showTitle){
+      const title = document.createElement('div');
+      title.className = 'l-title';
+      title.textContent = titleText || '';
+      title.style.fontSize = pt(14);
+      title.style.marginBottom = mm(2);
+      label.appendChild(title);
+    }
+
+    const img = document.createElement('img');
+    img.alt = 'QR';
+    img.style.display='block';
+    img.style.width = mm(qrMM);
+    img.style.height= mm(qrMM);
+    img.style.objectFit='contain';
+    img.style.margin='0 auto';
+    label.appendChild(img);
+
+    if(showCtrl){
+      const ctrl = document.createElement('div');
+      ctrl.className = 'l-ctrl mono';
+      ctrl.textContent = control;
+      ctrl.style.fontSize = pt(14);
+      ctrl.style.marginTop = mm(2);
+      label.appendChild(ctrl);
+    }
+
+    wrap.appendChild(label);
+    page.appendChild(wrap);
+
+    const qrPx = Math.max(300, mmToPx(qrMM) * 2);
+    const payload = buildQRPayload(control);
+    await toQR(payload, qrPx).then(url => { img.src = url; });
+
+    return page;
+  }
+
+  // بناء كل الصفحات
+  async function buildSheets(){
+    const orient = $('#orientation').value;
+    const pageW = orient==='portrait' ? 210 : 297;
+    const pageH = orient==='portrait' ? 297 : 210;
+
+    const sheets = $('#sheets');
+    sheets.innerHTML = '';
+    sheets.style.width  = mm(pageW);
+    sheets.style.minHeight = mm(pageH);
+
+    const mode = $('#mode').value;
+    const showTitle = $('#showTitle').checked;
+    const showCtrl  = $('#showCtrl').checked;
+
+    if(mode==='single'){
+      const control = ($('#singleControl').value || '').trim();
+      if(!control){ alert('أدخل رقم الـControl'); return; }
+      const page = await buildSingle(control, ($('#titleSingle').value||'').trim() || $('#title').value, parseFloat($('#qrSingle').value||'60'), showTitle, showCtrl);
+      sheets.appendChild(page);
+      return;
+    }
+
+    // إعدادات الشبكة
+    const margin = parseFloat($('#marginMM').value || '10');
+    const gapX   = 4, gapY = 6;
+    const labelW = parseFloat($('#lw').value || '50');
+    const labelH = parseFloat($('#lh').value || '25');
+    const padMM  = parseFloat($('#padMM').value || '2');
+    const qrMM   = parseFloat($('#qrMM').value || '22');
+    const fontPt = Math.max(7, parseInt($('#fontPt').value || '10',10));
+    const titleText = ($('#title').value || '').trim();
+
+    let controls = [];
+
+    if(mode==='custom'){
+      controls = ($('#controls').value || '').split('\n').map(s=>s.trim()).filter(Boolean);
+      if(!controls.length){ alert('اكتب قائمة الـControl'); return; }
+    } else if(mode==='dept'){
+      const all = (await getDocs(query(collection(db,'assets'), orderBy('control')))).docs.map(d=> d.data());
+      controls = all.filter(x=>{
+        const sOK = !$('#siteSel').value || x.site=== $('#siteSel').value;
+        const dOK = !$('#deptSel').value || x.department=== $('#deptSel').value;
+        return sOK && dOK;
+      }).map(x=> x.control).filter(Boolean);
+      if(!controls.length){ alert('لا توجد أجهزة مطابقة للاختيار'); return; }
+    }
+
+    // تقسيم على صفحات
+    let rest = controls.slice();
+    while(rest.length){
+      const { page, perPage, pending } = await buildPage(rest, pageW, pageH, margin, gapX, gapY, labelW, labelH, padMM, qrMM, fontPt, titleText, showTitle, showCtrl);
+      sheets.appendChild(page);
+      if(pending?.length) await Promise.all(pending);
+      rest = rest.slice(perPage);
+    }
+  }
+
+  // أزرار
+  document.getElementById('btnBuild').addEventListener('click', buildSheets);
+  document.getElementById('btnPrint').addEventListener('click', async ()=>{
+    if(!document.getElementById('sheets').children.length) await buildSheets();
+    const imgs = Array.from(document.querySelectorAll('#sheets img'));
+    await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(r => { img.onload=r; img.onerror=r; })));
+    window.print();
+  });
+
+  // Presets
+  document.getElementById('preset_5x2_5').addEventListener('click', ()=>{
+    $('#lw').value=50; $('#lh').value=25; $('#qrMM').value=22; $('#padMM').value=2; $('#fontPt').value=10;
+  });
+  document.getElementById('preset_38x19').addEventListener('click', ()=>{
+    $('#lw').value=38; $('#lh').value=19; $('#qrMM').value=16; $('#padMM').value=2; $('#fontPt').value=9;
+  });
+  document.getElementById('preset_60x40').addEventListener('click', ()=>{
+    $('#lw').value=60; $('#lh').value=40; $('#qrMM').value=30; $('#padMM').value=3; $('#fontPt').value=12;
+  });
+
+  // ملء Site/Dept
+  loadSitesDepts().catch(()=>{});
+
+  // Deep-link: مفرد تلقائي لما تيجي من index
+  (async function initFromQS(){
+    const p = new URLSearchParams(location.search);
+    const controlQS = p.get('control');
+    const autoprint = p.get('autoprint');
+
+    if(controlQS){
+      $('#mode').value = 'single';
+      switchMode('single');
+      $('#singleControl').value = decodeURIComponent(controlQS);
+      await buildSheets();
+      if(autoprint==='1'){
+        const imgs = Array.from(document.querySelectorAll('#sheets img'));
+        await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(r => { img.onload=r; img.onerror=r; })));
+        window.print();
+      }
+    }else{
+      switchMode('single'); // افتراضي
+    }
+
+    // مثال افتراضي في custom
+    document.getElementById('controls').value = ['AS-0001','AS-0002','AS-0003','AS-0004','AS-0005','AS-0006'].join('\n');
+  })();
+</script>
+</body>
+</html>
