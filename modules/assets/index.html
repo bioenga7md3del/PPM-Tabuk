@@ -2,94 +2,107 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PPM TABUK • الأجهزة</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="../css/theme-light.css">
+  <link rel="stylesheet" href="../../css/theme-light.css">
 </head>
 <body>
+
+  <!-- Header -->
   <header class="max-w-7xl mx-auto px-3 md:px-6 mt-3">
-  <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <button class="icon-btn" title="القائمة">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M4 6h16M4 12h16M4 18h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
+    <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <button class="icon-btn" title="القائمة">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M4 6h16M4 12h16M4 18h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <nav class="flex items-center gap-3 text-white/90">
+        <a href="../dashboard/index.html">Dashboard</a>
+        <a href="../assets/index.html" class="font-bold">الأجهزة</a>
+        <a href="../preventive/index.html">الصيانة الوقائية</a>
+        <a href="../corrective/index.html">الصيانة التصحيحية</a>
+        <a href="../sites/index.html">المواقع</a>
+        <a href="../users/index.html" id="navAdmin">المستخدمون</a>
+      </nav>
+      <div class="flex items-center gap-2">
+        <div class="avatar">👤</div>
+        <span id="userName" class="hidden sm:inline text-sm"></span>
+        <button id="btnLogout" class="btn btn-ghost">تسجيل الخروج</button>
+      </div>
     </div>
-    <nav class="flex items-center gap-3 text-white/90">
-      <a href="../dashboard/index.html">Dashboard</a>
-      <a href="../assets/index.html">الأجهزة</a>
-      <a href="../preventive/index.html">الصيانة الوقائية</a>
-      <a href="../corrective/index.html">الصيانة التصحيحية</a>
-      <a href="../sites/index.html">المواقع</a>
-      <a href="../users/index.html" id="navAdmin">المستخدمون</a>
-    </nav>
-    <div class="avatar">👤</div>
-  </div>
-</header>
+  </header>
+
   <main class="max-w-7xl mx-auto p-3 md:p-6 space-y-6">
+    <section class="flex flex-wrap gap-2">
+      <a href="add.html" class="btn btn-brand">➕ إضافة جهاز جديد</a>
+      <a href="import.html" class="btn btn-ghost">⬆️ تحميل ملفات (Excel)</a>
+    </section>
 
-<section class="flex flex-wrap gap-2">
-  <a href="add.html" class="btn btn-brand">➕ إضافة جهاز جديد</a>
-  <a href="import.html" class="btn btn-ghost">⬆️ تحميل ملفات (Excel)</a>
-</section>
+    <section class="card p-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <input id="f_control" class="field" placeholder="رقم التحكم (Control)"/>
+        <input id="f_name" class="field" placeholder="الاسم"/>
+        <input id="f_model" class="field" placeholder="الموديل"/>
+        <input id="f_brand" class="field" placeholder="الماركة"/>
+        <input id="f_serial" class="field" placeholder="السيريال"/>
+        <select id="f_class" class="field"><option value="">فئة الجهاز</option><option>A</option><option>B</option><option>C</option></select>
+        <input id="f_site" class="field" placeholder="الموقع"/>
+        <input id="f_department" class="field" placeholder="القسم"/>
+        <select id="f_warranty" class="field"><option value="">الضمان</option><option value="yes">داخل الضمان</option><option value="no">خارج الضمان</option></select>
+      </div>
+    </section>
 
-<section class="card p-4">
-  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
-    <input id="f_control" class="field" placeholder="رقم التحكم (Control)"/>
-    <input id="f_name" class="field" placeholder="الاسم"/>
-    <input id="f_model" class="field" placeholder="الموديل"/>
-    <input id="f_brand" class="field" placeholder="الماركة"/>
-    <input id="f_serial" class="field" placeholder="السيريال"/>
-    <select id="f_class" class="field"><option value="">فئة الجهاز</option><option>A</option><option>B</option><option>C</option></select>
-    <input id="f_site" class="field" placeholder="الموقع"/>
-    <input id="f_department" class="field" placeholder="القسم"/>
-    <select id="f_warranty" class="field"><option value="">الضمان</option><option value="yes">داخل الضمان</option><option value="no">خارج الضمان</option></select>
-  </div>
-</section>
+    <section class="card p-3">
+      <div class="overflow-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-800 text-slate-200">
+            <tr>
+              <th class="p-2"><input type="checkbox" id="chkAll"/></th>
+              <th class="p-2">Control</th>
+              <th class="p-2">Name</th>
+              <th class="p-2">Brand</th>
+              <th class="p-2">Model</th>
+              <th class="p-2">Serial</th>
+              <th class="p-2">Site</th>
+              <th class="p-2">Department</th>
+              <th class="p-2">PM</th>
+              <th class="p-2">Next</th>
+              <th class="p-2">أدوات</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
 
-<section class="card p-3">
-  <div class="overflow-auto">
-    <table class="min-w-full text-sm">
-      <thead class="bg-slate-800 text-slate-200">
-        <tr>
-          <th class="p-2"><input type="checkbox" id="chkAll"/></th>
-          <th class="p-2">Control</th>
-          <th class="p-2">Name</th>
-          <th class="p-2">Brand</th>
-          <th class="p-2">Model</th>
-          <th class="p-2">Serial</th>
-          <th class="p-2">Site</th>
-          <th class="p-2">Department</th>
-          <th class="p-2">PM</th>
-          <th class="p-2">Next</th>
-          <th class="p-2">أدوات</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </div>
-  <div id="pager" class="flex flex-col md:flex-row gap-2 md:items-center md:justify-between p-2">
-    <div id="pageStats" class="text-xs text-slate-400"></div>
-    <div class="flex items-center gap-2">
-      <label class="text-xs text-slate-400">عدد الصفوف:</label>
-      <select id="pageSize" class="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm">
-        <option>20</option><option selected>50</option><option>100</option><option>1000</option><option value="all">الكل</option>
-      </select>
-      <button id="prevPage" class="px-2 py-1 rounded bg-slate-700 text-slate-100 text-sm">السابق</button>
-      <span id="pageInfo" class="text-xs text-slate-400 min-w-[4rem] text-center">1/1</span>
-      <button id="nextPage" class="px-2 py-1 rounded bg-slate-700 text-slate-100 text-sm">التالي</button>
-    </div>
-  </div>
-</section>
-
-<script type="module">
-  import '../../js/roles.js';
-  import '../../js/filters.js';
-  import '../../js/table.js';
-</script>
-
+      <div id="pager" class="flex flex-col md:flex-row gap-2 md:items-center md:justify-between p-2">
+        <div id="pageStats" class="text-xs text-slate-400"></div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-slate-400">عدد الصفوف:</label>
+          <select id="pageSize" class="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm">
+            <option>20</option><option selected>50</option><option>100</option><option>1000</option><option value="all">الكل</option>
+          </select>
+          <button id="prevPage" class="px-2 py-1 rounded bg-slate-700 text-slate-100 text-sm">السابق</button>
+          <span id="pageInfo" class="text-xs text-slate-400 min-w-[4rem] text-center">1/1</span>
+          <button id="nextPage" class="px-2 py-1 rounded bg-slate-700 text-slate-100 text-sm">التالي</button>
+        </div>
+      </div>
+    </section>
   </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import "../../js/roles.js"; import "../../js/filters.js"; import "../../js/table.js";
+
+    const cfg = { apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM", authDomain:"pmqrtabuk.firebaseapp.com", projectId:"pmqrtabuk", storageBucket:"pmqrtabuk.firebasestorage.app", messagingSenderId:"305570616285", appId:"1:305570616285:web:4f6839fd08b8b5aa131c34" };
+    const app = initializeApp(cfg); const auth = getAuth(app);
+    const userName = document.getElementById('userName'); const btnLogout = document.getElementById('btnLogout');
+
+    onAuthStateChanged(auth, (user)=>{ if(!user){ location.replace("../../login.html"); return; } userName.textContent = user.displayName || user.email || "User"; });
+    btnLogout.addEventListener('click', async()=>{ try{ await signOut(auth);}finally{ location.replace("../../login.html"); }});
+  </script>
 </body>
 </html>
