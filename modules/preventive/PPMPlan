@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>PPM TABUK • Create PPM Plan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../../css/theme-light.css">
+</head>
+
+<body class="bg-slate-50 text-slate-800">
+
+  <!-- HEADER -->
+  <header class="max-w-7xl mx-auto px-3 md:px-6 mt-3">
+    <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between bg-slate-900 rounded-xl shadow">
+      <nav class="flex items-center gap-3 text-white text-sm">
+        <a href="../dashboard/index.html">Dashboard</a>
+        <a href="../assets/index.html">Assets</a>
+        <a href="../preventive/index.html" class="text-sky-400">Preventive</a>
+        <a href="../corrective/index.html">Corrective</a>
+        <a href="../sites/index.html">Sites</a>
+        <a href="../users/index.html" id="navAdmin">Users</a>
+      </nav>
+      <div class="flex items-center gap-3 text-white text-sm">
+        <span id="userName" class="font-semibold"></span>
+        <span class="text-slate-500">|</span>
+        <button id="btnLogout" class="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-700">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-3 md:p-6 space-y-6">
+
+    <!-- Breadcrumb / Title -->
+    <section class="flex items-center justify-between">
+      <div>
+        <div class="text-xs text-slate-500">Preventive / Plans</div>
+        <h1 class="text-xl md:text-2xl font-extrabold mt-1">Create PPM Plan</h1>
+      </div>
+      <a href="index.html" class="px-3 py-2 rounded-lg border bg-white hover:bg-slate-50">← Back to Preventive</a>
+    </section>
+
+    <!-- Notice -->
+    <section class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
+      <div class="font-bold mb-1">Feature under construction</div>
+      <p class="text-sm">This page is a prepared scaffold for the upcoming PPM Plan builder. UI elements below are placeholders and currently disabled.</p>
+    </section>
+
+    <!-- Placeholder Form (Disabled) -->
+    <section class="bg-white border rounded-xl shadow-sm p-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Site</label>
+          <select class="field opacity-60 cursor-not-allowed" disabled>
+            <option>—</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Department</label>
+          <select class="field opacity-60 cursor-not-allowed" disabled>
+            <option>—</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Device Class</label>
+          <select class="field opacity-60 cursor-not-allowed" disabled>
+            <option>—</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">PM Frequency</label>
+          <select class="field opacity-60 cursor-not-allowed" disabled>
+            <option>Monthly</option>
+            <option>Quarterly</option>
+            <option>Semi-Annual</option>
+            <option>Annual</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Start Date</label>
+          <input type="date" class="field opacity-60 cursor-not-allowed" disabled/>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Notes</label>
+          <textarea class="field opacity-60 cursor-not-allowed" rows="3" placeholder="—" disabled></textarea>
+        </div>
+      </div>
+
+      <div class="mt-4 flex items-center justify-end gap-2">
+        <button class="px-3 py-2 rounded-lg bg-slate-200 text-slate-600 cursor-not-allowed" disabled>Preview</button>
+        <button class="px-3 py-2 rounded-lg bg-sky-600 text-white opacity-60 cursor-not-allowed" disabled>Create Plan</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Auth Guard + Username + Logout -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    const cfg = {
+      apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
+      authDomain:"pmqrtabuk.firebaseapp.com",
+      projectId:"pmqrtabuk",
+      storageBucket:"pmqrtabuk.firebasestorage.app",
+      messagingSenderId:"305570616285",
+      appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
+    };
+    const app = initializeApp(cfg);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+
+    const userName = document.getElementById('userName');
+    const btnLogout = document.getElementById('btnLogout');
+
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ location.replace("../../login.html"); return; }
+      let name = user.displayName || user.email || "User";
+      try{
+        const s = await getDoc(doc(db,'users',user.uid));
+        if (s.exists() && s.data().name) name = s.data().name;
+      }catch{}
+      userName.textContent = name;
+    });
+
+    btnLogout.addEventListener('click', async ()=>{
+      try{ await signOut(auth); } finally { location.replace("../../login.html"); }
+    });
+  </script>
+</body>
+</html>
