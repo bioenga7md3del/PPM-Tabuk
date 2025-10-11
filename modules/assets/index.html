@@ -19,6 +19,7 @@
           </svg>
         </button>
       </div>
+
       <nav class="flex items-center gap-3 text-white/90">
         <a href="../dashboard/index.html">Dashboard</a>
         <a href="../assets/index.html" class="font-bold">الأجهزة</a>
@@ -27,6 +28,7 @@
         <a href="../sites/index.html">المواقع</a>
         <a href="../users/index.html" id="navAdmin">المستخدمون</a>
       </nav>
+
       <div class="flex items-center gap-2">
         <div class="avatar">👤</div>
         <span id="userName" class="hidden sm:inline text-sm"></span>
@@ -36,11 +38,13 @@
   </header>
 
   <main class="max-w-7xl mx-auto p-3 md:p-6 space-y-6">
+    <!-- أزرار أعلى -->
     <section class="flex flex-wrap gap-2">
       <a href="add.html" class="btn btn-brand">➕ إضافة جهاز جديد</a>
       <a href="import.html" class="btn btn-ghost">⬆️ تحميل ملفات (Excel)</a>
     </section>
 
+    <!-- فلاتر -->
     <section class="card p-4">
       <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <input id="f_control" class="field" placeholder="رقم التحكم (Control)"/>
@@ -48,13 +52,20 @@
         <input id="f_model" class="field" placeholder="الموديل"/>
         <input id="f_brand" class="field" placeholder="الماركة"/>
         <input id="f_serial" class="field" placeholder="السيريال"/>
-        <select id="f_class" class="field"><option value="">فئة الجهاز</option><option>A</option><option>B</option><option>C</option></select>
+        <select id="f_class" class="field">
+          <option value="">فئة الجهاز</option><option value="A">A</option><option value="B">B</option><option value="C">C</option>
+        </select>
         <input id="f_site" class="field" placeholder="الموقع"/>
         <input id="f_department" class="field" placeholder="القسم"/>
-        <select id="f_warranty" class="field"><option value="">الضمان</option><option value="yes">داخل الضمان</option><option value="no">خارج الضمان</option></select>
+        <select id="f_warranty" class="field">
+          <option value="">الضمان</option>
+          <option value="yes">داخل الضمان</option>
+          <option value="no">خارج الضمان</option>
+        </select>
       </div>
     </section>
 
+    <!-- الجدول -->
     <section class="card p-3">
       <div class="overflow-auto">
         <table class="min-w-full text-sm">
@@ -77,12 +88,17 @@
         </table>
       </div>
 
+      <!-- Pager -->
       <div id="pager" class="flex flex-col md:flex-row gap-2 md:items-center md:justify-between p-2">
         <div id="pageStats" class="text-xs text-slate-400"></div>
         <div class="flex items-center gap-2">
           <label class="text-xs text-slate-400">عدد الصفوف:</label>
           <select id="pageSize" class="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm">
-            <option>20</option><option selected>50</option><option>100</option><option>1000</option><option value="all">الكل</option>
+            <option>20</option>
+            <option selected>50</option>
+            <option>100</option>
+            <option>1000</option>
+            <option value="all">الكل</option>
           </select>
           <button id="prevPage" class="px-2 py-1 rounded bg-slate-700 text-slate-100 text-sm">السابق</button>
           <span id="pageInfo" class="text-xs text-slate-400 min-w-[4rem] text-center">1/1</span>
@@ -93,16 +109,196 @@
   </main>
 
   <script type="module">
+    /* Firebase + Auth Guard + عرض الاسم من Firestore */
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import "../../js/roles.js"; import "../../js/filters.js"; import "../../js/table.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-    const cfg = { apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM", authDomain:"pmqrtabuk.firebaseapp.com", projectId:"pmqrtabuk", storageBucket:"pmqrtabuk.firebasestorage.app", messagingSenderId:"305570616285", appId:"1:305570616285:web:4f6839fd08b8b5aa131c34" };
-    const app = initializeApp(cfg); const auth = getAuth(app);
-    const userName = document.getElementById('userName'); const btnLogout = document.getElementById('btnLogout');
+    const cfg = {
+      apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
+      authDomain:"pmqrtabuk.firebaseapp.com",
+      projectId:"pmqrtabuk",
+      storageBucket:"pmqrtabuk.firebasestorage.app",
+      messagingSenderId:"305570616285",
+      appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
+    };
+    const app = initializeApp(cfg);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
 
-    onAuthStateChanged(auth, (user)=>{ if(!user){ location.replace("../../login.html"); return; } userName.textContent = user.displayName || user.email || "User"; });
-    btnLogout.addEventListener('click', async()=>{ try{ await signOut(auth);}finally{ location.replace("../../login.html"); }});
+    const userNameEl = document.getElementById('userName');
+    const btnLogout  = document.getElementById('btnLogout');
+
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ location.replace("../../login.html"); return; }
+      // إظهار الاسم من users/{uid}.name ولو مش موجود استخدم displayName
+      let name = user.displayName || "";
+      try{
+        const s = await getDoc(doc(db,'users', user.uid));
+        if (s.exists() && s.data().name) name = s.data().name;
+      }catch{}
+      userNameEl.textContent = name || "بدون اسم";
+      // بعد التأكد من المستخدم، حمّل الأجهزة
+      await loadAssets();
+    });
+
+    btnLogout.addEventListener('click', async ()=>{
+      try { await signOut(auth); } finally { location.replace("../../login.html"); }
+    });
+
+    /* ============ تحميل الأجهزة من Firestore وعرضها ============ */
+    const tbody      = document.getElementById('tbody');
+    const pageSizeEl = document.getElementById('pageSize');
+    const pageInfoEl = document.getElementById('pageInfo');
+    const pageStats  = document.getElementById('pageStats');
+    const prevBtn    = document.getElementById('prevPage');
+    const nextBtn    = document.getElementById('nextPage');
+
+    const filters = {
+      control: document.getElementById('f_control'),
+      name: document.getElementById('f_name'),
+      model: document.getElementById('f_model'),
+      brand: document.getElementById('f_brand'),
+      serial: document.getElementById('f_serial'),
+      class: document.getElementById('f_class'),
+      site: document.getElementById('f_site'),
+      department: document.getElementById('f_department'),
+      warranty: document.getElementById('f_warranty')
+    };
+
+    let ALL = [];     // كل الأجهزة من Firestore
+    let VIEW = [];    // بعد تطبيق الفلاتر
+    let page = 1;     // الصفحة الحالية
+
+    async function loadAssets(){
+      // ملاحظة: ممكن استخدام where + startAfter للتقسيم على السيرفر، لكن هنا هنقرأ مرة واحدة
+      // وبعدين نعمل تصفية وترقيم على الواجهة لسهولة الاستخدام.
+      const qs = await getDocs(query(collection(db,'assets'), orderBy('control')));
+      ALL = qs.docs.map(d=> ({ id:d.id, ...d.data() }));
+      applyFiltersAndRender();
+      attachFilterHandlers();
+    }
+
+    function attachFilterHandlers(){
+      Object.values(filters).forEach(el=> el.addEventListener('input', ()=>{ page=1; applyFiltersAndRender(); }));
+      pageSizeEl.addEventListener('change', ()=>{ page=1; renderTable(); });
+      prevBtn.addEventListener('click', ()=>{ if(page>1){ page--; renderTable(); }});
+      nextBtn.addEventListener('click', ()=>{ const totalPages = getTotalPages(); if(page<totalPages){ page++; renderTable(); }});
+      document.getElementById('chkAll').addEventListener('change', (e)=>{
+        tbody.querySelectorAll('input[type="checkbox"][data-row]').forEach(c=> c.checked = e.target.checked);
+      });
+    }
+
+    function normalize(v){ return String(v||'').toLowerCase().trim(); }
+
+    function applyFiltersAndRender(){
+      const q = {
+        control: normalize(filters.control.value),
+        name: normalize(filters.name.value),
+        model: normalize(filters.model.value),
+        brand: normalize(filters.brand.value),
+        serial: normalize(filters.serial.value),
+        class: normalize(filters.class.value),
+        site: normalize(filters.site.value),
+        department: normalize(filters.department.value),
+        warranty: normalize(filters.warranty.value),
+      };
+      VIEW = ALL.filter(x=>{
+        const f = {
+          control: normalize(x.control || x.controlNumber || x.controlNo),
+          name: normalize(x.name || x.deviceName || x.assetName),
+          model: normalize(x.model),
+          brand: normalize(x.brand),
+          serial: normalize(x.serial || x.serialNumber),
+          class: normalize(x.class || x.assetClass || x.category),
+          site: normalize(x.site),
+          department: normalize(x.department || x.dept),
+          warranty: normalize(x.warranty) // yes/no أو true/false
+        };
+        // تطابق يحتوي (contains) لكل فلاتر النصوص
+        if(q.control && !f.control.includes(q.control)) return false;
+        if(q.name    && !f.name.includes(q.name)) return false;
+        if(q.model   && !f.model.includes(q.model)) return false;
+        if(q.brand   && !f.brand.includes(q.brand)) return false;
+        if(q.serial  && !f.serial.includes(q.serial)) return false;
+        if(q.class   && f.class !== q.class) return false;
+        if(q.site    && !f.site.includes(q.site)) return false;
+        if(q.department && !f.department.includes(q.department)) return false;
+        if(q.warranty){
+          // نقارن yes/no مع مختلف القيم
+          const w = (f.warranty==='yes' || f.warranty==='true' || f.warranty==='1');
+          if(q.warranty==='yes' && !w) return false;
+          if(q.warranty==='no'  &&  w) return false;
+        }
+        return true;
+      });
+      renderTable();
+    }
+
+    function getPageSize(){
+      const v = pageSizeEl.value;
+      if(v==='all') return VIEW.length || 1;
+      return parseInt(v,10) || 50;
+    }
+    function getTotalPages(){
+      const ps = getPageSize();
+      return Math.max(1, Math.ceil((VIEW.length||0)/ps));
+    }
+
+    function renderTable(){
+      const ps = getPageSize();
+      const totalPages = getTotalPages();
+      page = Math.min(page, totalPages);
+
+      const start = (page-1)*ps;
+      const chunk = VIEW.slice(start, start+ps);
+
+      tbody.innerHTML = '';
+      for(const a of chunk){
+        const control = a.control || a.controlNumber || a.controlNo || '';
+        const name    = a.name || a.deviceName || a.assetName || '';
+        const brand   = a.brand || '';
+        const model   = a.model || '';
+        const serial  = a.serial || a.serialNumber || '';
+        const site    = a.site || '';
+        const dept    = a.department || a.dept || '';
+        const pm      = a.pm || a.pmPlan || a.pmFrequency || '';   // حقل خطة PM (لو موجود)
+        const next    = a.next || a.nextPM || a.nextDate || '';     // تاريخ PM التالي (لو موجود)
+
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-200';
+        tr.innerHTML = `
+          <td class="p-2 text-center"><input type="checkbox" data-row /></td>
+          <td class="p-2">${escapeHtml(control)}</td>
+          <td class="p-2">${escapeHtml(name)}</td>
+          <td class="p-2">${escapeHtml(brand)}</td>
+          <td class="p-2">${escapeHtml(model)}</td>
+          <td class="p-2">${escapeHtml(serial)}</td>
+          <td class="p-2">${escapeHtml(site)}</td>
+          <td class="p-2">${escapeHtml(dept)}</td>
+          <td class="p-2">${escapeHtml(pm)}</td>
+          <td class="p-2">${escapeHtml(next)}</td>
+          <td class="p-2">
+            <div class="flex gap-2">
+              <a class="px-2 py-1 rounded bg-slate-700 text-white text-xs" target="_blank" href="../preventive/qr.html?control=${encodeURIComponent(control)}">QR</a>
+              <a class="px-2 py-1 rounded bg-sky-600 text-white text-xs"  target="_blank" href="../preventive/sticker.html#view/${encodeURIComponent(control)}">Sticker</a>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      pageInfoEl.textContent = `${page}/${totalPages}`;
+      const from = VIEW.length? (start+1) : 0;
+      const to   = Math.min(start+chunk.length, VIEW.length);
+      pageStats.textContent = `عرض ${from}–${to} من ${VIEW.length} جهاز`;
+      prevBtn.disabled = (page<=1);
+      nextBtn.disabled = (page>=totalPages);
+    }
+
+    function escapeHtml(s){
+      return String(s??'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+    }
   </script>
 </body>
 </html>
