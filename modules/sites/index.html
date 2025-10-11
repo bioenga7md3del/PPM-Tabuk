@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>PPM TABUK • المواقع والأقسام</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/theme-light.css">
+</head>
+<body>
+  <header class="max-w-7xl mx-auto px-3 md:px-6 mt-3">
+  <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <button class="icon-btn" title="القائمة">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M4 6h16M4 12h16M4 18h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <nav class="flex items-center gap-3 text-white/90">
+      <a href="../dashboard/index.html">Dashboard</a>
+      <a href="../assets/index.html">الأجهزة</a>
+      <a href="../preventive/index.html">الصيانة الوقائية</a>
+      <a href="../corrective/index.html">الصيانة التصحيحية</a>
+      <a href="../sites/index.html">المواقع</a>
+      <a href="../users/index.html" id="navAdmin">المستخدمون</a>
+    </nav>
+    <div class="avatar">👤</div>
+  </div>
+</header>
+  <main class="max-w-7xl mx-auto p-3 md:p-6 space-y-6">
+
+<section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div class="card p-4">
+    <div class="font-bold mb-3">إضافة موقع</div>
+    <div class="flex gap-2">
+      <input id="siteName" class="field flex-1" placeholder="اسم الموقع"/>
+      <button id="addSite" class="btn btn-brand">حفظ</button>
+    </div>
+    <ul id="sitesList" class="mt-3 space-y-1 text-slate-600 text-sm"></ul>
+  </div>
+  <div class="card p-4">
+    <div class="font-bold mb-3">إضافة قسم</div>
+    <div class="flex gap-2">
+      <input id="deptName" class="field flex-1" placeholder="اسم القسم"/>
+      <button id="addDept" class="btn btn-brand">حفظ</button>
+    </div>
+    <ul id="deptsList" class="mt-3 space-y-1 text-slate-600 text-sm"></ul>
+  </div>
+</section>
+
+<script type="module">
+  import { db } from '../../js/firebase.js';
+  import { collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  async function loadList(col, ulId){
+    const ul = document.getElementById(ulId); ul.innerHTML='';
+    const qs = await getDocs(query(collection(db,col), orderBy('name')));
+    qs.forEach(d=>{ const li=document.createElement('li'); li.textContent = d.data().name; ul.appendChild(li); });
+  }
+  document.getElementById('addSite').onclick = async ()=>{ const v=document.getElementById('siteName').value.trim(); if(!v) return; await addDoc(collection(db,'sites'), { name:v }); document.getElementById('siteName').value=''; loadList('sites','sitesList'); };
+  document.getElementById('addDept').onclick = async ()=>{ const v=document.getElementById('deptName').value.trim(); if(!v) return; await addDoc(collection(db,'departments'), { name:v }); document.getElementById('deptName').value=''; loadList('departments','deptsList'); };
+  loadList('sites','sitesList'); loadList('departments','deptsList');
+</script>
+
+  </main>
+</body>
+</html>
