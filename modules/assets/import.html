@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>استيراد الأصول إلى Firestore</title>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<style>
+  :root{--bg:#0b1220;--card:#111827;--muted:#94a3b8;--text:#e5e7eb;--ok:#10b981;--err:#ef4444;--info:#3b82f6}
+  html,body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0}
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  .card{background:#111827;border:1px solid #1f2937;border-radius:12px;padding:16px;margin:12px 0;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+  input,select{background:#0b1220;color:#fff;border:1px solid #374151;border-radius:10px;padding:10px 12px}
+  .btn{border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+  .btn.ok{background:#10b981;color:#083344}
+  .btn.sec{background:#3b82f6;color:#e0f2fe}
+  .muted{color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{border:1px solid #1f2937;padding:6px 8px}
+  th{background:#0f172a}
+  .prog{height:10px;background:#0f172a;border-radius:8px;overflow:hidden}
+  .bar{height:100%;width:0;background:#10b981}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;margin-inline-start:6px}
+  .good{background:rgba(16,185,129,.2);color:#a7f3d0}
+  .bad{background:rgba(239,68,68,.2);color:#fecaca}
+  .note{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.4);padding:10px;border-radius:10px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+</style>
+  <link rel="stylesheet" href="../css/theme-light.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>استيراد الأصول إلى Firestore</h1>
+
+    <div class="note">
+      استخدم هذا النموذج لتجهيز الملف بدون لخبطة في الأعمدة:
+      <div class="row" style="margin-top:8px">
+        <button class="btn sec" id="tplXlsx">تحميل نموذج (Excel)</button>
+        <button class="btn sec" id="tplCsv">تحميل نموذج (CSV)</button>
+      </div>
+      الأعمدة القياسية: <b>Control Number</b>, <b>Site</b>, <b>Department</b>, <b>Location</b>,
+      <b>PM Date</b>, <b>Next Date</b>, <b>Technician</b>,
+      <b>Name</b>, <b>Brand</b>, <b>Serial</b>.
+      (لو <b>Next Date</b> فاضي هيتحسب تلقائيًا = +6 شهور من PM Date)
+    </div>
+
+    <div class="row">
+      <input type="file" id="file" accept=".xlsx,.xls,.csv"/>
+      <label><input type="checkbox" id="dry" checked> تشغيل كتجربة (بدون كتابة)</label>
+      <label>المجموعة: <input id="collection" value="assets" style="min-width:160px"></label>
+      <button class="btn sec" id="parseBtn">قراءة الملف</button>
+    </div>
+    <div id="status" class="muted">لم يتم تحميل ملف بعد.</div>
+  </div>
+
+  <div class="card" id="mapCard" style="display:none">
+    <h2>خريطة الأعمدة</h2>
+    <div class="grid" id="mapping"></div>
+    <div class="row">
+      <button class="btn sec" id="previewBtn">معاينة أول 10 صفوف</button>
+      <button class="btn ok" id="importBtn">بدء الاستيراد</button>
+    </div>
+  </div>
+
+  <div class="card" id="previewCard" style="display:none">
+    <h2>المعاينة</h2>
+    <div id="preview"></div>
+  </div>
+
+  <div class="card" id="progressCard" style="display:none">
+    <h2>التقدم</h2>
+    <div class="prog"><div class="bar" id="bar"></div></div>
+    <div id="log" style="margin-top:10px;white-space:pre-wrap;font-family:ui-monospace,monospace"></div>
+  </div>
+</div>
+
+<!-- SheetJS لقراءة/إنشاء Excel -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+import { getFirestore, collection, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+/* ==== Firebase Config (مشروعك) ==== */
+const firebaseConfig = {
+  apiKey: "AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
+  authDomain: "pmqrtabuk.firebaseapp.com",
+  projectId: "pmqrtabuk",
+  storageBucket: "pmqrtabuk.firebasestorage.app",
+  messagingSenderId: "305570616285",
+  appId: "1:305570616285:web:4f6839fd08b8b5aa131c34"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+/* ==== عناصر ==== */
+const $ = s => document.querySelector(s);
+const fileInput = $('#file');
+const parseBtn  = $('#parseBtn');
+const previewBtn= $('#previewBtn');
+const importBtn = $('#importBtn');
+const mappingEl = $('#mapping');
+const mapCard   = $('#mapCard');
+const previewCard=$('#previewCard');
+const progressCard=$('#progressCard');
+const statusEl  = $('#status');
+const previewEl = $('#preview');
+const bar       = $('#bar');
+const logEl     = $('#log');
+const colInput  = $('#collection');
+const dryEl     = $('#dry');
+const tplXlsx   = $('#tplXlsx');
+const tplCsv    = $('#tplCsv');
+
+let headers = [];
+let rows = [];
+let map = {};
+
+/* ==== توليد ملفات النموذج ==== */
+function downloadCSV(filename, rows){
+  const header = Object.keys(rows[0]).join(',');
+  const body = rows.map(r=>Object.values(r).map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([header + '\n' + body], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function downloadXLSX(filename, rows){
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Assets');
+  XLSX.writeFile(wb, filename);
+}
+
+/* == نموذج محدّث يحتوي الأعمدة الجديدة == */
+const TEMPLATE_HEADERS = ["Control Number","Site","Department","Location","PM Date","Next Date","Technician","Name","Brand","Serial"];
+const TEMPLATE_SAMPLE = [{
+  "Control Number":"AS-0001",
+  "Site":"Mobile Team",
+  "Department":"Elsada",
+  "Location":"OR-1 (اختياري)",
+  "PM Date":"2025-09-25",
+  "Next Date":"",               // اتركه فاضي لو تحب يتحسب تلقائيًا
+  "Technician":"Ahmed",
+  "Name":"Infusion Pump",
+  "Brand":"B Braun",
+  "Serial":"SN12345"
+}];
+tplXlsx.onclick = ()=> downloadXLSX('pm_assets_template.xlsx', TEMPLATE_SAMPLE);
+tplCsv.onclick  = ()=> downloadCSV('pm_assets_template.csv', TEMPLATE_SAMPLE);
+
+/* ==== تطبيع الأعمدة & الاستيراد ==== */
+const ALIASES = {
+  control: new Set(['control number','control','controlnumber','رقم الجهاز','رقم التحكم','الكنترول','رقم الأصل','رقم الاصل']),
+  site: new Set(['site','الموقع','المستشفى','المنشأة','facility']),
+  department: new Set(['department','القسم','القسم/الوحدة','section']),
+  location: new Set(['location','الوصف','الوصف التفصيلي','الموقع الداخلي','الغرفة']),
+  pm_date: new Set(['pm date','pm_date','تاريخ الصيانة الوقائية','تاريخ pm','pmdate']),
+  next_date: new Set(['next date','next_date','الصيانة القادمة','تاريخ الصيانة القادمة','nextdate']),
+  tech: new Set(['technician','tech','القائم بالصيانة','الفني','الفني المسؤول','technican','technician name']),
+  // الجدد:
+  name: new Set(['name','اسم الجهاز','الاسم','device name','equipment name','اسم المعدة']),
+  brand: new Set(['brand','الماركة','الشركة المصنعة','manufacturer','make','الشركة','المُصنِّع']),
+  serial: new Set(['serial','serial no','serial number','sn','الرقم التسلسلي','رقم التسلسل','s/n'])
+};
+function norm(s){ return String(s||'').trim().toLowerCase().replace(/ـ/g,''); }
+function guessTarget(h){
+  const n = norm(h);
+  for(const [t,set] of Object.entries(ALIASES)){ if(set.has(n)) return t; }
+  return null;
+}
+function toISO(d){
+  if(d===undefined || d===null || d==='') return null;
+  if(typeof d==='number'){ const unix = (d - 25569) * 86400 * 1000; return new Date(unix).toISOString().slice(0,10); }
+  const dt = new Date(d); return isNaN(+dt) ? null : dt.toISOString().slice(0,10);
+}
+function addMonths(dateISO, m=6){ if(!dateISO) return null; const dt = new Date(dateISO); dt.setMonth(dt.getMonth()+m); return dt.toISOString().slice(0,10); }
+function safeId(s){ return String(s||'').trim().replace(/[\/#?\s]+/g,'-'); }
+
+/* ==== قراءة الملف ==== */
+const readCSV = async (buf) => {
+  // مبدئيًا UTF-8 (لو عندك ملفات Windows-1256 قولي أضيف Smart Decoder)
+  const text = new TextDecoder('utf-8').decode(buf);
+  const wb = XLSX.read(text, {type:'string'});
+  return wb.Sheets[wb.SheetNames[0]];
+};
+
+parseBtn.onclick = async ()=>{
+  const file = fileInput.files?.[0];
+  if(!file){ statusEl.textContent='اختر ملف أولًا.'; return; }
+  statusEl.textContent='جاري القراءة…';
+  try{
+    const buf = await file.arrayBuffer();
+    let ws;
+    if(file.name.toLowerCase().endsWith('.csv')){
+      ws = await readCSV(buf);
+    }else{
+      const wb = XLSX.read(buf, {type:'array'});
+      ws = wb.Sheets[wb.SheetNames[0]];
+    }
+    rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+    headers = Object.keys(rows[0]||{});
+    if(headers.length===0){ statusEl.textContent='لا يوجد أعمدة في الشيت الأول.'; return; }
+
+    // خريطة مبدئية تشمل الأعمدة الجديدة
+    map = {control:null, site:null, department:null, location:null, pm_date:null, next_date:null, tech:null, name:null, brand:null, serial:null};
+    headers.forEach(h=>{ const t = guessTarget(h); if(t && !map[t]) map[t]=h; });
+
+    // واجهة المابينج
+    mappingEl.innerHTML = '';
+    for(const t of Object.keys(map)){
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <label style="display:block;margin-bottom:6px">${t}</label>
+        <select data-target="${t}" style="min-width:220px">
+          <option value="">— غير مخصص —</option>
+          ${headers.map(h=>`<option value="${h}" ${map[t]===h?'selected':''}>${h}</option>`).join('')}
+        </select>`;
+      mappingEl.appendChild(div);
+    }
+    mappingEl.querySelectorAll('select').forEach(sel=>{
+      sel.onchange = () => map[sel.dataset.target]=sel.value||null;
+    });
+
+    mapCard.style.display='block';
+    previewCard.style.display='none';
+    progressCard.style.display='none';
+    statusEl.textContent=`تم التحميل: ${rows.length} صفًا • ${headers.length} عمودًا`;
+  }catch(e){ statusEl.textContent='فشل قراءة الملف: '+e.message; }
+};
+
+/* ==== المعاينة ==== */
+previewBtn.onclick = ()=>{
+  const sample = rows.slice(0,10);
+  const cols = Object.values(map).filter(Boolean); // الأعمدة المختارة فقط
+  if(cols.length===0){ previewEl.textContent='اختر أعمدة أولًا.'; previewCard.style.display='block'; return; }
+  let html = '<table><thead><tr>';
+  html += cols.map(c=>`<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+  for(const r of sample){ html += '<tr>' + cols.map(c=>`<td>${r[c]??''}</td>`).join('') + '</tr>'; }
+  html += '</tbody></table>';
+  previewEl.innerHTML = html;
+  previewCard.style.display='block';
+};
+
+/* ==== الاستيراد ==== */
+importBtn.onclick = async ()=>{
+  // نخلي control و pm_date إلزاميين زي ما هو، والباقي اختياري
+  const requiredMapKeys = ['control','pm_date'];
+  for(const r of requiredMapKeys){ if(!map[r]){ alert(`العمود الإجباري مفقود: ${r}`); return; } }
+  const coll = (document.getElementById('collection').value||'assets').trim();
+  const dry  = dryEl.checked;
+
+  progressCard.style.display='block';
+  bar.style.width='0%'; logEl.textContent='';
+  const total = rows.length; let done=0, ok=0, fail=0;
+
+  const chunkSize = 400;
+  for(let i=0;i<rows.length;i+=chunkSize){
+    const chunk = rows.slice(i, i+chunkSize);
+    const batch = writeBatch(db);
+
+    for(const r of chunk){
+      try{
+        const control = String(map.control? r[map.control] : '').trim();
+        if(!control) throw new Error('Control فارغ');
+
+        const pm   = toISO(map.pm_date? r[map.pm_date] : null);
+        if(!pm) throw new Error('PM Date غير صالح');
+        let next   = toISO(map.next_date? r[map.next_date] : null) || addMonths(pm,6);
+
+        // الحقول الاختيارية (ومنها الجداد)
+        const site = map.site? r[map.site] : null;
+        const dept = map.department? r[map.department] : null;
+        const loc  = map.location? r[map.location] : null;
+        const tech = map.tech? r[map.tech] : null;
+
+        const name  = map.name?  String(r[map.name]  ?? '').trim() : null;
+        const brand = map.brand? String(r[map.brand] ?? '').trim() : null;
+        const serial= map.serial?String(r[map.serial]?? '').trim() : null;
+
+        const data = {
+          control,
+          site: site || null,
+          department: dept || null,
+          location: loc || null,
+          pm_date: pm,
+          next_date: next || null,
+          tech: tech || null,
+          // الجُداد:
+          name: name || null,
+          brand: brand || null,
+          serial: serial || null,
+          updatedAt: serverTimestamp()
+        };
+
+        if(!dry){
+          const ref = doc(collection(db, coll), safeId(control));
+          batch.set(ref, data, { merge: true }); // merge=true علشان ما نمسحش حقول قديمة بالخطأ
+        }
+        ok++;
+      }catch(e){
+        fail++;
+        logEl.textContent += `❌ ${map.control? (rows[0] && r[map.control]) : ''} — ${e.message}\n`;
+      }finally{
+        done++;
+      }
+    }
+
+    if(!dry){ await batch.commit(); }
+    bar.style.width = `${Math.round((done/total)*100)}%`;
+  }
+
+  logEl.textContent = `✅ ناجحة: ${ok}   ❌ فاشلة: ${fail}\n` + logEl.textContent;
+  if(dry) logEl.textContent = 'وضع التجربة مفعّل — لم يتم كتابة أي بيانات.\n' + logEl.textContent;
+};
+</script>
+</body>
+</html>
