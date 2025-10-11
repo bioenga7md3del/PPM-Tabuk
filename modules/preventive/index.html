@@ -19,6 +19,7 @@
           </svg>
         </button>
       </div>
+
       <nav class="flex items-center gap-3 text-white/90">
         <a href="../dashboard/index.html">Dashboard</a>
         <a href="../assets/index.html">الأجهزة</a>
@@ -27,6 +28,7 @@
         <a href="../sites/index.html">المواقع</a>
         <a href="../users/index.html" id="navAdmin">المستخدمون</a>
       </nav>
+
       <div class="flex items-center gap-2">
         <div class="avatar">👤</div>
         <span id="userName" class="hidden sm:inline text-sm"></span>
@@ -36,30 +38,31 @@
   </header>
 
   <main class="max-w-7xl mx-auto p-3 md:p-6 space-y-6">
-    <!-- فلاتر سريعة -->
+    
+    <!-- فلاتر -->
     <section class="card p-4">
       <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <input id="f_control" class="field" placeholder="رقم التحكم"/>
-        <input id="f_name" class="field" placeholder="الاسم"/>
+        <input id="f_name" class="field" placeholder="اسم الجهاز"/>
         <input id="f_site" class="field" placeholder="الموقع"/>
         <input id="f_department" class="field" placeholder="القسم"/>
       </div>
     </section>
 
-    <!-- جدول PM -->
+    <!-- جدول الأجهزة -->
     <section class="card p-3">
       <div class="overflow-auto">
         <table class="min-w-full text-sm">
           <thead class="bg-slate-800 text-slate-200">
             <tr>
-              <th class="p-2"><input type="checkbox" id="chkAll"/></th>
+              <th class="p-2">#</th>
               <th class="p-2">Control</th>
               <th class="p-2">Name</th>
               <th class="p-2">Site</th>
               <th class="p-2">Department</th>
-              <th class="p-2">PM</th>
-              <th class="p-2">Next</th>
-              <th class="p-2">أدوات</th>
+              <th class="p-2">Last PM</th>
+              <th class="p-2">Next PM</th>
+              <th class="p-2">QR / Sticker</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
@@ -79,19 +82,155 @@
         </div>
       </div>
     </section>
+
   </main>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import "../../js/roles.js"; import "../../js/filters.js"; import "../../js/table.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-    const cfg = { apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM", authDomain:"pmqrtabuk.firebaseapp.com", projectId:"pmqrtabuk", storageBucket:"pmqrtabuk.firebasestorage.app", messagingSenderId:"305570616285", appId:"1:305570616285:web:4f6839fd08b8b5aa131c34" };
-    const app = initializeApp(cfg); const auth = getAuth(app);
-    const userName = document.getElementById('userName'); const btnLogout = document.getElementById('btnLogout');
+    const cfg = {
+      apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
+      authDomain:"pmqrtabuk.firebaseapp.com",
+      projectId:"pmqrtabuk",
+      storageBucket:"pmqrtabuk.firebasestorage.app",
+      messagingSenderId:"305570616285",
+      appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
+    };
+    const app = initializeApp(cfg);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
 
-    onAuthStateChanged(auth, (user)=>{ if(!user){ location.replace("../../login.html"); return; } userName.textContent = user.displayName || user.email || "User"; });
-    btnLogout.addEventListener('click', async()=>{ try{ await signOut(auth);}finally{ location.replace("../../login.html"); }});
+    const userNameEl = document.getElementById('userName');
+    const btnLogout  = document.getElementById('btnLogout');
+    const tbody      = document.getElementById('tbody');
+
+    let ALL = [];
+    let VIEW = [];
+    let page = 1;
+
+    const pageSizeEl = document.getElementById('pageSize');
+    const pageInfoEl = document.getElementById('pageInfo');
+    const pageStats  = document.getElementById('pageStats');
+    const prevBtn    = document.getElementById('prevPage');
+    const nextBtn    = document.getElementById('nextPage');
+
+    const filters = {
+      control: document.getElementById('f_control'),
+      name: document.getElementById('f_name'),
+      site: document.getElementById('f_site'),
+      department: document.getElementById('f_department')
+    };
+
+    // --- تسجيل الدخول واسم المستخدم ---
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ location.replace("../../login.html"); return; }
+      let name = user.displayName || "";
+      try{
+        const s = await getDoc(doc(db,'users', user.uid));
+        if (s.exists() && s.data().name) name = s.data().name;
+      }catch{}
+      userNameEl.textContent = name || "بدون اسم";
+      await loadPreventiveAssets();
+    });
+
+    btnLogout.addEventListener('click', async ()=>{
+      try { await signOut(auth); } finally { location.replace("../../login.html"); }
+    });
+
+    // --- تحميل الأجهزة من Firestore ---
+    async function loadPreventiveAssets(){
+      const qs = await getDocs(query(collection(db,'assets'), orderBy('control')));
+      ALL = qs.docs.map(d=> ({ id:d.id, ...d.data() }));
+      applyFiltersAndRender();
+      Object.values(filters).forEach(el=> el.addEventListener('input', ()=>{ page=1; applyFiltersAndRender(); }));
+      pageSizeEl.addEventListener('change', ()=>{ page=1; renderTable(); });
+      prevBtn.addEventListener('click', ()=>{ if(page>1){ page--; renderTable(); }});
+      nextBtn.addEventListener('click', ()=>{ const total=getTotalPages(); if(page<total){ page++; renderTable(); }});
+    }
+
+    // --- الفلاتر ---
+    function normalize(v){ return String(v||'').toLowerCase().trim(); }
+    function applyFiltersAndRender(){
+      const q = {
+        control: normalize(filters.control.value),
+        name: normalize(filters.name.value),
+        site: normalize(filters.site.value),
+        department: normalize(filters.department.value),
+      };
+      VIEW = ALL.filter(x=>{
+        const c = normalize(x.control || x.controlNumber || '');
+        const n = normalize(x.name || x.deviceName || '');
+        const s = normalize(x.site || '');
+        const d = normalize(x.department || '');
+        if(q.control && !c.includes(q.control)) return false;
+        if(q.name && !n.includes(q.name)) return false;
+        if(q.site && !s.includes(q.site)) return false;
+        if(q.department && !d.includes(q.department)) return false;
+        return true;
+      });
+      renderTable();
+    }
+
+    // --- الترقيم ---
+    function getPageSize(){
+      const v = pageSizeEl.value;
+      if(v==='all') return VIEW.length || 1;
+      return parseInt(v,10) || 50;
+    }
+    function getTotalPages(){
+      const ps = getPageSize();
+      return Math.max(1, Math.ceil((VIEW.length||0)/ps));
+    }
+
+    // --- عرض الجدول ---
+    function renderTable(){
+      const ps = getPageSize();
+      const totalPages = getTotalPages();
+      page = Math.min(page, totalPages);
+
+      const start = (page-1)*ps;
+      const chunk = VIEW.slice(start, start+ps);
+
+      tbody.innerHTML = '';
+      let i = start + 1;
+      for(const a of chunk){
+        const control = a.control || a.controlNumber || '';
+        const name    = a.name || '';
+        const site    = a.site || '';
+        const dept    = a.department || '';
+        const lastPM  = a.lastPM || a.pm || '';
+        const nextPM  = a.nextPM || a.next || '';
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-200';
+        tr.innerHTML = `
+          <td class="p-2 text-center text-slate-500">${i++}</td>
+          <td class="p-2">${escapeHtml(control)}</td>
+          <td class="p-2">${escapeHtml(name)}</td>
+          <td class="p-2">${escapeHtml(site)}</td>
+          <td class="p-2">${escapeHtml(dept)}</td>
+          <td class="p-2">${escapeHtml(lastPM)}</td>
+          <td class="p-2">${escapeHtml(nextPM)}</td>
+          <td class="p-2 text-center">
+            <a href="qr.html?control=${encodeURIComponent(control)}" target="_blank" class="px-2 py-1 rounded bg-slate-700 text-white text-xs">QR</a>
+            <a href="sticker.html#view/${encodeURIComponent(control)}" target="_blank" class="px-2 py-1 rounded bg-sky-600 text-white text-xs">Sticker</a>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      pageInfoEl.textContent = `${page}/${totalPages}`;
+      const from = VIEW.length? (start+1) : 0;
+      const to   = Math.min(start+chunk.length, VIEW.length);
+      pageStats.textContent = `عرض ${from}–${to} من ${VIEW.length} جهاز`;
+      prevBtn.disabled = (page<=1);
+      nextBtn.disabled = (page>=totalPages);
+    }
+
+    function escapeHtml(s){
+      return String(s??'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+    }
   </script>
 </body>
 </html>
