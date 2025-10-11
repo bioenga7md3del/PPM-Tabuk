@@ -1,50 +1,62 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>PPM TABUK • الصيانة الوقائية</title>
+  <title>PPM TABUK • Preventive Maintenance</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../../css/theme-light.css">
 </head>
-<body>
 
-  <!-- Header -->
+<body class="bg-slate-50 text-slate-800">
+
+  <!-- HEADER -->
   <header class="max-w-7xl mx-auto px-3 md:px-6 mt-3">
-    <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between">
-      <nav class="flex items-center gap-3 text-white/90">
+    <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between bg-slate-900 rounded-xl shadow">
+      <nav class="flex items-center gap-3 text-white text-sm">
         <a href="../dashboard/index.html">Dashboard</a>
-        <a href="../assets/index.html">الأجهزة</a>
-        <a href="../preventive/index.html" class="font-bold">الصيانة الوقائية</a>
-        <a href="../corrective/index.html">الصيانة التصحيحية</a>
-        <a href="../sites/index.html">المواقع</a>
-        <a href="../users/index.html" id="navAdmin">المستخدمون</a>
+        <a href="../assets/index.html">Assets</a>
+        <a href="../preventive/index.html" class="font-bold text-sky-400">Preventive</a>
+        <a href="../corrective/index.html">Corrective</a>
+        <a href="../sites/index.html">Sites</a>
+        <a href="../users/index.html" id="navAdmin">Users</a>
       </nav>
-      <div class="flex items-center gap-2">
-        <div class="avatar">👤</div>
-        <span id="userName" class="hidden sm:inline text-sm"></span>
-        <button id="btnLogout" class="btn btn-ghost">تسجيل الخروج</button>
+
+      <div class="flex items-center gap-3">
+        <div class="text-white text-sm flex items-center gap-2">
+          <span id="userName" class="font-semibold"></span>
+          <span class="text-slate-400">|</span>
+          <button id="btnLogout" class="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm">Logout</button>
+        </div>
       </div>
     </div>
   </header>
 
   <main class="max-w-7xl mx-auto p-3 md:p-6 space-y-6">
-    
-    <!-- فلاتر -->
-    <section class="card p-4">
+
+    <!-- CREATE BUTTON -->
+    <section class="flex flex-wrap justify-between items-center">
+      <h1 class="text-xl font-bold text-slate-800">Preventive Maintenance</h1>
+      <a href="PPMPlan.html" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg shadow">
+        ➕ Create PPM Plan
+      </a>
+    </section>
+
+    <!-- FILTERS -->
+    <section class="card p-4 bg-white border rounded-xl shadow-sm">
       <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        <input id="f_control" class="field" placeholder="رقم التحكم"/>
-        <input id="f_name" class="field" placeholder="اسم الجهاز"/>
-        <input id="f_site" class="field" placeholder="الموقع"/>
-        <input id="f_department" class="field" placeholder="القسم"/>
+        <input id="f_control" class="field" placeholder="Control Number"/>
+        <input id="f_name" class="field" placeholder="Device Name"/>
+        <select id="f_site" class="field"></select>
+        <select id="f_department" class="field"></select>
       </div>
     </section>
 
-    <!-- جدول -->
-    <section class="card p-3">
+    <!-- TABLE -->
+    <section class="card p-3 bg-white border rounded-xl shadow-sm">
       <div class="overflow-auto">
         <table class="min-w-full text-sm">
-          <thead class="bg-slate-800 text-slate-200">
+          <thead class="bg-slate-800 text-white">
             <tr>
               <th class="p-2">#</th>
               <th class="p-2">Control</th>
@@ -53,46 +65,47 @@
               <th class="p-2">Department</th>
               <th class="p-2">Last PM</th>
               <th class="p-2">Next PM</th>
-              <th class="p-2">أدوات</th>
+              <th class="p-2">Actions</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
         </table>
       </div>
 
+      <!-- Pagination -->
       <div id="pager" class="flex flex-col md:flex-row gap-2 md:items-center md:justify-between p-2">
-        <div id="pageStats" class="text-xs text-slate-400"></div>
+        <div id="pageStats" class="text-xs text-slate-500"></div>
         <div class="flex items-center gap-2">
-          <label class="text-xs text-slate-400">عدد الصفوف:</label>
-          <select id="pageSize" class="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm">
-            <option>20</option><option selected>50</option><option>100</option><option>1000</option><option value="all">الكل</option>
+          <label class="text-xs text-slate-500">Rows per page:</label>
+          <select id="pageSize" class="px-2 py-1 rounded bg-slate-100 border text-sm">
+            <option>20</option><option selected>50</option><option>100</option><option>1000</option><option value="all">All</option>
           </select>
-          <button id="prevPage" class="px-2 py-1 rounded bg-slate-700 text-slate-100 text-sm">السابق</button>
-          <span id="pageInfo" class="text-xs text-slate-400 min-w-[4rem] text-center">1/1</span>
-          <button id="nextPage" class="px-2 py-1 rounded bg-slate-700 text-slate-100 text-sm">التالي</button>
+          <button id="prevPage" class="px-2 py-1 rounded bg-slate-700 text-white text-sm">Prev</button>
+          <span id="pageInfo" class="text-xs text-slate-500 min-w-[4rem] text-center">1/1</span>
+          <button id="nextPage" class="px-2 py-1 rounded bg-slate-700 text-white text-sm">Next</button>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- نافذة تعديل -->
+  <!-- EDIT MODAL -->
   <div id="editModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-5 w-full max-w-md text-slate-800">
-      <h3 class="text-lg font-bold mb-4">تعديل بيانات الصيانة الوقائية</h3>
-      <input id="edit_control" type="hidden">
+    <div class="bg-white rounded-xl p-5 w-full max-w-md text-slate-800">
+      <h3 class="text-lg font-bold mb-4">Edit Preventive Data</h3>
+      <input id="edit_id" type="hidden">
       <div class="space-y-3">
         <div>
-          <label class="block text-sm mb-1">تاريخ الصيانة الأخيرة (Last PM)</label>
+          <label class="block text-sm mb-1">Last PM Date</label>
           <input id="edit_last" type="date" class="w-full border border-slate-300 rounded-lg px-3 py-2">
         </div>
         <div>
-          <label class="block text-sm mb-1">تاريخ الصيانة القادمة (Next PM)</label>
+          <label class="block text-sm mb-1">Next PM Date</label>
           <input id="edit_next" type="date" class="w-full border border-slate-300 rounded-lg px-3 py-2">
         </div>
       </div>
       <div class="flex justify-end gap-2 mt-4">
-        <button id="closeEdit" class="px-3 py-1 rounded bg-slate-300 hover:bg-slate-400">إلغاء</button>
-        <button id="saveEdit" class="px-3 py-1 rounded bg-sky-600 text-white hover:bg-sky-700">💾 حفظ</button>
+        <button id="closeEdit" class="px-3 py-1 rounded bg-slate-300 hover:bg-slate-400">Cancel</button>
+        <button id="saveEdit" class="px-3 py-1 rounded bg-sky-600 text-white hover:bg-sky-700">Save</button>
       </div>
     </div>
   </div>
@@ -100,7 +113,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
     const cfg = {
       apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
@@ -114,23 +127,19 @@
     const auth = getAuth(app);
     const db   = getFirestore(app);
 
-    const userNameEl = document.getElementById('userName');
-    const btnLogout  = document.getElementById('btnLogout');
-    const tbody      = document.getElementById('tbody');
-    const modal      = document.getElementById('editModal');
-    const closeEdit  = document.getElementById('closeEdit');
-    const saveEdit   = document.getElementById('saveEdit');
-    const editControl= document.getElementById('edit_control');
-    const editLast   = document.getElementById('edit_last');
-    const editNext   = document.getElementById('edit_next');
+    const userName = document.getElementById('userName');
+    const btnLogout = document.getElementById('btnLogout');
+    const tbody = document.getElementById('tbody');
 
-    let ALL=[], VIEW=[], page=1;
+    const modal = document.getElementById('editModal');
+    const editId = document.getElementById('edit_id');
+    const editLast = document.getElementById('edit_last');
+    const editNext = document.getElementById('edit_next');
+    const closeEdit = document.getElementById('closeEdit');
+    const saveEdit = document.getElementById('saveEdit');
 
-    const pageSizeEl=document.getElementById('pageSize');
-    const pageInfoEl=document.getElementById('pageInfo');
-    const pageStats=document.getElementById('pageStats');
-    const prevBtn=document.getElementById('prevPage');
-    const nextBtn=document.getElementById('nextPage');
+    let ALL=[], VIEW=[], userSites=[], userDepts=[], page=1;
+
     const filters={
       control:document.getElementById('f_control'),
       name:document.getElementById('f_name'),
@@ -138,85 +147,149 @@
       department:document.getElementById('f_department')
     };
 
+    const pageSizeEl=document.getElementById('pageSize');
+    const pageInfoEl=document.getElementById('pageInfo');
+    const pageStats=document.getElementById('pageStats');
+    const prevBtn=document.getElementById('prevPage');
+    const nextBtn=document.getElementById('nextPage');
+
+    // Auth Guard
     onAuthStateChanged(auth, async (user)=>{
       if(!user){ location.replace("../../login.html"); return; }
-      let name=user.displayName||"";
-      try{const s=await getDoc(doc(db,'users',user.uid));if(s.exists()&&s.data().name)name=s.data().name;}catch{}
-      userNameEl.textContent=name||"بدون اسم";
-      await loadPreventiveAssets();
+      const snap = await getDoc(doc(db,'users',user.uid));
+      let name=user.email;
+      if(snap.exists()){
+        const data=snap.data();
+        name=data.name||user.email;
+        userSites=data.sites||[];
+        userDepts=data.departments||[];
+      }
+      userName.textContent=name;
+      await fillFilters();
+      await loadAssets();
     });
 
-    btnLogout.addEventListener('click', async()=>{try{await signOut(auth);}finally{location.replace("../../login.html");}});
+    btnLogout.addEventListener('click', async()=>{ try{await signOut(auth);}finally{location.replace("../../login.html");} });
 
-    async function loadPreventiveAssets(){
-      const qs=await getDocs(query(collection(db,'assets'), orderBy('control')));
-      ALL=qs.docs.map(d=>({id:d.id,...d.data()}));
-      applyFiltersAndRender();
-      Object.values(filters).forEach(el=>el.addEventListener('input',()=>{page=1;applyFiltersAndRender();}));
-      pageSizeEl.addEventListener('change',()=>{page=1;renderTable();});
-      prevBtn.addEventListener('click',()=>{if(page>1){page--;renderTable();}});
-      nextBtn.addEventListener('click',()=>{const total=getTotalPages();if(page<total){page++;renderTable();}});
+    // Fill Site/Department filters
+    async function fillFilters(){
+      const qs = await getDocs(collection(db,'assets'));
+      const sites = new Set(), depts = new Set();
+      qs.forEach(d=>{
+        const a=d.data();
+        if(a.site) sites.add(a.site);
+        if(a.department) depts.add(a.department);
+      });
+      const siteSel = filters.site;
+      const deptSel = filters.department;
+      siteSel.innerHTML='<option value="">All Sites</option>';
+      deptSel.innerHTML='<option value="">All Departments</option>';
+      [...sites].sort().forEach(s=>{
+        if(userSites.length==0 || userSites.includes(s))
+          siteSel.innerHTML += `<option value="${s}">${s}</option>`;
+      });
+      [...depts].sort().forEach(d=>{
+        if(userDepts.length==0 || userDepts.includes(d))
+          deptSel.innerHTML += `<option value="${d}">${d}</option>`;
+      });
     }
 
-    function normalize(v){return String(v||'').toLowerCase().trim();}
+    async function loadAssets(){
+      const qs = await getDocs(query(collection(db,'assets'), orderBy('control')));
+      ALL = qs.docs.map(d=>({id:d.id,...d.data()}));
+      applyFiltersAndRender();
+      Object.values(filters).forEach(el=> el.addEventListener('input', ()=>{page=1; applyFiltersAndRender();}));
+      pageSizeEl.addEventListener('change', ()=>{page=1; renderTable();});
+      prevBtn.addEventListener('click', ()=>{ if(page>1){ page--; renderTable(); }});
+      nextBtn.addEventListener('click', ()=>{ const total=getTotalPages(); if(page<total){ page++; renderTable(); }});
+    }
+
+    function normalize(v){ return String(v||'').toLowerCase().trim(); }
+
     function applyFiltersAndRender(){
-      const q={control:normalize(filters.control.value),name:normalize(filters.name.value),site:normalize(filters.site.value),department:normalize(filters.department.value)};
-      VIEW=ALL.filter(x=>{
+      const q = {
+        control: normalize(filters.control.value),
+        name: normalize(filters.name.value),
+        site: normalize(filters.site.value),
+        department: normalize(filters.department.value),
+      };
+      VIEW = ALL.filter(x=>{
         const c=normalize(x.control||x.controlNumber||'');
-        const n=normalize(x.name||'');
+        const n=normalize(x.name||x.deviceName||'');
         const s=normalize(x.site||'');
         const d=normalize(x.department||'');
-        if(q.control&&!c.includes(q.control))return false;
-        if(q.name&&!n.includes(q.name))return false;
-        if(q.site&&!s.includes(q.site))return false;
-        if(q.department&&!d.includes(q.department))return false;
+        if(q.control && !c.includes(q.control)) return false;
+        if(q.name && !n.includes(q.name)) return false;
+        if(q.site && s!==q.site) return false;
+        if(q.department && d!==q.department) return false;
+        if(userSites.length && !userSites.includes(x.site)) return false;
+        if(userDepts.length && !userDepts.includes(x.department)) return false;
         return true;
       });
       renderTable();
     }
 
-    function getPageSize(){const v=pageSizeEl.value;if(v==='all')return VIEW.length||1;return parseInt(v,10)||50;}
-    function getTotalPages(){const ps=getPageSize();return Math.max(1,Math.ceil((VIEW.length||0)/ps));}
+    function getPageSize(){
+      const v=pageSizeEl.value;
+      if(v==='all') return VIEW.length||1;
+      return parseInt(v,10)||50;
+    }
+    function getTotalPages(){
+      const ps=getPageSize();
+      return Math.max(1,Math.ceil((VIEW.length||0)/ps));
+    }
 
     function renderTable(){
-      const ps=getPageSize();const total=getTotalPages();page=Math.min(page,total);
-      const start=(page-1)*ps;const chunk=VIEW.slice(start,start+ps);
-      tbody.innerHTML='';let i=start+1;
+      const ps=getPageSize();
+      const total=getTotalPages();
+      page=Math.min(page,total);
+      const start=(page-1)*ps;
+      const chunk=VIEW.slice(start,start+ps);
+      tbody.innerHTML='';
+      let i=start+1;
       for(const a of chunk){
         const control=a.control||a.controlNumber||'';
-        const name=a.name||'';const site=a.site||'';const dept=a.department||'';
-        const last=a.lastPM||a.pm||'';const next=a.nextPM||a.next||'';
-        const tr=document.createElement('tr');tr.className='border-b border-slate-200';
+        const name=a.name||'';
+        const site=a.site||'';
+        const dept=a.department||'';
+        const last=a.lastPM||a.pmDate||a.pm||'';
+        const next=a.nextPM||a.nextPmDate||a.next||'';
+        const tr=document.createElement('tr');
+        tr.className='border-b border-slate-200';
         tr.innerHTML=`
           <td class="p-2 text-center">${i++}</td>
-          <td class="p-2">${escapeHtml(control)}</td>
-          <td class="p-2">${escapeHtml(name)}</td>
-          <td class="p-2">${escapeHtml(site)}</td>
-          <td class="p-2">${escapeHtml(dept)}</td>
-          <td class="p-2">${escapeHtml(last)}</td>
-          <td class="p-2">${escapeHtml(next)}</td>
+          <td class="p-2">${control}</td>
+          <td class="p-2">${name}</td>
+          <td class="p-2">${site}</td>
+          <td class="p-2">${dept}</td>
+          <td class="p-2">${last}</td>
+          <td class="p-2">${next}</td>
           <td class="p-2 flex gap-2">
-            <button data-edit="${a.id}" class="px-2 py-1 rounded bg-amber-500 text-white text-xs">✏️ تعديل</button>
-            <a href="qr.html?control=${encodeURIComponent(control)}" target="_blank" class="px-2 py-1 rounded bg-slate-700 text-white text-xs">QR</a>
-            <a href="sticker.html#view/${encodeURIComponent(control)}" target="_blank" class="px-2 py-1 rounded bg-sky-600 text-white text-xs">Sticker</a>
-          </td>`;
+            <button data-edit="${a.id}" class="px-2 py-1 bg-amber-500 text-white text-xs rounded">Edit</button>
+            <a href="qr.html?control=${encodeURIComponent(control)}" target="_blank" class="px-2 py-1 bg-slate-700 text-white text-xs rounded">QR</a>
+            <a href="sticker.html#view/${encodeURIComponent(control)}" target="_blank" class="px-2 py-1 bg-sky-600 text-white text-xs rounded">Sticker</a>
+          </td>
+        `;
         tbody.appendChild(tr);
       }
       pageInfoEl.textContent=`${page}/${total}`;
-      const from=VIEW.length?(start+1):0;const to=Math.min(start+chunk.length,VIEW.length);
-      pageStats.textContent=`عرض ${from}–${to} من ${VIEW.length} جهاز`;
-      prevBtn.disabled=(page<=1);nextBtn.disabled=(page>=total);
+      const from=VIEW.length?(start+1):0;
+      const to=Math.min(start+chunk.length,VIEW.length);
+      pageStats.textContent=`Showing ${from}–${to} of ${VIEW.length} devices`;
+      prevBtn.disabled=(page<=1);
+      nextBtn.disabled=(page>=total);
     }
 
+    // Edit modal
     document.addEventListener('click',(e)=>{
       const b=e.target.closest('button[data-edit]');
-      if(!b)return;
+      if(!b) return;
       const id=b.dataset.edit;
-      const device=ALL.find(x=>x.id===id);
-      if(!device)return;
-      editControl.value=id;
-      editLast.value=device.lastPM||device.pm||'';
-      editNext.value=device.nextPM||device.next||'';
+      const dev=ALL.find(x=>x.id===id);
+      if(!dev) return;
+      editId.value=id;
+      editLast.value=dev.lastPM||dev.pm||'';
+      editNext.value=dev.nextPM||dev.next||'';
       modal.classList.remove('hidden');
       modal.classList.add('flex');
     });
@@ -224,20 +297,20 @@
     closeEdit.onclick=()=>{modal.classList.add('hidden');modal.classList.remove('flex');};
 
     saveEdit.onclick=async()=>{
-      const id=editControl.value;
+      const id=editId.value;
       const last=editLast.value;
       const next=editNext.value;
       try{
-        await updateDoc(doc(db,'assets',id),{lastPM:last,nextPM:next});
+        await updateDoc(doc(db,'assets',id),{
+          lastPM:last,nextPM:next,pm:last,next:next,updatedAt:serverTimestamp()
+        });
         modal.classList.add('hidden');
-        await loadPreventiveAssets();
-        alert("✅ تم تحديث بيانات الصيانة الوقائية بنجاح");
+        await loadAssets();
+        alert('✅ Preventive data updated successfully');
       }catch(err){
-        alert("❌ خطأ أثناء التحديث: "+err.message);
+        alert('❌ Update failed: '+err.message);
       }
     };
-
-    function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
   </script>
 </body>
 </html>
