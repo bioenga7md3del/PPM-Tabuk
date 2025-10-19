@@ -7,24 +7,24 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../../css/theme-light.css">
-  <!-- (اختياري) مبدّل الثيم لو موجود -->
-  <script src="../../js/theme.js"></script>
+  <!-- (اختياري) مبدّل الثيم -->
+  <script src="../../js/theme.js" defer></script>
 
-  <!-- لودر الـ partials -->
-  <script src="../../js/include.js"></script>
+  <!-- لودر الـ partials (لازم يكون موجود) -->
+  <script src="../../js/include.js" defer></script>
 </head>
 
 <body>
 
-  <!-- ✅ الهيدر الموحد من partials/header.html -->
-  <div data-include="../../partials/header.html"></div>
+  <!-- ✅ الهيدر الموحد -->
+  <header data-include="../../partials/header.html"></header>
 
   <main class="max-w-7xl mx-auto p-3 md:p-6 space-y-6">
 
     <!-- CREATE BUTTON -->
     <section class="flex flex-wrap justify-between items-center">
       <h1 class="text-xl font-bold text-slate-800">الصيانة الوقائية</h1>
-      <a href="PPMPlan" class="btn btn-brand shadow">➕ Create PPM Plan</a>
+      <a href="PPMPlan.html" class="btn btn-brand shadow">➕ Create PPM Plan</a>
     </section>
 
     <!-- FILTERS -->
@@ -42,9 +42,9 @@
       </div>
     </section>
 
-    <!-- TABLE -->
+    <!-- TABLE (ثابت LTR عشان ترتيب الأعمدة) -->
     <section class="card">
-      <div class="overflow-auto">
+      <div class="overflow-auto" dir="ltr">
         <table class="min-w-full text-sm table">
           <thead class="bg-slate-800 text-white">
             <tr>
@@ -78,29 +78,7 @@
     </section>
   </main>
 
-  <!-- EDIT MODAL -->
-  <div id="editModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-xl p-5 w-full max-w-md text-slate-800 card">
-      <h3 class="text-lg font-bold mb-4">Edit Preventive Data</h3>
-      <input id="edit_id" type="hidden">
-      <div class="space-y-3">
-        <div>
-          <label class="block text-sm mb-1">Last PM Date</label>
-          <input id="edit_last" type="date" class="w-full field">
-        </div>
-        <div>
-          <label class="block text-sm mb-1">Next PM Date (auto +6 months)</label>
-          <input id="edit_next" type="date" class="w-full field bg-slate-50" readonly>
-        </div>
-      </div>
-      <div class="flex justify-end gap-2 mt-4">
-        <button id="closeEdit" class="btn btn-muted">Cancel</button>
-        <button id="saveEdit" class="btn btn-brand">Save</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Logic -->
+  <!-- ===== Logic ===== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -118,15 +96,21 @@
     const auth = getAuth(app);
     const db   = getFirestore(app);
 
-    const userName = document.getElementById('userName');
-    const btnLogout = document.getElementById('btnLogout');
-    const tbody = document.getElementById('tbody');
+    // عناصر الصفحة (الهيدر هيتحقن بعد include.js، لذلك بنجيبها بعد الحدث)
+    let userName, btnLogout;
+    document.addEventListener('partials:loaded', ()=>{
+      userName  = document.getElementById('userName');
+      btnLogout = document.getElementById('btnLogout');
+      // ربط لوج أوت بعد ظهور الزر
+      btnLogout?.addEventListener('click', async()=>{ try{await signOut(auth);}finally{location.replace("../../login.html");} });
+    });
 
+    const tbody = document.getElementById('tbody');
     const modal = document.getElementById('editModal');
-    const editId = document.getElementById('edit_id');
+    const editId   = document.getElementById('edit_id');
     const editLast = document.getElementById('edit_last');
     const editNext = document.getElementById('edit_next');
-    const closeEdit = document.getElementById('closeEdit');
+    const closeEdit= document.getElementById('closeEdit');
     const saveEdit = document.getElementById('saveEdit');
 
     let ALL=[], VIEW=[], userSites=[], userDepts=[], page=1;
@@ -145,7 +129,7 @@
     const prevBtn=document.getElementById('prevPage');
     const nextBtn=document.getElementById('nextPage');
 
-    // Helpers (Dates)
+    // === Helpers (Dates) ===
     const toISO = d => d ? new Date(d).toISOString().slice(0,10) : '';
     const parseDate = (v) => {
       if(!v) return null;
@@ -171,26 +155,22 @@
       return (now - d) >= (31*24*60*60*1000);
     };
 
-    // Auth Guard
+    // ==== Auth Guard ====
     onAuthStateChanged(auth, async (user)=>{
       if(!user){ location.replace("../../login.html"); return; }
-      const snap = await getDoc(doc(db,'users',user.uid));
-      let name=user.email;
-      if(snap.exists()){
-        const data=snap.data();
-        name=data.name||user.email;
-        userSites=data.sites||[];
-        userDepts=data.departments||[];
-      }
-      userName.textContent=name;
+
+      // اسم المستخدم
+      try{
+        const snap = await getDoc(doc(db,'users',user.uid));
+        const name = (snap.exists() && snap.data().name) ? snap.data().name : (user.displayName || user.email);
+        (document.getElementById('userName')||{}).textContent = name || '';
+      }catch{}
+
       await fillFilters();
       await loadAssets();
-
-      // Logout
-      btnLogout?.addEventListener('click', async()=>{ try{await signOut(auth);}finally{location.replace("../../login.html");} });
     });
 
-    // Fill filters
+    // Fill Site/Department filters
     async function fillFilters(){
       const qs = await getDocs(collection(db,'assets'));
       const sites = new Set(), depts = new Set();
@@ -319,7 +299,7 @@
       nextBtn.disabled=(page>=total);
     }
 
-    // Edit modal
+    // === Edit modal ===
     document.addEventListener('click',(e)=>{
       const b=e.target.closest('button[data-edit]');
       if(!b) return;
