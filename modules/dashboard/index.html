@@ -4,45 +4,59 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PPM TABUK • Dashboard</title>
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- ثبّت الثيم الموحد -->
+
+  <!-- الثيم الموحد -->
   <link rel="stylesheet" href="../../css/theme-light.css">
-  <!-- (اختياري) مبدّل الثيم فاتح/داكن -->
-  <script src="../../js/theme.js"></script>
+
+  <!-- (اختياري) مبدّل الثيم -->
+  <script src="../../js/theme.js" defer></script>
+
+  <!-- Loader للـ partials -->
+  <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
+
+  <!-- تنسيق اللينك النشط بالهيدر -->
+  <style>
+    /* تمييز اللينك النشط */
+    #mainNav a.active {
+      position: relative;
+      font-weight: 900 !important;
+      letter-spacing: 0.3px;
+      background: linear-gradient(90deg, #60a5fa, #3b82f6, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmer 3s linear infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    /* الشَرطة الصغيرة تحت اللينك النشط */
+    #mainNav a.active::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; bottom: -4px;
+      height: 2px;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa, #3b82f6);
+      border-radius: 2px;
+      transform: scaleX(0);
+      transition: transform 0.25s ease-in-out;
+    }
+    #mainNav a.active:hover::after { transform: scaleX(1); }
+    /* Hover عام لباقي الروابط */
+    #mainNav a:hover {
+      color: #bfdbfe !important;
+      transition: color 0.2s;
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Header -->
-  <header class="max-w-7xl mx-auto px-3 md:px-6 mt-3">
-    <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <button class="icon-btn" title="القائمة" aria-label="القائمة">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M4 6h16M4 12h16M4 18h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-
-      <nav class="flex items-center gap-3 text-white/90">
-        <a href="../dashboard/index.html" class="font-bold">Dashboard</a>
-        <a href="../assets/index.html">الأجهزة</a>
-        <a href="../preventive/index.html">الصيانة الوقائية</a>
-        <a href="../corrective/index.html">الصيانة التصحيحية</a>
-        <a href="../sites/index.html">المواقع</a>
-        <a href="../users/index.html" id="navAdmin">المستخدمون</a>
-      </nav>
-
-      <div class="flex items-center gap-2">
-        <!-- زر تبديل الثيم -->
-        <button onclick="toggleTheme && toggleTheme()" title="تبديل الثيم"
-          class="icon-btn" aria-label="تبديل الثيم">🌓</button>
-
-        <div class="avatar">👤</div>
-        <span id="userName" class="hidden sm:inline text-sm"></span>
-        <button id="btnLogout" class="btn btn-ghost">تسجيل الخروج</button>
-      </div>
-    </div>
-  </header>
+  <!-- ✅ الهيدر الموحد من الـ partial -->
+  <header data-include="/PPM-Tabuk/partials/header.html?v=2"></header>
 
   <main class="max-w-7xl mx-auto p-3 md:p-6 space-y-6">
 
@@ -111,14 +125,14 @@
 
   </main>
 
-  <!-- Scripts -->
+  <!-- ===== Scripts ===== -->
   <script type="module">
-    /* Firebase + Auth + اسم المستخدم + قراءات بسيطة لمؤشرات من Firestore */
+    /* Firebase + Auth + اسم المستخدم + مؤشرات */
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import { getFirestore, doc, getDoc, collection, getCountFromServer, query, where } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
     import "../../js/roles.js";
-    import "../../js/charts.js";  // يرسم الرسوم البيانية من بياناتك أو يحط قيم افتراضية لو موجود
+    import "../../js/charts.js";  // يرسم الرسوم البيانية (كما عندك)
 
     const cfg = {
       apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
@@ -132,34 +146,49 @@
     const auth = getAuth(app);
     const db   = getFirestore(app);
 
-    const userName = document.getElementById('userName');
-    const btnLogout = document.getElementById('btnLogout');
+    // بعد تحميل الهيدر
+    document.addEventListener("partials:loaded", () => {
+      // زر الخروج
+      const btnLogout = document.getElementById("btnLogout");
+      if (btnLogout) {
+        btnLogout.addEventListener("click", async () => {
+          try { await signOut(auth); } finally { location.replace("../../login.html"); }
+        });
+      }
 
+      // ✅ تمييز اللينك الحالي (Dashboard)
+      const path = location.pathname.toLowerCase();
+      document.querySelectorAll("#mainNav a").forEach(a => {
+        const href = a.getAttribute("href")?.toLowerCase() || "";
+        if (path.endsWith("dashboard/index.html") && href.includes("dashboard")) a.classList.add("active");
+        else if (path.endsWith("assets/index.html") && href.includes("assets")) a.classList.add("active");
+        else if (path.endsWith("preventive/index.html") && href.includes("preventive")) a.classList.add("active");
+        else if (path.endsWith("corrective/index.html") && href.includes("corrective")) a.classList.add("active");
+        else if (path.endsWith("sites/index.html") && href.includes("sites")) a.classList.add("active");
+        else if (path.endsWith("users/index.html") && href.includes("users")) a.classList.add("active");
+      });
+    });
+
+    // اسم المستخدم + تحميل KPIs
     onAuthStateChanged(auth, async (user)=>{
       if(!user){ location.replace("../../login.html"); return; }
 
       // اسم المستخدم من users/{uid}.name أو displayName
-      let name = user.displayName || "";
       try{
         const snap = await getDoc(doc(db,'users', user.uid));
-        if (snap.exists() && snap.data().name) name = snap.data().name;
+        const name = (snap.exists() && snap.data().name) ? snap.data().name : (user.displayName || user.email);
+        const el = document.getElementById('userName');
+        if (el) el.textContent = name || "";
       }catch{}
-      userName.textContent = name || "بدون اسم";
 
-      // بعد التأكد، حمّل مؤشرات سريعة (أمثلة باستخدام getCountFromServer)
+      // KPIs
       await loadKPIs();
     });
 
-    btnLogout.addEventListener('click', async ()=>{
-      try { await signOut(auth); } finally { location.replace("../../login.html"); }
-    });
-
-    /* ========= KPIs / WO samples (عدّاد سريع) ========= */
     async function loadKPIs(){
       try{
-        // أمثلة افتراضية: استبدل أسماء الكولكشن/الحالات بمخططك الفعلي لو مختلف
-        const woCol  = collection(db, 'workOrders'); // لو عندك
         const eqCol  = collection(db, 'assets');
+        const woCol  = collection(db, 'workOrders'); // لو موجود
 
         // Total Equipment
         const eqTotalSnap = await getCountFromServer(eqCol);
