@@ -37,18 +37,25 @@
     <!-- CREATE BUTTON -->
     <section class="flex flex-wrap justify-between items-center">
       <h1 class="text-xl font-bold text-slate-800">Preventive Maintenance</h1>
-      <a href="PPMPlan.html" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg shadow">
+      <a href="PPMPlan" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg shadow">
         ➕ Create PPM Plan
       </a>
     </section>
 
     <!-- FILTERS -->
     <section class="card p-4 bg-white border rounded-xl shadow-sm">
-      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <input id="f_control" class="field" placeholder="Control Number"/>
         <input id="f_name" class="field" placeholder="Device Name"/>
         <select id="f_site" class="field"></select>
         <select id="f_department" class="field"></select>
+
+        <!-- فلتر الشهر الحالي من Next PM -->
+        <select id="f_due" class="field">
+          <option value="">All</option>
+          <option value="this_month">This Month (Next PM)</option>
+          <option value="overdue_30">Overdue 30+ (Next PM)</option>
+        </select>
       </div>
     </section>
 
@@ -99,8 +106,8 @@
           <input id="edit_last" type="date" class="w-full border border-slate-300 rounded-lg px-3 py-2">
         </div>
         <div>
-          <label class="block text-sm mb-1">Next PM Date</label>
-          <input id="edit_next" type="date" class="w-full border border-slate-300 rounded-lg px-3 py-2">
+          <label class="block text-sm mb-1">Next PM Date (auto +6 months)</label>
+          <input id="edit_next" type="date" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-slate-50" readonly>
         </div>
       </div>
       <div class="flex justify-end gap-2 mt-4">
@@ -113,7 +120,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, query, orderBy, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
     const cfg = {
       apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
@@ -144,7 +151,8 @@
       control:document.getElementById('f_control'),
       name:document.getElementById('f_name'),
       site:document.getElementById('f_site'),
-      department:document.getElementById('f_department')
+      department:document.getElementById('f_department'),
+      due:document.getElementById('f_due')
     };
 
     const pageSizeEl=document.getElementById('pageSize');
@@ -152,6 +160,35 @@
     const pageStats=document.getElementById('pageStats');
     const prevBtn=document.getElementById('prevPage');
     const nextBtn=document.getElementById('nextPage');
+
+    // === Helpers (تواريخ) ===
+    const toISO = d => d ? new Date(d).toISOString().slice(0,10) : '';
+    const parseDate = (v) => {
+      if(!v) return null;
+      // لو أصلاً YYYY-MM-DD
+      if(/^\d{4}-\d{2}-\d{2}$/.test(String(v))) return new Date(String(v)+'T00:00:00');
+      const t = new Date(v); return isNaN(t)? null : t;
+    };
+    const addMonths = (date, months=6) => {
+      if(!date) return null;
+      const d = new Date(date.getTime());
+      const day = d.getDate();
+      d.setMonth(d.getMonth()+months);
+      // تلافي نهاية الشهور
+      if(d.getDate() < day) d.setDate(0);
+      d.setHours(0,0,0,0);
+      return d;
+    };
+    const isInThisMonth = (v) => {
+      const d = parseDate(v); if(!d) return false;
+      const now = new Date(); return (d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth());
+    };
+    const isOverdue30 = (v) => {
+      const d = parseDate(v); if(!d) return false;
+      const now = new Date(); now.setHours(0,0,0,0);
+      // متأخر أكثر من 30 يوم
+      return (now - d) >= (31*24*60*60*1000);
+    };
 
     // Auth Guard
     onAuthStateChanged(auth, async (user)=>{
@@ -198,7 +235,15 @@
       const qs = await getDocs(query(collection(db,'assets'), orderBy('control')));
       ALL = qs.docs.map(d=>({id:d.id,...d.data()}));
       applyFiltersAndRender();
-      Object.values(filters).forEach(el=> el.addEventListener('input', ()=>{page=1; applyFiltersAndRender();}));
+
+      // listeners
+      const onChange = ()=>{ page=1; applyFiltersAndRender(); };
+      filters.control.addEventListener('input', onChange);
+      filters.name.addEventListener('input', onChange);
+      filters.site.addEventListener('change', onChange);
+      filters.department.addEventListener('change', onChange);
+      filters.due.addEventListener('change', onChange);
+
       pageSizeEl.addEventListener('change', ()=>{page=1; renderTable();});
       prevBtn.addEventListener('click', ()=>{ if(page>1){ page--; renderTable(); }});
       nextBtn.addEventListener('click', ()=>{ const total=getTotalPages(); if(page<total){ page++; renderTable(); }});
@@ -212,18 +257,28 @@
         name: normalize(filters.name.value),
         site: normalize(filters.site.value),
         department: normalize(filters.department.value),
+        due: filters.due.value||''
       };
       VIEW = ALL.filter(x=>{
         const c=normalize(x.control||x.controlNumber||'');
         const n=normalize(x.name||x.deviceName||'');
         const s=normalize(x.site||'');
         const d=normalize(x.department||'');
+
+        // تواريخ بمسميات مختلفة
+        const last = x.pm_date || x.lastPM || x.pmDate || x.pm || '';
+        const next = x.next_date || x.nextPM || x.nextPmDate || x.next || '';
+
         if(q.control && !c.includes(q.control)) return false;
         if(q.name && !n.includes(q.name)) return false;
         if(q.site && s!==q.site) return false;
         if(q.department && d!==q.department) return false;
         if(userSites.length && !userSites.includes(x.site)) return false;
         if(userDepts.length && !userDepts.includes(x.department)) return false;
+
+        if(q.due==='this_month' && !isInThisMonth(next)) return false;
+        if(q.due==='overdue_30' && !isOverdue30(next)) return false;
+
         return true;
       });
       renderTable();
@@ -252,18 +307,21 @@
         const name=a.name||'';
         const site=a.site||'';
         const dept=a.department||'';
-        const last=a.lastPM||a.pmDate||a.pm||'';
-        const next=a.nextPM||a.nextPmDate||a.next||'';
+
+        // ✅ اقرأ آخر/الجاية من الحقول الصحيحة أولاً
+        const last=a.pm_date||a.lastPM||a.pmDate||a.pm||'';
+        const next=a.next_date||a.nextPM||a.nextPmDate||a.next||'';
+
         const tr=document.createElement('tr');
         tr.className='border-b border-slate-200';
         tr.innerHTML=`
           <td class="p-2 text-center">${i++}</td>
-          <td class="p-2">${control}</td>
-          <td class="p-2">${name}</td>
-          <td class="p-2">${site}</td>
-          <td class="p-2">${dept}</td>
-          <td class="p-2">${last}</td>
-          <td class="p-2">${next}</td>
+          <td class="p-2">${control||'—'}</td>
+          <td class="p-2">${name||'—'}</td>
+          <td class="p-2">${site||'—'}</td>
+          <td class="p-2">${dept||'—'}</td>
+          <td class="p-2">${last||'—'}</td>
+          <td class="p-2">${next||'—'}</td>
           <td class="p-2 flex gap-2">
             <button data-edit="${a.id}" class="px-2 py-1 bg-amber-500 text-white text-xs rounded">Edit</button>
             <a href="qr.html?control=${encodeURIComponent(control)}" target="_blank" class="px-2 py-1 bg-slate-700 text-white text-xs rounded">QR</a>
@@ -280,7 +338,7 @@
       nextBtn.disabled=(page>=total);
     }
 
-    // Edit modal
+    // === Edit modal ===
     document.addEventListener('click',(e)=>{
       const b=e.target.closest('button[data-edit]');
       if(!b) return;
@@ -288,21 +346,45 @@
       const dev=ALL.find(x=>x.id===id);
       if(!dev) return;
       editId.value=id;
-      editLast.value=dev.lastPM||dev.pm||'';
-      editNext.value=dev.nextPM||dev.next||'';
+
+      // حمّل Last من كل المسميات – والأولوية pm_date
+      const lastRaw = dev.pm_date || dev.lastPM || dev.pmDate || dev.pm || '';
+      const lastDate = parseDate(lastRaw);
+      editLast.value = lastDate ? toISO(lastDate) : '';
+
+      // احسب Next تلقائيًا +6 شهور
+      const nextDate = addMonths(lastDate,6);
+      editNext.value = nextDate ? toISO(nextDate) : '';
+
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+    });
+
+    // كل ما Last يتغيّر — احسب Next +6
+    editLast.addEventListener('input', ()=>{
+      const d = parseDate(editLast.value);
+      const n = addMonths(d,6);
+      editNext.value = n ? toISO(n) : '';
     });
 
     closeEdit.onclick=()=>{modal.classList.add('hidden');modal.classList.remove('flex');};
 
     saveEdit.onclick=async()=>{
       const id=editId.value;
-      const last=editLast.value;
-      const next=editNext.value;
+      const last=editLast.value||'';
+      const next=editNext.value||'';
       try{
+        // نكتب كل المسميات لضمان التوافق مع الصفحات الأخرى
         await updateDoc(doc(db,'assets',id),{
-          lastPM:last,nextPM:next,pm:last,next:next,updatedAt:serverTimestamp()
+          pm_date:last,           // ✅ الأساسي
+          next_date:next,         // ✅ الأساسي
+          lastPM:last,            // دعم قديم
+          nextPM:next,            // دعم قديم
+          pmDate:last,            // دعم قديم
+          nextPmDate:next,        // دعم قديم
+          pm:last,                // دعم قديم
+          next:next,              // دعم قديم
+          updatedAt:serverTimestamp()
         });
         modal.classList.add('hidden');
         await loadAssets();
