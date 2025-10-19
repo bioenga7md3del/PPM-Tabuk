@@ -16,7 +16,39 @@
 
 
 
-  
+
+<!-- تنسيق اللينك النشط -->
+<style>
+  /* تمييز اللينك النشط */
+  #mainNav a.active {
+    position: relative;
+    color: #93c5fd !important;       /* أزرق فاتح */
+    font-weight: 900 !important;     /* خط سميك */
+    letter-spacing: 0.3px;
+    transition: color 0.25s ease-in-out;
+  }
+
+  #mainNav a.active::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -4px;
+    height: 2px;
+    background-color: #60a5fa;       /* خط أزرق تحته */
+    border-radius: 2px;
+    transform: scaleX(0);
+    transition: transform 0.25s ease-in-out;
+  }
+
+  #mainNav a.active:hover::after {
+    transform: scaleX(1);
+  }
+
+  #mainNav a:hover {
+    color: #bfdbfe !important;       /* افتح عند المرور */
+  }
+</style>
+
+<!-- سكربت تحديد الصفحة وتفعيل اللينك -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -45,16 +77,16 @@
       });
     }
 
-    // ✅ تمييز اللينك النشِط
+    // ✅ تمييز اللينك الحالي
     const path = location.pathname.toLowerCase();
     document.querySelectorAll("#mainNav a").forEach(a => {
       const href = a.getAttribute("href")?.toLowerCase() || "";
-      if (path.endsWith("dashboard/index.html") && href.includes("dashboard")) a.classList.add("font-bold","text-sky-200");
-      else if (path.endsWith("assets/index.html") && href.includes("assets")) a.classList.add("font-bold","text-sky-200");
-      else if (path.endsWith("preventive/index.html") && href.includes("preventive")) a.classList.add("font-bold","text-sky-200");
-      else if (path.endsWith("corrective/index.html") && href.includes("corrective")) a.classList.add("font-bold","text-sky-200");
-      else if (path.endsWith("sites/index.html") && href.includes("sites")) a.classList.add("font-bold","text-sky-200");
-      else if (path.endsWith("users/index.html") && href.includes("users")) a.classList.add("font-bold","text-sky-200");
+      if (path.endsWith("dashboard/index.html") && href.includes("dashboard")) a.classList.add("active");
+      else if (path.endsWith("assets/index.html") && href.includes("assets")) a.classList.add("active");
+      else if (path.endsWith("preventive/index.html") && href.includes("preventive")) a.classList.add("active");
+      else if (path.endsWith("corrective/index.html") && href.includes("corrective")) a.classList.add("active");
+      else if (path.endsWith("sites/index.html") && href.includes("sites")) a.classList.add("active");
+      else if (path.endsWith("users/index.html") && href.includes("users")) a.classList.add("active");
     });
   });
 
@@ -69,9 +101,6 @@
     }catch{}
   });
 </script>
-
-
-
 
 
 
