@@ -11,15 +11,14 @@
   <!-- الثيم الموحد -->
   <link rel="stylesheet" href="../../css/theme-light.css">
 
-  <!-- (اختياري) مبدّل الثيم -->
+  <!-- مبدّل الثيم (اختياري) -->
   <script src="../../js/theme.js" defer></script>
 
-  <!-- Loader للـ partials -->
+  <!-- تحميل الهيدر الموحد -->
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
 
-  <!-- تنسيق اللينك النشط -->
+  <!-- تمييز اللينك النشط -->
   <style>
-    /* تمييز اللينك النشط */
     #mainNav a.active {
       position: relative;
       font-weight: 900 !important;
@@ -34,7 +33,6 @@
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
     }
-    /* الشَرطة الصغيرة تحت اللينك النشط */
     #mainNav a.active::after {
       content: "";
       position: absolute;
@@ -46,7 +44,6 @@
       transition: transform 0.25s ease-in-out;
     }
     #mainNav a.active:hover::after { transform: scaleX(1); }
-    /* Hover عام لباقي الروابط */
     #mainNav a:hover {
       color: #bfdbfe !important;
       transition: color 0.2s;
@@ -61,10 +58,13 @@
 
   <main class="max-w-7xl mx-auto p-3 md:p-6 space-y-6">
 
-    <!-- العنوان + زرار -->
-    <section class="flex flex-wrap justify-between items-center">
+    <!-- العنوان + الأزرار -->
+    <section class="flex flex-wrap justify-between items-center gap-2">
       <h1 class="text-xl font-bold text-slate-800">Assets Management</h1>
-      <a href="add.html" class="btn btn-brand">➕ Add New Device</a>
+      <div class="flex gap-2">
+        <a href="import.html" class="btn btn-ghost">⬆️ Import Devices</a>
+        <a href="add.html" class="btn btn-brand">➕ Add New Device</a>
+      </div>
     </section>
 
     <!-- الفلاتر -->
@@ -100,7 +100,7 @@
     </section>
   </main>
 
-  <!-- === سكربت === -->
+  <!-- سكربت -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
