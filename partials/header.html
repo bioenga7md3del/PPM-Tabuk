@@ -1,18 +1,17 @@
-<!-- partials/header.html -->
 <header class="max-w-7xl mx-auto px-3 md:px-6 mt-3">
   <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between rounded-xl">
     <nav class="flex items-center gap-3 text-white text-sm" id="mainNav">
-      <a data-to="dashboard">Dashboard</a>
-      <a data-to="assets">Assets</a>
-      <a data-to="preventive">Preventive</a>
-      <a data-to="corrective">Corrective</a>
-      <a data-to="sites">Sites</a>
-      <a data-to="users" id="navAdmin">Users</a>
+      <a href="/PPM-Tabuk/modules/dashboard/index.html">Dashboard</a>
+      <a href="/PPM-Tabuk/modules/assets/index.html">Assets</a>
+      <a href="/PPM-Tabuk/modules/preventive/index.html">Preventive</a>
+      <a href="/PPM-Tabuk/modules/corrective/index.html">Corrective</a>
+      <a href="/PPM-Tabuk/modules/sites/index.html">Sites</a>
+      <a href="/PPM-Tabuk/modules/users/index.html" id="navAdmin">Users</a>
     </nav>
 
     <div class="flex items-center gap-3">
-      <!-- زر الثيم -->
-      <button onclick="toggleTheme()" title="Toggle Theme"
+      <!-- Theme -->
+      <button onclick="toggleTheme && toggleTheme()" title="Toggle Theme"
         class="w-9 h-9 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 text-white shadow transition">
         🌓
       </button>
