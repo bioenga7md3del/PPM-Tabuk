@@ -28,6 +28,31 @@
   --radius:16px;
 }
 
+
+/* تمييز اللينك النشط في الهيدر */
+#mainNav a.active {
+  position: relative;
+  color: #93c5fd !important;       /* أزرق فاتح */
+  font-weight: 900 !important;     /* خط سميك */
+  letter-spacing: 0.3px;
+}
+
+#mainNav a.active::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -4px;
+  height: 2px;
+  background-color: #60a5fa;       /* شَرطة تحت الزر */
+  border-radius: 2px;
+  transform: scaleX(0);
+  transition: transform 0.25s ease-in-out;
+}
+
+#mainNav a.active:hover::after {
+  transform: scaleX(1);
+}
+
+
 /* Dark Mode (اختياري: فعّله بإضافة data-theme="dark" على html) */
 :root[data-theme="dark"]{
   --bg:#0b1220;
