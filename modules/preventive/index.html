@@ -4,54 +4,27 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PPM TABUK • Preventive Maintenance</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../../css/theme-light.css">
-  <!-- اختياري: مبدّل الثيم -->
+  <!-- (اختياري) مبدّل الثيم لو موجود -->
   <script src="../../js/theme.js"></script>
+
+  <!-- لودر الـ partials -->
+  <script src="../../js/include.js"></script>
 </head>
 
 <body>
 
-  <!-- HEADER (مطابق للداشبورد) -->
-  <header class="max-w-7xl mx-auto px-3 md:px-6 mt-3">
-    <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <button class="icon-btn" title="القائمة" aria-label="القائمة">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M4 6h16M4 12h16M4 18h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-
-      <nav class="flex items-center gap-3 text-white/90">
-        <a href="../dashboard/index.html">Dashboard</a>
-        <a href="../assets/index.html">الأجهزة</a>
-        <a href="../preventive/index.html" class="font-bold">الصيانة الوقائية</a>
-        <a href="../corrective/index.html">الصيانة التصحيحية</a>
-        <a href="../sites/index.html">المواقع</a>
-        <a href="../users/index.html" id="navAdmin">المستخدمون</a>
-      </nav>
-
-      <div class="flex items-center gap-2">
-        <!-- زر تبديل الثيم -->
-        <button onclick="toggleTheme && toggleTheme()" title="تبديل الثيم"
-          class="icon-btn" aria-label="تبديل الثيم">🌓</button>
-
-        <div class="avatar">👤</div>
-        <span id="userName" class="hidden sm:inline text-sm"></span>
-        <button id="btnLogout" class="btn btn-ghost">تسجيل الخروج</button>
-      </div>
-    </div>
-  </header>
+  <!-- ✅ الهيدر الموحد من partials/header.html -->
+  <div data-include="../../partials/header.html"></div>
 
   <main class="max-w-7xl mx-auto p-3 md:p-6 space-y-6">
 
     <!-- CREATE BUTTON -->
     <section class="flex flex-wrap justify-between items-center">
-      <h1 class="text-xl font-bold text-slate-800">Preventive Maintenance</h1>
-      <a href="PPMPlan" class="btn btn-brand shadow">
-        ➕ Create PPM Plan
-      </a>
+      <h1 class="text-xl font-bold text-slate-800">الصيانة الوقائية</h1>
+      <a href="PPMPlan" class="btn btn-brand shadow">➕ Create PPM Plan</a>
     </section>
 
     <!-- FILTERS -->
@@ -127,6 +100,7 @@
     </div>
   </div>
 
+  <!-- Logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -171,7 +145,7 @@
     const prevBtn=document.getElementById('prevPage');
     const nextBtn=document.getElementById('nextPage');
 
-    // === Helpers (Dates) ===
+    // Helpers (Dates)
     const toISO = d => d ? new Date(d).toISOString().slice(0,10) : '';
     const parseDate = (v) => {
       if(!v) return null;
@@ -211,11 +185,12 @@
       userName.textContent=name;
       await fillFilters();
       await loadAssets();
+
+      // Logout
+      btnLogout?.addEventListener('click', async()=>{ try{await signOut(auth);}finally{location.replace("../../login.html");} });
     });
 
-    btnLogout.addEventListener('click', async()=>{ try{await signOut(auth);}finally{location.replace("../../login.html");} });
-
-    // Fill Site/Department filters
+    // Fill filters
     async function fillFilters(){
       const qs = await getDocs(collection(db,'assets'));
       const sites = new Set(), depts = new Set();
@@ -344,7 +319,7 @@
       nextBtn.disabled=(page>=total);
     }
 
-    // === Edit modal ===
+    // Edit modal
     document.addEventListener('click',(e)=>{
       const b=e.target.closest('button[data-edit]');
       if(!b) return;
@@ -364,7 +339,6 @@
       modal.classList.add('flex');
     });
 
-    // كل ما Last يتغيّر — احسب Next +6
     editLast.addEventListener('input', ()=>{
       const d = parseDate(editLast.value);
       const n = addMonths(d,6);
