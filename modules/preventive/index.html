@@ -1,39 +1,45 @@
 <!doctype html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PPM TABUK • Preventive Maintenance</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../../css/theme-light.css">
-  <!-- اختياري: مبدّل الثيم (لو الملف موجود) -->
+  <!-- اختياري: مبدّل الثيم -->
   <script src="../../js/theme.js"></script>
 </head>
 
-<body class="bg-slate-50 text-slate-800">
+<body>
 
-  <!-- HEADER -->
+  <!-- HEADER (مطابق للداشبورد) -->
   <header class="max-w-7xl mx-auto px-3 md:px-6 mt-3">
-    <div class="px-3 md:px-4 py-2 flex items-center justify-between bg-slate-900 rounded-xl shadow topbar">
-      <nav class="flex items-center gap-3 text-white text-sm">
+    <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <button class="icon-btn" title="القائمة" aria-label="القائمة">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M4 6h16M4 12h16M4 18h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <nav class="flex items-center gap-3 text-white/90">
         <a href="../dashboard/index.html">Dashboard</a>
-        <a href="../assets/index.html">Assets</a>
-        <a href="../preventive/index.html" class="font-bold text-sky-300">Preventive</a>
-        <a href="../corrective/index.html">Corrective</a>
-        <a href="../sites/index.html">Sites</a>
-        <a href="../users/index.html" id="navAdmin">Users</a>
+        <a href="../assets/index.html">الأجهزة</a>
+        <a href="../preventive/index.html" class="font-bold">الصيانة الوقائية</a>
+        <a href="../corrective/index.html">الصيانة التصحيحية</a>
+        <a href="../sites/index.html">المواقع</a>
+        <a href="../users/index.html" id="navAdmin">المستخدمون</a>
       </nav>
 
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
         <!-- زر تبديل الثيم -->
-        <button onclick="toggleTheme && toggleTheme()" title="Toggle Theme"
-          class="w-9 h-9 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 text-white shadow transition">🌓</button>
+        <button onclick="toggleTheme && toggleTheme()" title="تبديل الثيم"
+          class="icon-btn" aria-label="تبديل الثيم">🌓</button>
 
-        <div class="text-white text-sm flex items-center gap-2">
-          <span id="userName" class="font-semibold"></span>
-          <span class="text-slate-400">|</span>
-          <button id="btnLogout" class="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm">Logout</button>
-        </div>
+        <div class="avatar">👤</div>
+        <span id="userName" class="hidden sm:inline text-sm"></span>
+        <button id="btnLogout" class="btn btn-ghost">تسجيل الخروج</button>
       </div>
     </div>
   </header>
@@ -43,13 +49,13 @@
     <!-- CREATE BUTTON -->
     <section class="flex flex-wrap justify-between items-center">
       <h1 class="text-xl font-bold text-slate-800">Preventive Maintenance</h1>
-      <a href="PPMPlan" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg shadow">
+      <a href="PPMPlan" class="btn btn-brand shadow">
         ➕ Create PPM Plan
       </a>
     </section>
 
     <!-- FILTERS -->
-    <section class="p-4 bg-white border rounded-xl shadow-sm card">
+    <section class="card p-4">
       <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <input id="f_control" class="field" placeholder="Control Number"/>
         <input id="f_name" class="field" placeholder="Device Name"/>
@@ -64,7 +70,7 @@
     </section>
 
     <!-- TABLE -->
-    <section class="bg-white border rounded-xl shadow-sm card">
+    <section class="card">
       <div class="overflow-auto">
         <table class="min-w-full text-sm table">
           <thead class="bg-slate-800 text-white">
@@ -107,16 +113,16 @@
       <div class="space-y-3">
         <div>
           <label class="block text-sm mb-1">Last PM Date</label>
-          <input id="edit_last" type="date" class="w-full border border-slate-300 rounded-lg px-3 py-2 field">
+          <input id="edit_last" type="date" class="w-full field">
         </div>
         <div>
           <label class="block text-sm mb-1">Next PM Date (auto +6 months)</label>
-          <input id="edit_next" type="date" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 field" readonly>
+          <input id="edit_next" type="date" class="w-full field bg-slate-50" readonly>
         </div>
       </div>
       <div class="flex justify-end gap-2 mt-4">
-        <button id="closeEdit" class="px-3 py-1 rounded bg-slate-300 hover:bg-slate-400">Cancel</button>
-        <button id="saveEdit" class="px-3 py-1 rounded bg-sky-600 text-white hover:bg-sky-700">Save</button>
+        <button id="closeEdit" class="btn btn-muted">Cancel</button>
+        <button id="saveEdit" class="btn btn-brand">Save</button>
       </div>
     </div>
   </div>
@@ -265,7 +271,6 @@
         const s=normalize(x.site||'');
         const d=normalize(x.department||'');
 
-        // نقرأ فقط الحقول القياسية
         const last = x.pm_date || '';
         const next = x.next_date || '';
 
@@ -373,7 +378,6 @@
       const last=editLast.value||'';
       const next=editNext.value||'';
       try{
-        // نكتب فقط الحقول القياسية — بدون إنشاء مفاتيح بديلة
         await updateDoc(doc(db,'assets',id),{
           pm_date:last,
           next_date:next,
