@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PPM TABUK • Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- ثبّت الثيم الموحد -->
   <link rel="stylesheet" href="../../css/theme-light.css">
+  <!-- (اختياري) مبدّل الثيم فاتح/داكن -->
+  <script src="../../js/theme.js"></script>
 </head>
 <body>
 
@@ -13,7 +16,7 @@
   <header class="max-w-7xl mx-auto px-3 md:px-6 mt-3">
     <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <button class="icon-btn" title="القائمة">
+        <button class="icon-btn" title="القائمة" aria-label="القائمة">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
             <path d="M4 6h16M4 12h16M4 18h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
           </svg>
@@ -30,6 +33,10 @@
       </nav>
 
       <div class="flex items-center gap-2">
+        <!-- زر تبديل الثيم -->
+        <button onclick="toggleTheme && toggleTheme()" title="تبديل الثيم"
+          class="icon-btn" aria-label="تبديل الثيم">🌓</button>
+
         <div class="avatar">👤</div>
         <span id="userName" class="hidden sm:inline text-sm"></span>
         <button id="btnLogout" class="btn btn-ghost">تسجيل الخروج</button>
