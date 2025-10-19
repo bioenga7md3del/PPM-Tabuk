@@ -12,7 +12,7 @@
 
   <!-- HEADER -->
   <header class="max-w-7xl mx-auto px-3 md:px-6 mt-3">
-    <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between bg-slate-900 rounded-xl shadow">
+    <div class="px-3 md:px-4 py-2 flex items-center justify-between bg-slate-900 rounded-xl shadow">
       <nav class="flex items-center gap-3 text-white text-sm">
         <a href="../dashboard/index.html">Dashboard</a>
         <a href="../assets/index.html">Assets</a>
@@ -43,14 +43,12 @@
     </section>
 
     <!-- FILTERS -->
-    <section class="card p-4 bg-white border rounded-xl shadow-sm">
+    <section class="p-4 bg-white border rounded-xl shadow-sm">
       <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <input id="f_control" class="field" placeholder="Control Number"/>
         <input id="f_name" class="field" placeholder="Device Name"/>
         <select id="f_site" class="field"></select>
         <select id="f_department" class="field"></select>
-
-        <!-- فلتر الشهر الحالي من Next PM -->
         <select id="f_due" class="field">
           <option value="">All</option>
           <option value="this_month">This Month (Next PM)</option>
@@ -60,7 +58,7 @@
     </section>
 
     <!-- TABLE -->
-    <section class="card p-3 bg-white border rounded-xl shadow-sm">
+    <section class="bg-white border rounded-xl shadow-sm">
       <div class="overflow-auto">
         <table class="min-w-full text-sm">
           <thead class="bg-slate-800 text-white">
@@ -120,7 +118,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, query, orderBy, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
     const cfg = {
       apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
@@ -161,11 +159,10 @@
     const prevBtn=document.getElementById('prevPage');
     const nextBtn=document.getElementById('nextPage');
 
-    // === Helpers (تواريخ) ===
+    // === Helpers (Dates) ===
     const toISO = d => d ? new Date(d).toISOString().slice(0,10) : '';
     const parseDate = (v) => {
       if(!v) return null;
-      // لو أصلاً YYYY-MM-DD
       if(/^\d{4}-\d{2}-\d{2}$/.test(String(v))) return new Date(String(v)+'T00:00:00');
       const t = new Date(v); return isNaN(t)? null : t;
     };
@@ -174,7 +171,6 @@
       const d = new Date(date.getTime());
       const day = d.getDate();
       d.setMonth(d.getMonth()+months);
-      // تلافي نهاية الشهور
       if(d.getDate() < day) d.setDate(0);
       d.setHours(0,0,0,0);
       return d;
@@ -186,7 +182,6 @@
     const isOverdue30 = (v) => {
       const d = parseDate(v); if(!d) return false;
       const now = new Date(); now.setHours(0,0,0,0);
-      // متأخر أكثر من 30 يوم
       return (now - d) >= (31*24*60*60*1000);
     };
 
@@ -236,7 +231,6 @@
       ALL = qs.docs.map(d=>({id:d.id,...d.data()}));
       applyFiltersAndRender();
 
-      // listeners
       const onChange = ()=>{ page=1; applyFiltersAndRender(); };
       filters.control.addEventListener('input', onChange);
       filters.name.addEventListener('input', onChange);
@@ -265,9 +259,9 @@
         const s=normalize(x.site||'');
         const d=normalize(x.department||'');
 
-        // تواريخ بمسميات مختلفة
-        const last = x.pm_date || x.lastPM || x.pmDate || x.pm || '';
-        const next = x.next_date || x.nextPM || x.nextPmDate || x.next || '';
+        // نقرأ فقط الحقول القياسية
+        const last = x.pm_date || '';
+        const next = x.next_date || '';
 
         if(q.control && !c.includes(q.control)) return false;
         if(q.name && !n.includes(q.name)) return false;
@@ -308,24 +302,27 @@
         const site=a.site||'';
         const dept=a.department||'';
 
-        // ✅ اقرأ آخر/الجاية من الحقول الصحيحة أولاً
-        const last=a.pm_date||a.lastPM||a.pmDate||a.pm||'';
-        const next=a.next_date||a.nextPM||a.nextPmDate||a.next||'';
+        const last=a.pm_date||'';
+        const next=a.next_date||'';
+
+        const btn = (txt, cls)=>`<span class="inline-flex items-center justify-center h-7 px-2 rounded text-xs font-semibold ${cls}">${txt}</span>`;
 
         const tr=document.createElement('tr');
         tr.className='border-b border-slate-200';
         tr.innerHTML=`
           <td class="p-2 text-center">${i++}</td>
-          <td class="p-2">${control||'—'}</td>
+          <td class="p-2 whitespace-nowrap mono">${control||'—'}</td>
           <td class="p-2">${name||'—'}</td>
           <td class="p-2">${site||'—'}</td>
           <td class="p-2">${dept||'—'}</td>
           <td class="p-2">${last||'—'}</td>
           <td class="p-2">${next||'—'}</td>
-          <td class="p-2 flex gap-2">
-            <button data-edit="${a.id}" class="px-2 py-1 bg-amber-500 text-white text-xs rounded">Edit</button>
-            <a href="qr.html?control=${encodeURIComponent(control)}" target="_blank" class="px-2 py-1 bg-slate-700 text-white text-xs rounded">QR</a>
-            <a href="sticker.html#view/${encodeURIComponent(control)}" target="_blank" class="px-2 py-1 bg-sky-600 text-white text-xs rounded">Sticker</a>
+          <td class="p-2">
+            <div class="flex gap-2">
+              <button data-edit="${a.id}" class="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded">Edit</button>
+              <a href="qr.html?control=${encodeURIComponent(control)}" target="_blank" class="px-2 py-1 bg-slate-700 hover:bg-slate-800 text-white text-xs rounded">QR</a>
+              <a href="sticker.html#view/${encodeURIComponent(control)}" target="_blank" class="px-2 py-1 bg-sky-600 hover:bg-sky-700 text-white text-xs rounded">Sticker</a>
+            </div>
           </td>
         `;
         tbody.appendChild(tr);
@@ -347,12 +344,10 @@
       if(!dev) return;
       editId.value=id;
 
-      // حمّل Last من كل المسميات – والأولوية pm_date
-      const lastRaw = dev.pm_date || dev.lastPM || dev.pmDate || dev.pm || '';
+      const lastRaw = dev.pm_date || '';
       const lastDate = parseDate(lastRaw);
       editLast.value = lastDate ? toISO(lastDate) : '';
 
-      // احسب Next تلقائيًا +6 شهور
       const nextDate = addMonths(lastDate,6);
       editNext.value = nextDate ? toISO(nextDate) : '';
 
@@ -374,16 +369,10 @@
       const last=editLast.value||'';
       const next=editNext.value||'';
       try{
-        // نكتب كل المسميات لضمان التوافق مع الصفحات الأخرى
+        // ✅ نكتب فقط الحقول القياسية — بدون إنشاء مفاتيح بديلة
         await updateDoc(doc(db,'assets',id),{
-          pm_date:last,           // ✅ الأساسي
-          next_date:next,         // ✅ الأساسي
-          lastPM:last,            // دعم قديم
-          nextPM:next,            // دعم قديم
-          pmDate:last,            // دعم قديم
-          nextPmDate:next,        // دعم قديم
-          pm:last,                // دعم قديم
-          next:next,              // دعم قديم
+          pm_date:last,
+          next_date:next,
           updatedAt:serverTimestamp()
         });
         modal.classList.add('hidden');
