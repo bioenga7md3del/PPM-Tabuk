@@ -1,27 +1,40 @@
-// js/include.js
-(function () {
-  async function loadIncludes() {
-    const nodes = document.querySelectorAll("[data-include]");
-    for (const el of nodes) {
-      const url = el.getAttribute("data-include");
-      try {
-        const res = await fetch(url, { cache: "no-cache" });
-        if (!res.ok) throw new Error(res.status + " " + res.statusText);
-        const html = await res.text();
-        el.innerHTML = html;
-      } catch (err) {
-        console.error("include.js: failed to load", url, err);
-        // اختياري: رسالة بسيطة بدل الهيدر
-        el.innerHTML = "";
-      }
+/* =========================================================
+   🔁 include.js — تحميل الهيدر الموحد وتفعيل اللينك النشط
+   ========================================================= */
+document.addEventListener("DOMContentLoaded", async () => {
+  // تحميل العناصر اللي فيها data-include
+  const includes = document.querySelectorAll("[data-include]");
+  for (const el of includes) {
+    const file = el.getAttribute("data-include");
+    try {
+      const res = await fetch(file);
+      const html = await res.text();
+      el.innerHTML = html;
+    } catch (err) {
+      console.error("Include error:", file, err);
     }
-    // علّم الصفحات إن الـ partials اتحمّلت
-    document.dispatchEvent(new CustomEvent("partials:loaded"));
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", loadIncludes);
-  } else {
-    loadIncludes();
-  }
-})();
+  // لما يخلص التحميل كله
+  document.dispatchEvent(new Event("partials:loaded"));
+});
+
+/* =========================================================
+   🌈 تفعيل اللينك النشط في الهيدر تلقائيًا
+   ========================================================= */
+document.addEventListener("partials:loaded", () => {
+  const current = location.pathname.toLowerCase();
+  const navLinks = document.querySelectorAll("#mainNav a");
+
+  navLinks.forEach(link => {
+    const href = link.getAttribute("data-to")?.toLowerCase() || "";
+    if (!href) return;
+
+    // تحقق بسيط من وجود اسم المجلد الحالي في الرابط
+    if (current.includes(`/${href}/`)) {
+      link.classList.add("active");
+    } else {
+      link.classList.remove("active");
+    }
+  });
+});
