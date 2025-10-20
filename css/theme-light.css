@@ -261,3 +261,22 @@ td, th { vertical-align: middle; }
 #mainNav .dd .dd-item:hover{ background:#f1f5f9; }
 #mainNav .dd .dd-item span:first-child{ width:22px; text-align:center; }
 
+/* ===== Dark Theme (variables override) ===== */
+:root.dark, html.dark, [data-theme="dark"] {
+  --bg: #0b1220;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --surface: #0f172a;
+  --surface-alt: #0b1020;
+  --border: #1f2937;
+  --brand: #60a5fa;
+  --brand-2: #93c5fd;
+  --ok:#10b981; --warn:#f59e0b; --danger:#ef4444;
+}
+
+/* أمثلة بسيطة لتبديل الألوان بناءً على المتغيرات */
+html.dark body{ background: var(--bg); color: var(--text); }
+html.dark .card{ background: var(--surface); border-color: var(--border); }
+html.dark .topbar{ background: var(--brand); }
+html.dark #mainNav a:hover,
+html.dark .dd .dd-btn:hover{ background: rgba(255,255,255,.15); }
