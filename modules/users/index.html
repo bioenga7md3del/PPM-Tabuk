@@ -12,7 +12,7 @@
     .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:10px;padding:.7rem 1rem;font-weight:700}
     .btn-primary{background:#2563eb;color:#fff}
     .muted{color:#64748b}
-    .badge{display:inline-flex;align-items:center;gap:.4rem;border-radius:999px;padding:.2rem .6rem;font-size:.8rem}
+    .badge{display:inline-flex;align-items:center;gap:.4rem;border-radius:999px;padding:.25rem .7rem;font-size:.8rem}
     .ok{background:rgba(16,185,129,.12);color:#047857}
     .err{background:rgba(239,68,68,.12);color:#b91c1c}
     .kbd{border:1px solid #e2e8f0;border-bottom-width:2px;border-radius:8px;padding:.05rem .45rem;background:#f1f5f9}
@@ -21,7 +21,7 @@
 <body>
   <main class="mx-auto max-w-xl p-6">
     <h1 class="text-xl font-extrabold mb-2">تهيئة سريعة – System Owner</h1>
-    <p class="muted text-sm mb-4">الاختبار ده بسيط علشان نتأكد من الاتصال بـ Firebase وننشئ أول مالك نظام بيوزرنيم وباسورد.</p>
+    <p class="muted text-sm mb-4">هنختبر الاتصال بـ Firebase وننشئ أول مالك نظام بيوزرنيم وباسورد.</p>
 
     <!-- حالة الاتصال -->
     <div class="card p-4 mb-4">
@@ -29,7 +29,7 @@
       <div id="connInfo" class="text-xs mt-2 muted"></div>
     </div>
 
-    <!-- نموذج إضافة مالك النظام -->
+    <!-- نموذج System Owner -->
     <div class="card p-5">
       <h2 class="font-bold mb-3">إنشاء System Owner</h2>
       <form id="formOwner" class="grid grid-cols-1 gap-3">
@@ -68,40 +68,64 @@
   </main>
 
   <script type="module">
-    // 1) استخدم ملف مشروعك الرسمي (مسار نسبي من /modules/users/bootstrap.html)
-    import { auth, db } from "../../js/firebase.js";
-    import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
-    import {
-      collection, doc, getDoc, getDocs, setDoc, serverTimestamp, query, where, limit
-    } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js";
+    // ===== محاولة الاستيراد من ملف مشروعك + Fallback تلقائي =====
+    let auth, db, source = "project-module";
+    try {
+      const mod = await import("../../js/firebase.js");
+      auth = mod?.auth; db = mod?.db;
+      console.log("Loaded from ../../js/firebase.js →", {auth, db});
+      if (!auth || !db) throw new Error("auth/db undefined from project module");
+    } catch (e) {
+      console.warn("Fallback to inline Firebase config due to:", e);
+      source = "inline-config";
+      const { initializeApp, getApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js");
+      const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
+      const { getFirestore } = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js");
 
+      const firebaseConfig = {
+        apiKey: "AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
+        authDomain: "pmqrtabuk.firebaseapp.com",
+        projectId: "pmqrtabuk",
+        storageBucket: "pmqrtabuk.firebasestorage.app",
+        messagingSenderId: "305570616285",
+        appId: "1:305570616285:web:4f6839fd08b8b5aa131c34"
+      };
+      const app = (getApps().length ? getApp() : initializeApp(firebaseConfig));
+      auth = getAuth(app);
+      db   = getFirestore(app);
+    }
+
+    // ===== UI helpers =====
     const $ = (id)=>document.getElementById(id);
     const rxUser = /^[a-z0-9_-]{4,24}$/;
     const normalize = (u)=> (u||"").trim().toLowerCase();
     const synthEmail = (u)=> `${normalize(u)}@ppm.local`;
 
-    // 2) فحص الاتصال بـ Firebase (إشعار واضح)
+    // ===== فحص الاتصال مع إشعار واضح =====
+    import { collection, getDocs, query, limit, doc, getDoc, setDoc, serverTimestamp, where } 
+      from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import { createUserWithEmailAndPassword } 
+      from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+
     async function checkFirebaseConnection(){
       const badge = $("conn");
       const info  = $("connInfo");
       try{
-        if (!auth || !db) throw new Error("auth/db undefined");
-        // استعلام خفيف (بدون صلاحيات خاصة) – مجرد اختبار وصول
         await getDocs(query(collection(db,"users"), limit(1)));
         badge.classList.remove("err"); badge.classList.add("ok");
         badge.textContent = "✅ متصل بـ Firebase";
-        info.textContent = `projectId: ${(auth.app && auth.app.options && auth.app.options.projectId) || "?"}`;
-        console.log("Firebase connected ✓", { projectId: auth.app?.options?.projectId });
+        info.textContent  = `source: ${source} • projectId: ${auth.app?.options?.projectId || "?"}`;
+        console.log("Firebase connected ✓", { source, projectId: auth.app?.options?.projectId });
       }catch(e){
         badge.classList.remove("ok"); badge.classList.add("err");
         badge.textContent = "❌ غير متصل بـ Firebase";
-        info.textContent = "تحقق من /js/firebase.js و Authorized domains و Firestore Rules.";
+        info.textContent  = "تحقق من authorized domains + Firestore Rules + network.";
         console.error("Firebase connection error:", e);
       }
     }
     checkFirebaseConnection();
 
-    // Utilities for usernames
+    // ===== أدوات usernames/users =====
     async function isUsernameFree(username){
       const id = normalize(username);
       const ref = doc(db,"usernames", id);
@@ -116,7 +140,7 @@
       await setDoc(doc(db,"users", uid), payload, { merge:false });
     }
 
-    // 3) إنشاء System Owner (بسيط)
+    // ===== إنشاء System Owner =====
     $("formOwner").addEventListener("submit", async (e)=>{
       e.preventDefault();
       const msg = $("msg");
@@ -132,25 +156,21 @@
       if(!rxUser.test(username)){ msg.textContent = "❗ اسم المستخدم غير صالح."; return; }
       if(pwd !== pwd2){ msg.textContent = "❗ كلمتا المرور غير متطابقتين."; return; }
 
-      // ممنوع إنشاء مالك تاني
+      // تأكد عدم وجود مالك
       try{
         const hasOwner = await getDocs(query(collection(db,"users"), where("role","==","SystemOwner"), limit(1)));
         if (hasOwner.size > 0){ msg.textContent = "⚠️ يوجد بالفعل System Owner."; return; }
-      }catch(err){ /* لو القواعد تمنع القراءة، سيظهر فشل الاتصال في الأعلى */ }
+      }catch(_){ /* لو القواعد تمنع القراءة، هنعتمد على محاولة الإنشاء */ }
 
-      // تفرد اليوزرنيم
       if(!(await isUsernameFree(username))){ msg.textContent = "⚠️ اسم المستخدم محجوز."; return; }
 
-      msg.textContent = "جارٍ إنشاء الحساب...";
+      msg.textContent = "جارٍ الإنشاء...";
       try{
-        // إنشاء حساب الدخول ببريد صناعي
         const cred = await createUserWithEmailAndPassword(auth, synthEmail(username), pwd);
-        const uid = cred.user.uid;
+        const uid  = cred.user.uid;
 
-        // حجز اليوزرنيم
         await reserveUsername(username, { uid, userId: uid, createdAt: serverTimestamp() });
 
-        // وثيقة المستخدم
         const payload = {
           username, normalizedUsername: username, email,
           role: "SystemOwner", siteScope: ["*"], deptScope: ["*"],
@@ -166,7 +186,7 @@
         };
         await createUserDoc(uid, payload);
 
-        msg.innerHTML = "✅ تم إنشاء <b>System Owner</b> بنجاح — ادخل باسم المستخدم <span class='kbd'>"+username+"</span>";
+        msg.innerHTML = "✅ تم إنشاء <b>System Owner</b> — ادخل باسم المستخدم <span class='kbd'>"+username+"</span>";
       }catch(err){
         console.error(err);
         msg.textContent = "❌ تعذر الإنشاء: " + (err?.message || err);
