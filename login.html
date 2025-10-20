@@ -5,49 +5,86 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PPM TABUK • تسجيل الدخول</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/PPM-Tabuk/css/theme-light.css">
-  <script src="/PPM-Tabuk/js/theme.js" defer></script>
   <link rel="icon" href="/PPM-Tabuk/assets/favicon.ico"/>
   <style>
-    body{background:#f8fafc;color:#0f172a}
-    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 10px 28px rgba(2,6,23,.06)}
-    .inp{border:1px solid #e5e7eb;border-radius:12px;padding:.75rem 1rem;width:100%}
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;border-radius:12px;padding:.75rem 1rem;font-weight:700}
-    .btn-primary{background:#2563eb;color:#fff}
-    .btn-soft{background:#eef2f7}
+    :root{
+      --glass-bg: rgba(255,255,255,.75);
+      --glass-brd: rgba(255,255,255,.35);
+    }
+    body{
+      min-height:100vh;
+      background:
+        radial-gradient(1200px 800px at 100% -10%, #dee9ff 0%, transparent 60%),
+        radial-gradient(1000px 700px at -10% 100%, #e7f6ff 0%, transparent 60%),
+        linear-gradient(135deg,#eef2ff 0%, #f8fafc 40%, #ecfeff 100%);
+    }
+    .glass{
+      background:var(--glass-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border:1px solid var(--glass-brd);
+      border-radius: 20px;
+      box-shadow:
+        0 10px 30px rgba(2,6,23,.08),
+        inset 0 1px 0 rgba(255,255,255,.5);
+    }
+    .inp{border:1px solid #e5e7eb;border-radius:12px;padding:.85rem 1rem;width:100%;background:#fff}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;border-radius:12px;padding:.85rem 1rem;font-weight:800}
+    .btn-primary{background:#1d4ed8;color:#fff}
+    .btn-soft{background:#f1f5f9}
     .muted{color:#64748b}
-    .badge{display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .6rem;border-radius:999px;font-size:.75rem}
+    .badge{display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .6rem;border-radius:999px;font-size:.75rem}
     .badge-ok{background:rgba(16,185,129,.12);color:#047857}
-    .badge-err{background:rgba(239,68,68,.12);color:#b91c1c}
+    .badge-warn{background:rgba(234,179,8,.15);color:#a16207}
+    .logo-ring{
+      box-shadow: 0 8px 24px rgba(2,6,23,.12);
+      border:3px solid rgba(255,255,255,.7);
+    }
   </style>
 </head>
-<body>
-  <main class="min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-md">
-      <!-- شعار/هيدر بسيط -->
-      <div class="text-center mb-6">
-        <img src="/PPM-Tabuk/assets/logo.svg" alt="PPM TABUK" class="inline-block h-12 mb-2" onerror="this.style.display='none'">
-        <h1 class="text-xl font-extrabold tracking-tight">تسجيل الدخول</h1>
-        <p class="text-sm muted">الدخول بـ <b>اسم المستخدم + كلمة المرور</b>. (لا نستخدم البريد للدخول)</p>
-      </div>
+<body class="text-slate-800">
+  <!-- زخرفة خلفية -->
+  <div class="pointer-events-none fixed inset-0 -z-10">
+    <div class="absolute -top-24 -right-24 w-[36rem] h-[36rem] rounded-full bg-gradient-to-br from-blue-200/60 to-cyan-100/40 blur-3xl"></div>
+    <div class="absolute -bottom-24 -left-24 w-[32rem] h-[32rem] rounded-full bg-gradient-to-tr from-sky-200/60 to-indigo-100/40 blur-3xl"></div>
+  </div>
 
-      <!-- حالة الاتصال -->
-      <div class="card p-3 mb-4">
-        <div id="connBadge" class="badge">⏳ فحص الاتصال...</div>
-        <div id="connInfo" class="text-xs mt-2 muted"></div>
-      </div>
+  <main class="min-h-screen">
+    <div class="mx-auto max-w-6xl px-4 py-10 grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
 
-      <!-- تنبيه إنشاء المالك إن لم يوجد (اختياري) -->
-      <div id="ownerAlert" class="card p-3 mb-4 hidden">
-        <div class="text-sm">
-          لا يوجد <b>System Owner</b> بالنظام بعد. ابدأ بإنشاء المالك أولاً.
+      <!-- Panel: الهوية -->
+      <section class="glass p-8 lg:p-10 relative overflow-hidden">
+        <div class="absolute -left-16 -bottom-20 w-72 h-72 rounded-full bg-blue-100/40 blur-2xl"></div>
+        <div class="relative">
+          <div class="flex items-center gap-4">
+            <img src="/PPM-Tabuk/assets/TabukCluster.jpeg" alt="Tabuk Cluster"
+                 class="w-20 h-20 rounded-2xl object-cover logo-ring bg-white">
+            <div>
+              <h1 class="text-2xl font-black tracking-tight">PPM TABUK</h1>
+              <p class="text-sm muted">Planned Preventive Maintenance Platform</p>
+            </div>
+          </div>
+
+          <div class="mt-6 leading-6">
+            <p class="text-lg font-extrabold">Biomedical Department</p>
+            <p class="text-lg font-extrabold -mt-1">Tabuk Cluster</p>
+            <p class="mt-3 text-sm text-slate-500">مرحبًا بك. سجّل الدخول باستخدام <b>اسم المستخدم + كلمة المرور</b>. لا نستخدم البريد للدخول.</p>
+          </div>
+
+          <div class="mt-6 flex items-center gap-2 text-xs">
+            <span id="connBadge" class="badge badge-warn">⏳ فحص الاتصال...</span>
+            <span id="connInfo" class="muted"></span>
+          </div>
+
+          <div id="ownerAlert" class="hidden mt-4">
+            <a href="/PPM-Tabuk/modules/users/bootstrap.html" class="btn btn-soft">👑 إنشاء مالك النظام</a>
+          </div>
         </div>
-        <a href="/PPM-Tabuk/modules/users/bootstrap.html" class="btn btn-soft mt-2 w-full">👑 إنشاء مالك النظام</a>
-      </div>
+      </section>
 
-      <!-- فورم الدخول -->
-      <div class="card p-5">
-        <form id="loginForm" class="space-y-3">
+      <!-- Panel: فورم الدخول -->
+      <section class="glass p-6 lg:p-8">
+        <form id="loginForm" class="space-y-4">
           <div>
             <label class="block text-sm mb-1">اسم المستخدم</label>
             <input id="username" class="inp" placeholder="مثال: owner" autocomplete="username" required>
@@ -66,18 +103,19 @@
             </label>
             <a href="#" id="forgot" class="text-sm text-slate-500 hover:underline">نسيت كلمة المرور؟</a>
           </div>
-          <button class="btn btn-primary w-full" id="submitBtn" type="submit">تسجيل الدخول</button>
-          <div id="msg" class="text-sm mt-2"></div>
-        </form>
-      </div>
 
-      <!-- فوتر بسيط -->
-      <p class="mt-4 text-center text-xs text-slate-400">© <span id="year"></span> PPM TABUK</p>
+          <button id="submitBtn" class="btn btn-primary w-full" type="submit">تسجيل الدخول</button>
+          <div id="msg" class="text-sm"></div>
+        </form>
+
+        <p class="mt-6 text-center text-xs text-slate-400">© <span id="year"></span> PPM TABUK</p>
+      </section>
     </div>
   </main>
 
+  <!-- منطق الصفحة -->
   <script type="module">
-    // نستخدم مسارات مطلقة من جذر المشروع
+    // استخدام مسارات مطلقة
     import { auth, db } from "/PPM-Tabuk/js/firebase.js";
     import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import { doc, getDoc, collection, getDocs, query, where, limit, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
@@ -89,16 +127,19 @@
     const synthEmail = (u)=> `${normalize(u)}@ppm.local`;
     $("year").textContent = new Date().getFullYear();
 
+    // تحويل بعد الدخول — المطلوب
+    const DEFAULT_REDIRECT = "/PPM-Tabuk/modules/dashboard/index.html";
+
     const ROLE_REDIRECTS = {
-      "SystemOwner": "/PPM-Tabuk/index.html",
-      "Admin": "/PPM-Tabuk/index.html",
-      "Supervisor": "/PPM-Tabuk/index.html",
-      "DepartmentHead": "/PPM-Tabuk/index.html",
-      "Technician": "/PPM-Tabuk/index.html",
-      "Staff": "/PPM-Tabuk/index.html",
-      "MaintenanceDeptSupervisor": "/PPM-Tabuk/index.html",
-      "WarehouseGuard": "/PPM-Tabuk/index.html",
-      "SystemMonitor": "/PPM-Tabuk/index.html"
+      "SystemOwner": DEFAULT_REDIRECT,
+      "Admin": DEFAULT_REDIRECT,
+      "Supervisor": DEFAULT_REDIRECT,
+      "DepartmentHead": DEFAULT_REDIRECT,
+      "Technician": DEFAULT_REDIRECT,
+      "Staff": DEFAULT_REDIRECT,
+      "MaintenanceDeptSupervisor": DEFAULT_REDIRECT,
+      "WarehouseGuard": DEFAULT_REDIRECT,
+      "SystemMonitor": DEFAULT_REDIRECT
     };
 
     // timeout آمن لفحص الاتصال
@@ -110,7 +151,7 @@
       });
     }
 
-    // فحص الاتصال بدون تعليق
+    // فحص الاتصال — لا يعلّق
     async function checkConnection(){
       const badge = $("connBadge");
       const info  = $("connInfo");
@@ -119,20 +160,20 @@
 
       try{
         await withTimeout(getDocs(query(collection(db,"users"), limit(1))), 4000);
-        badge.classList.add("badge-ok");
-        badge.classList.remove("badge-err");
         badge.textContent = "✅ متصل بـ Firebase";
+        badge.classList.remove("badge-warn");
+        badge.classList.add("badge-ok");
       }catch(e){
-        badge.classList.add("badge-err");
-        badge.classList.remove("badge-ok");
         const reason = (String(e?.message||"").includes("timeout")) ? "انتهت المهلة" : "ممنوع حسب القواعد";
         badge.textContent = `⚠️ SDK متصل، لكن فشل فحص Firestore (${reason})`;
+        badge.classList.remove("badge-ok");
+        badge.classList.add("badge-warn");
         console.warn("Connection probe:", e);
       }
     }
     checkConnection();
 
-    // تنبيه إنشاء المالك (نحاول وبس؛ لو القواعد تمنع بنسكت)
+    // محاولة رصد وجود SystemOwner (إن سمحت القواعد)
     async function ensureOwnerExists(){
       try{
         const snap = await withTimeout(getDocs(query(collection(db,"users"), where("role","==","SystemOwner"), limit(1))), 4000);
@@ -141,7 +182,7 @@
     }
     ensureOwnerExists();
 
-    // UI بسيطة
+    // UI: إظهار/إخفاء كلمة المرور + تذكّرني
     $("togglePwd").addEventListener("click", ()=>{
       const inp = $("password");
       const isPwd = inp.type === "password";
@@ -211,10 +252,11 @@
 
         try{
           await updateDoc(sref, { "account.lastLoginAt": serverTimestamp(), updatedAt: serverTimestamp() });
-        }catch(_e){ /* قواعد قد تمنع؛ تجاهل */ }
+        }catch(_e){ /* ignore if rules block */ }
 
         const role = String(user.role || "").trim();
-        const dest = ROLE_REDIRECTS[role] || "/PPM-Tabuk/index.html";
+        const urlNext = new URLSearchParams(location.search).get("next");
+        const dest = urlNext || ROLE_REDIRECTS[role] || DEFAULT_REDIRECT;
         location.href = dest;
       }catch(err){
         console.error(err);
@@ -223,7 +265,7 @@
         if (code.includes("auth/invalid-credential") || code.includes("auth/wrong-password")) text = "اسم المستخدم أو كلمة المرور غير صحيحة.";
         if (code.includes("auth/user-not-found")) text = "لا يوجد مستخدم بهذا الاسم.";
         if (code.includes("auth/too-many-requests")) text = "محاولات كثيرة. حاول لاحقًا.";
-        msg.innerHTML = '<span class="text-red-600">'+text+'</span>';
+        $("msg").innerHTML = '<span class="text-red-600">'+text+'</span>';
         setSubmitting(false);
       }
     });
