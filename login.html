@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PPM TABUK • تسجيل الدخول</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="../../css/theme-light.css">
-  <script src="../../js/theme.js" defer></script>
+  <link rel="stylesheet" href="/PPM-Tabuk/css/theme-light.css">
+  <script src="/PPM-Tabuk/js/theme.js" defer></script>
   <link rel="icon" href="/PPM-Tabuk/assets/favicon.ico"/>
   <style>
     body{background:#f8fafc;color:#0f172a}
@@ -33,11 +33,11 @@
 
       <!-- حالة الاتصال -->
       <div class="card p-3 mb-4">
-        <div id="connBadge" class="badge badge-err">⏳ فحص الاتصال...</div>
+        <div id="connBadge" class="badge">⏳ فحص الاتصال...</div>
         <div id="connInfo" class="text-xs mt-2 muted"></div>
       </div>
 
-      <!-- تنبيه إنشاء المالك إن لم يوجد -->
+      <!-- تنبيه إنشاء المالك إن لم يوجد (اختياري) -->
       <div id="ownerAlert" class="card p-3 mb-4 hidden">
         <div class="text-sm">
           لا يوجد <b>System Owner</b> بالنظام بعد. ابدأ بإنشاء المالك أولاً.
@@ -66,7 +66,7 @@
             </label>
             <a href="#" id="forgot" class="text-sm text-slate-500 hover:underline">نسيت كلمة المرور؟</a>
           </div>
-          <button class="btn btn-primary w-full" type="submit">تسجيل الدخول</button>
+          <button class="btn btn-primary w-full" id="submitBtn" type="submit">تسجيل الدخول</button>
           <div id="msg" class="text-sm mt-2"></div>
         </form>
       </div>
@@ -77,9 +77,10 @@
   </main>
 
   <script type="module">
-    import { auth, db } from "../../js/firebase.js";
+    // نستخدم مسارات مطلقة من جذر المشروع
+    import { auth, db } from "/PPM-Tabuk/js/firebase.js";
     import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import { doc, getDoc, collection, getDocs, query, where, limit } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import { doc, getDoc, collection, getDocs, query, where, limit, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
     // ===== Helpers
     const $ = (id)=>document.getElementById(id);
@@ -88,36 +89,59 @@
     const synthEmail = (u)=> `${normalize(u)}@ppm.local`;
     $("year").textContent = new Date().getFullYear();
 
-    // ===== حالة الاتصال
+    const ROLE_REDIRECTS = {
+      "SystemOwner": "/PPM-Tabuk/index.html",
+      "Admin": "/PPM-Tabuk/index.html",
+      "Supervisor": "/PPM-Tabuk/index.html",
+      "DepartmentHead": "/PPM-Tabuk/index.html",
+      "Technician": "/PPM-Tabuk/index.html",
+      "Staff": "/PPM-Tabuk/index.html",
+      "MaintenanceDeptSupervisor": "/PPM-Tabuk/index.html",
+      "WarehouseGuard": "/PPM-Tabuk/index.html",
+      "SystemMonitor": "/PPM-Tabuk/index.html"
+    };
+
+    // timeout آمن لفحص الاتصال
+    function withTimeout(promise, ms=4000){
+      return new Promise((resolve, reject)=>{
+        const t = setTimeout(()=> reject(new Error("timeout")), ms);
+        promise.then(v=>{ clearTimeout(t); resolve(v); })
+               .catch(e=>{ clearTimeout(t); reject(e); });
+      });
+    }
+
+    // فحص الاتصال بدون تعليق
     async function checkConnection(){
       const badge = $("connBadge");
       const info  = $("connInfo");
+      const pid = auth?.app?.options?.projectId || "?";
+      info.textContent = `projectId: ${pid}`;
+
       try{
-        await getDocs(query(collection(db,"users"), limit(1)));
-        badge.classList.remove("badge-err"); badge.classList.add("badge-ok");
+        await withTimeout(getDocs(query(collection(db,"users"), limit(1))), 4000);
+        badge.classList.add("badge-ok");
+        badge.classList.remove("badge-err");
         badge.textContent = "✅ متصل بـ Firebase";
-        info.textContent = `projectId: ${auth.app?.options?.projectId || "?"}`;
       }catch(e){
-        badge.classList.remove("badge-ok"); badge.classList.add("badge-err");
-        badge.textContent = "❌ غير متصل بـ Firebase";
-        info.textContent = "تحقق من Authorized domains و Firestore Rules و الملف ../../js/firebase.js";
-        console.error(e);
+        badge.classList.add("badge-err");
+        badge.classList.remove("badge-ok");
+        const reason = (String(e?.message||"").includes("timeout")) ? "انتهت المهلة" : "ممنوع حسب القواعد";
+        badge.textContent = `⚠️ SDK متصل، لكن فشل فحص Firestore (${reason})`;
+        console.warn("Connection probe:", e);
       }
     }
     checkConnection();
 
-    // ===== تنبيه لو مفيش SystemOwner
+    // تنبيه إنشاء المالك (نحاول وبس؛ لو القواعد تمنع بنسكت)
     async function ensureOwnerExists(){
       try{
-        const snap = await getDocs(query(collection(db,"users"), where("role","==","SystemOwner"), limit(1)));
-        if (snap.size === 0) {
-          $("ownerAlert").classList.remove("hidden");
-        }
+        const snap = await withTimeout(getDocs(query(collection(db,"users"), where("role","==","SystemOwner"), limit(1))), 4000);
+        if (snap.size === 0) $("ownerAlert").classList.remove("hidden");
       }catch(e){ /* ignore */ }
     }
     ensureOwnerExists();
 
-    // ===== UI: إظهار/إخفاء كلمة المرور + تذكّرني
+    // UI بسيطة
     $("togglePwd").addEventListener("click", ()=>{
       const inp = $("password");
       const isPwd = inp.type === "password";
@@ -125,15 +149,19 @@
       $("togglePwd").textContent = isPwd ? "إخفاء" : "إظهار";
     });
 
-    // Restore last username
     const lastU = localStorage.getItem("ppm:lastUsername");
     if (lastU) { $("username").value = lastU; $("remember").checked = true; }
 
-    // ===== الدخول
+    function setSubmitting(v){
+      const btn = $("submitBtn");
+      btn.disabled = v;
+      btn.textContent = v ? "جاري الدخول..." : "تسجيل الدخول";
+    }
+
+    // الدخول
     $("loginForm").addEventListener("submit", async (e)=>{
       e.preventDefault();
-      const msg = $("msg");
-      msg.textContent = "";
+      const msg = $("msg"); msg.textContent = "";
 
       const username = normalize($("username").value);
       const password = $("password").value;
@@ -151,41 +179,43 @@
       if (remember) localStorage.setItem("ppm:lastUsername", username);
       else localStorage.removeItem("ppm:lastUsername");
 
-      msg.textContent = "جارٍ تسجيل الدخول...";
+      setSubmitting(true);
       try{
-        // 1) تسجيل الدخول بالبريد الصناعي
         const email = synthEmail(username);
         const cred  = await signInWithEmailAndPassword(auth, email, password);
         const uid   = cred.user.uid;
 
-        // 2) قراءة وثيقة المستخدم
-        const snap = await getDoc(doc(db,"users", uid));
+        const sref = doc(db,"users", uid);
+        const snap = await getDoc(sref);
         if(!snap.exists()){
           msg.innerHTML = '<span class="text-red-600">لا توجد وثيقة مستخدم لهذا الحساب. تواصل مع المسؤول.</span>';
           await signOut(auth);
+          setSubmitting(false);
           return;
         }
         const user = snap.data();
 
-        // 3) تحقّق الحالة
         const status = (user.account && user.account.status) || (user.isActive ? "active" : "disabled");
         if (status === "disabled" || user.isActive === false){
           msg.innerHTML = '<span class="text-red-600">الحساب معطّل. تواصل مع المسؤول.</span>';
           await signOut(auth);
+          setSubmitting(false);
           return;
         }
 
-        // 4) لو مطلوب تغيير كلمة المرور
         if (user.account?.forcePwdChange === true){
-          // خزّن uid بسيشن مؤقت عشان صفحة change-password
           sessionStorage.setItem("ppm:pendingUid", uid);
           location.href = "/PPM-Tabuk/modules/auth/change-password.html";
           return;
         }
 
-        // 5) نجاح → توجيه للداشبورد/الرئيسية
-        // عدّل المسار حسب مشروعك
-        location.href = "/PPM-Tabuk/modules/dashboard/index.html";
+        try{
+          await updateDoc(sref, { "account.lastLoginAt": serverTimestamp(), updatedAt: serverTimestamp() });
+        }catch(_e){ /* قواعد قد تمنع؛ تجاهل */ }
+
+        const role = String(user.role || "").trim();
+        const dest = ROLE_REDIRECTS[role] || "/PPM-Tabuk/index.html";
+        location.href = dest;
       }catch(err){
         console.error(err);
         const code = String(err?.code || "");
@@ -194,12 +224,11 @@
         if (code.includes("auth/user-not-found")) text = "لا يوجد مستخدم بهذا الاسم.";
         if (code.includes("auth/too-many-requests")) text = "محاولات كثيرة. حاول لاحقًا.";
         msg.innerHTML = '<span class="text-red-600">'+text+'</span>';
+        setSubmitting(false);
       }
     });
 
-    // ===== نسيت كلمة المرور؟
-    // بما إننا لا نستخدم البريد الحقيقي للدخول، فإعادة التعيين التلقائي مش منطقية.
-    // نعرض رسالة إجرائية.
+    // نسيت كلمة المرور؟
     $("forgot").addEventListener("click", (e)=>{
       e.preventDefault();
       alert("لإعادة تعيين كلمة المرور: تواصل مع المسؤول ليولّد لك كلمة مرور مؤقتة ويجبر تغييرها عند أول دخول.");
