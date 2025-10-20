@@ -51,7 +51,7 @@
     <p class="mt-1 text-sm text-slate-500">ابدأ بمسح البيانات القديمة (إن وجدت) ثم أنشئ أول مستخدم <b>System Owner</b>.</p>
   </section>
 
-  <main class="mx-auto max-w-7xl px-4 py-2 space-y-6"> class="mx-auto max-w-5xl px-4 py-6 space-y-6">
+  <main class="mx-auto max-w-7xl px-4 py-2 space-y-6">
     <!-- تنبيه -->
     <div class="card p-4">
       <div class="flex items-start gap-3">
@@ -108,20 +108,10 @@
     </div>
 
     <details class="card p-5">
-      <summary class="cursor-pointer font-bold">إعداد Firebase (ضع القيم لديك)</summary>
-<pre class="text-xs bg-slate-100 p-3 rounded-lg overflow-auto"><code>// 1) ضع إعدادات مشروعك هنا
-const firebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
-};
-
-// 2) سياسة أسماء المستخدمين
-// نستخدم بريد صناعي لتوثيق Firebase: username@ppm.local
-// الدخول في الواجهة = Username + Password فقط.
+      <summary class="cursor-pointer font-bold">إعداد Firebase (مُدمج من مشروعك)</summary>
+<pre class="text-xs bg-slate-100 p-3 rounded-lg overflow-auto"><code>// الصفحة تعتمد على ملف الإعداد الموحد:
+// ../../js/firebase.js (يطّلع app/auth/db)
+// لذلك لا نضع config محلي هنا.
 </code></pre>
     </details>
 
@@ -165,28 +155,33 @@ service cloud.firestore {
           'nameAr','nameEn','email','phone','siteScope','deptScope','isActive','locale','theme','avatarUrl','notes'
         ])) ||
         // المستخدم يعدّل بروفايله الشخصي على حقول آمنة فقط
+        (request.auth.uid == uid && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'nameAr','nameEn','locale','theme','avatarUrl'
+        ]))
+      );
+
+      // حذف: فقط SystemOwner أو Admin (مع تنفيذ SoftDelete بالتطبيق المبدئي)
+      allow delete: if isSignedIn() && (isRole('SystemOwner') || isRole('Admin'));
+    }
+
+    // USERNAMES collection (حجز أسماء المستخدمين)
+    match /usernames/{uname} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && (isRole('SystemOwner') || isRole('Admin') || isRole('Supervisor'));
+      allow update, delete: if isSignedIn() && isRole('SystemOwner');
+    }
+  }
+}
+</code></pre>
+    </details>
   </main>
 
   <!-- Firebase + منطق الصفحة -->
   <script type="module">
-    // استيراد Firebase SDK v10 (modular)
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
-    import { getFirestore, collection, getDocs, deleteDoc, doc, setDoc, serverTimestamp, query, limit, where } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js";
-
-    // TODO: ضع إعدادات مشروعك هنا
-    const firebaseConfig = {
-      apiKey: "",
-      authDomain: "",
-      projectId: "",
-      storageBucket: "",
-      messagingSenderId: "",
-      appId: ""
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    // استخدم Firebase الموحد في مشروعك
+    import { auth, db } from "../../js/firebase.js";
+    import { createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
+    import { collection, getDocs, getDoc, deleteDoc, doc, setDoc, serverTimestamp, query, limit } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js";
 
     const el = (id) => document.getElementById(id);
     const msg = el('msg');
@@ -204,21 +199,13 @@ service cloud.firestore {
       if(!sure) return;
       msg.textContent = 'جارِ المسح...';
 
-      const colUsers = collection(db, 'users');
-      const snapUsers = await getDocs(colUsers);
-      let n1 = 0;
-      for(const d of snapUsers.docs){
-        await deleteDoc(doc(db, 'users', d.id));
-        n1++;
-      }
-
-      const colUN = collection(db, 'usernames');
-      const snapUN = await getDocs(colUN);
-      let n2 = 0;
-      for(const d of snapUN.docs){
-        await deleteDoc(doc(db, 'usernames', d.id));
-        n2++;
-      }
+      let n1 = 0, n2 = 0;
+      // حذف users
+      const snapUsers = await getDocs(collection(db, 'users'));
+      for (const d of snapUsers.docs) { await deleteDoc(doc(db, 'users', d.id)); n1++; }
+      // حذف usernames
+      const snapUN = await getDocs(collection(db, 'usernames'));
+      for (const d of snapUN.docs) { await deleteDoc(doc(db, 'usernames', d.id)); n2++; }
 
       msg.textContent = `تم المسح: users=${n1}, usernames=${n2}. يمكنك الآن إنشاء System Owner.`;
     }
@@ -227,8 +214,7 @@ service cloud.firestore {
       ev.preventDefault();
 
       // تحقق لا يوجد مستخدمين موجودين
-      const qUsers = query(collection(db,'users'), limit(1));
-      const existing = await getDocs(qUsers);
+      const existing = await getDocs(query(collection(db,'users'), limit(1)));
       if(existing.size > 0){
         if(!confirm('يوجد مستخدمون بالفعل. هل تود المتابعة وإنشاء System Owner آخر؟')) return;
       }
@@ -240,10 +226,7 @@ service cloud.firestore {
       const nameAr = el('nameAr').value || '';
       const nameEn = el('nameEn').value || '';
 
-      if(password !== password2){
-        msg.textContent = 'كلمتا المرور غير متطابقتين';
-        return;
-      }
+      if(password !== password2){ msg.textContent = 'كلمتا المرور غير متطابقتين'; return; }
 
       const normalized = normalizeUsername(username);
       if(!/^[a-z0-9_-]{4,24}$/.test(normalized)){
@@ -251,33 +234,20 @@ service cloud.firestore {
         return;
       }
 
-      // حجز اسم المستخدم في usernames
+      // تأكد أن اسم المستخدم غير محجوز
       const unameDocRef = doc(db, 'usernames', normalized);
-      // نحاول كتابة doc الحجز أولًا
-      try{
-        await setDoc(unameDocRef, {
-          reservedAt: serverTimestamp(),
-          by: 'bootstrap',
-        }, { merge: true });
-      }catch(e){
-        msg.textContent = 'اسم المستخدم محجوز مسبقًا.';
-        return;
-      }
+      const existUN = await getDoc(unameDocRef);
+      if (existUN.exists()) { msg.textContent = 'اسم المستخدم محجوز مسبقًا.'; return; }
 
       msg.textContent = 'جاري إنشاء حساب الدخول...';
 
-      // ننشئ حساب Firebase Auth ببريد صناعي
       const authEmail = synthEmailFromUsername(normalized);
       let cred;
-      try{
-        cred = await createUserWithEmailAndPassword(auth, authEmail, password);
-      }catch(e){
-        msg.textContent = 'فشل إنشاء حساب الدخول: ' + (e?.message || e);
-        return;
-      }
+      try{ cred = await createUserWithEmailAndPassword(auth, authEmail, password); }
+      catch(e){ msg.textContent = 'فشل إنشاء حساب الدخول: ' + (e?.message || e); return; }
 
       const uid = cred.user.uid;
-      const userId = uid; // نستخدم uid كمفتاح لوثيقة users لسهولة الربط
+      const userId = uid; // نستخدم uid كمفتاح وثيقة users
 
       const userDoc = {
         username: normalized,
@@ -308,18 +278,15 @@ service cloud.firestore {
       };
 
       try{
+        // احجز اسم المستخدم ثم اكتب المستخدم
+        await setDoc(unameDocRef, { uid, userId, createdAt: serverTimestamp() });
         await setDoc(doc(db,'users', userId), userDoc);
-        await setDoc(doc(db,'usernames', normalized), {
-          uid: uid,
-          userId: userId,
-          createdAt: serverTimestamp()
-        }, { merge: true });
       }catch(e){
         msg.textContent = 'تم إنشاء حساب الدخول لكن فشل حفظ وثيقة المستخدم: ' + (e?.message || e);
         return;
       }
 
-      msg.innerHTML = 'تم إنشاء <b>System Owner</b> بنجاح ✅ — بإمكانك استخدام اسم المستخدم <span class="kbd">' + normalized + '</span> للدخول.';
+      msg.innerHTML = 'تم إنشاء <b>System Owner</b> بنجاح ✅ — استخدم اسم المستخدم <span class="kbd">' + normalized + '</span> للدخول.';
     }
 
     async function doSignOut(){
