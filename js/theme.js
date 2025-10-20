@@ -1,25 +1,23 @@
-// ========== PPM Tabuk Theme Toggle ==========
+// js/theme.js
 (function(){
-  const KEY = 'ppm_theme';
-  const root = document.documentElement;
+  const KEY = 'ppm-theme';  // 'light' | 'dark'
 
-  // تطبيق الثيم الحالي من localStorage أو الافتراضي
   function apply(theme){
-    if(theme === 'dark'){
-      root.setAttribute('data-theme', 'dark');
-    } else {
-      root.removeAttribute('data-theme');
-    }
-    localStorage.setItem(KEY, theme || 'light');
+    const root = document.documentElement;
+    root.setAttribute('data-theme', theme);
+    // حط كلاس للمساعدة لو حبيت في CSS
+    root.classList.toggle('dark', theme === 'dark');
+    try { localStorage.setItem(KEY, theme); } catch {}
   }
 
-  // تحميل الثيم عند بداية الصفحة
-  const saved = localStorage.getItem(KEY) || 'light';
-  apply(saved);
+  // اختار القيمة المبدئية
+  const stored = (()=>{ try { return localStorage.getItem(KEY); } catch { return null; } })();
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  apply(stored || (prefersDark ? 'dark' : 'light'));
 
-  // دالة التبديل
+  // متاح عالميًا
   window.toggleTheme = function(){
-    const isDark = root.getAttribute('data-theme') === 'dark';
-    apply(isDark ? 'light' : 'dark');
+    const cur = document.documentElement.getAttribute('data-theme') || 'light';
+    apply(cur === 'light' ? 'dark' : 'light');
   };
 })();
