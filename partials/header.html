@@ -1,21 +1,59 @@
-<header class=""w-full max-w-none mx-auto p-3 md:p-6 space-y-6"">
+<!-- partials/header.html -->
+<header class="px-3 md:px-6 mt-3">
   <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between rounded-xl">
     <nav class="flex items-center gap-3 text-white text-sm" id="mainNav">
-      <a href="/PPM-Tabuk/modules/dashboard/index.html">Dashboard</a>
-      <a href="/PPM-Tabuk/modules/assets/index.html">Assets</a>
-      <a href="/PPM-Tabuk/modules/preventive/index.html">Preventive</a>
-      <a href="/PPM-Tabuk/modules/corrective/index.html">Corrective</a>
-      <a href="/PPM-Tabuk/modules/sites/index.html">Sites</a>
-      <a href="/PPM-Tabuk/modules/users/index.html" id="navAdmin">Users</a>
+      <a href="/PPM-Tabuk/modules/dashboard/index.html" data-to="dashboard">Dashboard</a>
+      <a href="/PPM-Tabuk/modules/assets/index.html" data-to="assets">Assets</a>
+
+      <!-- Corrective (click dropdown) -->
+      <div class="dd relative" data-dd="corrective">
+        <button type="button" class="dd-btn inline-flex items-center gap-2">
+          <span>Corrective</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="dd-panel card" role="menu" aria-hidden="true">
+          <a class="dd-item" href="/PPM-Tabuk/modules/corrective/index.html?tab=ticket" data-to="corrective">
+            <span>📝</span><span>Ticket</span>
+          </a>
+          <a class="dd-item" href="/PPM-Tabuk/modules/spares/index.html" data-to="spares">
+            <span>⚙️</span><span>SparePart</span>
+          </a>
+          <a class="dd-item" href="/PPM-Tabuk/modules/corrective/index.html?tab=wo" data-to="corrective">
+            <span>📄</span><span>WorkOrder</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Sites (hover dropdown; click navigates) -->
+      <div class="dd relative" data-dd="sites">
+        <a href="/PPM-Tabuk/modules/sites/index.html" class="inline-flex items-center gap-2" data-to="sites">
+          <span>Sites</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </a>
+        <div class="dd-panel card" role="menu" aria-hidden="true">
+          <a class="dd-item" href="/PPM-Tabuk/modules/sites/departments.html" data-to="sites">
+            <span>🏷️</span><span>Department</span>
+          </a>
+          <a class="dd-item" href="/PPM-Tabuk/modules/sites/buildings.html" data-to="sites">
+            <span>🏢</span><span>Building</span>
+          </a>
+          <a class="dd-item" href="/PPM-Tabuk/modules/sites/rooms.html" data-to="sites">
+            <span>🏠</span><span>Rooms</span>
+          </a>
+        </div>
+      </div>
+
+      <a href="/PPM-Tabuk/modules/preventive/index.html" data-to="preventive">Preventive</a>
+      <a href="/PPM-Tabuk/modules/users/index.html" data-to="users" id="navAdmin">Users</a>
     </nav>
 
     <div class="flex items-center gap-3">
-      <!-- Theme -->
-      <button onclick="toggleTheme && toggleTheme()" title="Toggle Theme"
-        class="w-9 h-9 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 text-white shadow transition">
-        🌓
-      </button>
-
+      <button onclick="toggleTheme?.()" title="Toggle Theme"
+        class="w-9 h-9 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 text-white shadow transition">🌓</button>
       <div class="text-white text-sm flex items-center gap-2">
         <span id="userName" class="font-semibold"></span>
         <span class="text-white/60">|</span>
