@@ -1,135 +1,218 @@
-/* =========================
-   PPM Tabuk — Global Theme
-   ========================= */
+/* =========================================================
+   🎨 THEME LIGHT – PPM TABUK
+   ========================================================= */
 
-/* ====== LIGHT (Default) ====== */
-:root{
-  --bg:#f6f7fb;
-  --text:#0f172a;
-  --muted:#64748b;
-
-  --surface:#ffffff;
-  --surface-alt:#0e1527; /* للبانل الداكن الاختياري */
-
-  --border:#e5e7eb;
-  --shadow:0 10px 30px rgba(2,6,23,0.08);
-
-  --brand:#3b82f6;   /* primary */
-  --brand-2:#60a5fa; /* lighter */
-
-  --ok:#10b981;
-  --warn:#f59e0b;
-  --danger:#ef4444;
-
-  /* table header */
-  --thead-bg:#1f2937;  /* slate-800 */
-  --thead-fg:#ffffff;
-
-  --radius:16px;
+/* ألوان الثيم العامة */
+:root {
+  --bg: #f6f7fb;
+  --text: #0f172a;
+  --muted: #64748b;
+  --surface: #ffffff;
+  --surface-alt: #0e1527;
+  --border: #e5e7eb;
+  --shadow: 0 10px 30px rgba(2,6,23,0.08);
+  --brand: #3b82f6;
+  --brand-2: #60a5fa;
+  --ok: #10b981;
+  --warn: #f59e0b;
+  --danger: #ef4444;
 }
 
+/* الخلفية والنص */
+html[dir="rtl"] body {
+  background: var(--bg);
+  color: var(--text);
+}
 
-/* تمييز اللينك النشط في الهيدر */
+/* ====== بطاقات وكروت ====== */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+/* ====== الشريط العلوي ====== */
+.topbar {
+  background: var(--brand);
+  color: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(59,130,246,.25);
+}
+.topbar .icon-btn {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255,255,255,.15);
+  transition: .15s;
+}
+.topbar .icon-btn:hover { background: rgba(255,255,255,.25); }
+.topbar .avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #fde68a;
+  color: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+}
+
+/* ====== عناصر واجهة العمل (WO Panels) ====== */
+.wo-panel {
+  background: var(--surface-alt);
+  color: #f8fafc;
+  border-radius: 16px;
+  padding: 18px;
+}
+.wo-title { font-weight: 900; font-size: 1.1rem; }
+.wo-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.wo-tile {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.wo-k { font-size: .8rem; color: #cbd5e1; }
+.wo-v { font-size: 1.25rem; font-weight: 900; }
+.wo-side {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-weight: 900;
+  letter-spacing: .5px;
+  color: #94a3b8;
+}
+
+/* ====== أزرار ====== */
+.btn {
+  padding: .55rem .9rem;
+  border-radius: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .25rem;
+  cursor: pointer;
+  transition: .2s;
+}
+.btn-ghost {
+  background: #eef2ff;
+  color: #1e293b;
+  border: 1px solid #c7d2fe;
+}
+.btn-brand {
+  background: var(--brand);
+  color: #fff;
+}
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+.btn:hover {
+  opacity: .9;
+  transform: translateY(-1px);
+}
+
+/* ====== الحقول ====== */
+.field {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: .6rem .8rem;
+  color: #0f172a;
+}
+.field:focus {
+  outline: none;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(147,197,253,.35);
+}
+
+/* ====== نصوص ناقصة ====== */
+.wo-v:empty::before, .kpi-v:empty::before {
+  content: '—';
+  opacity: .45;
+}
+
+/* =========================================================
+   💡 Layout & Responsiveness
+   ========================================================= */
+
+/* اجعل كل الصفحات Full Width */
+.max-w-7xl, .container, header, main {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* تقليل الفراغ الجانبي العام */
+body {
+  padding-inline: clamp(12px, 3.5vw, 28px);
+}
+
+/* الكروت تاخد عرض الصفحة */
+.card { width: 100%; }
+
+/* =========================================================
+   📊 Tables Direction & Alignment
+   ========================================================= */
+
+/* خلي كل الجداول افتراضيًا LTR */
+.card table, .card .overflow-auto {
+  direction: ltr;
+}
+
+/* في حال جدول معين RTL */
+.table-rtl { direction: rtl !important; }
+
+/* محاذاة الأعمدة */
+td, th { vertical-align: middle; }
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* =========================================================
+   🌈 Navigation Active Link (هيدر موحد)
+   ========================================================= */
+
 #mainNav a.active {
   position: relative;
-  color: #93c5fd !important;       /* أزرق فاتح */
-  font-weight: 900 !important;     /* خط سميك */
-  letter-spacing: 0.3px;
+  font-weight: 900;
+  letter-spacing: .3px;
+  background: linear-gradient(90deg, var(--brand-2), var(--brand), var(--brand-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 3s linear infinite;
 }
-
+@keyframes shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
 #mainNav a.active::after {
   content: "";
   position: absolute;
   left: 0; right: 0; bottom: -4px;
   height: 2px;
-  background-color: #60a5fa;       /* شَرطة تحت الزر */
+  background: linear-gradient(90deg, var(--brand), var(--brand-2), var(--brand));
   border-radius: 2px;
   transform: scaleX(0);
-  transition: transform 0.25s ease-in-out;
+  transition: transform .25s ease-in-out;
+}
+#mainNav a.active:hover::after { transform: scaleX(1); }
+#mainNav a:hover {
+  color: #bfdbfe !important;
+  transition: color .2s;
 }
 
-#mainNav a.active:hover::after {
-  transform: scaleX(1);
+/* =========================================================
+   ✨ تحسين الظلال والحواف على الشاشات العريضة
+   ========================================================= */
+@media (min-width: 1280px) {
+  .card {
+    box-shadow: var(--shadow);
+    border-radius: 16px;
+  }
 }
-
-
-/* Dark Mode (اختياري: فعّله بإضافة data-theme="dark" على html) */
-:root[data-theme="dark"]{
-  --bg:#0b1220;
-  --text:#e5e7eb;
-  --muted:#94a3b8;
-
-  --surface:#0f172a;
-  --surface-alt:#0b1220;
-
-  --border:#1f2937;
-  --shadow:0 10px 30px rgba(0,0,0,0.35);
-
-  --brand:#3b82f6;
-  --brand-2:#60a5fa;
-
-  --thead-bg:#0b1220;
-  --thead-fg:#e5e7eb;
-}
-
-/* ====== BASE ====== */
-/* بنستخدم html[dir] عشان الثيم يشتغل سواء عربي أو إنجليزي */
-html[dir="rtl"] body,
-html[dir="ltr"] body { background:var(--bg); color:var(--text); }
-
-.mono{ font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace }
-
-/* ====== LAYOUT PARTS ====== */
-.card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow) }
-
-.topbar{
-  background:var(--brand);
-  color:#fff;
-  border-radius:14px;
-  box-shadow:0 8px 24px rgba(59,130,246,.25);
-}
-.topbar .icon-btn{ width:38px; height:38px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; background:rgba(255,255,255,.15); transition:.15s }
-.topbar .icon-btn:hover{ background:rgba(255,255,255,.25) }
-.topbar .avatar{ width:36px; height:36px; border-radius:10px; background:#fde68a; color:#111; display:flex; align-items:center; justify-content:center; font-weight:900 }
-
-.wo-panel{ background:var(--surface-alt); color:#f8fafc; border-radius:16px; padding:18px }
-.wo-title{ font-weight:900; font-size:1.1rem }
-.wo-grid{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px }
-.wo-tile{ background:#111827; border:1px solid #1f2937; border-radius:12px; padding:10px 12px }
-.wo-k{ font-size:.8rem; color:#cbd5e1 } .wo-v{ font-size:1.25rem; font-weight:900 }
-.wo-side{ writing-mode:vertical-rl; transform:rotate(180deg); font-weight:900; letter-spacing:.5px; color:#94a3b8 }
-
-/* ====== Utility Cards / Pager ====== */
-.slim-card{ background:#eef2ff; border:1px dashed #c7d2fe; color:#1e293b; border-radius:12px; padding:12px }
-.chart-card{ padding:16px }
-#pager{ background:#fff; border-top:1px solid var(--border); border-radius:0 0 16px 16px }
-
-/* ====== Inputs ====== */
-.field{ background:#fff; border:1px solid var(--border); border-radius:12px; padding:.6rem .8rem; color:#0f172a }
-.field:focus{ outline:none; border-color:#93c5fd; box-shadow:0 0 0 3px rgba(147,197,253,.35) }
-:root[data-theme="dark"] .field{ background:#0b1220; color:var(--text) }
-
-/* ====== Buttons (موحّدة لكل الصفحات) ====== */
-.btn{ padding:.55rem .9rem; border-radius:12px; font-weight:800; display:inline-flex; align-items:center; gap:.45rem }
-.btn-ghost{ background:#eef2ff; color:#1e293b; border:1px solid #c7d2fe }
-.btn-brand{ background:var(--brand); color:#fff }
-.btn-brand:hover{ background:#2563eb }
-.btn-danger{ background:var(--danger); color:#fff }
-.btn-muted{ background:#e2e8f0; color:#0f172a }
-:root[data-theme="dark"] .btn-muted{ background:#1f2937; color:#e5e7eb }
-
-/* ====== Table Header موحّد ====== */
-thead.bg-slate-800,
-.table thead{
-  background:var(--thead-bg) !important;
-  color:var(--thead-fg) !important;
-}
-
-/* ====== Badges للحالات (اختياري) ====== */
-.badge{ padding:.2rem .5rem; border-radius:999px; font-weight:800; font-size:.72rem }
-.badge-ok{   background:#dcfce7; color:#166534 }
-.badge-warn{ background:#fef3c7; color:#92400e }
-.badge-bad{  background:#ffe4e6; color:#9f1239 }
-
-/* عناصر فاضية تظهر شرطة */
-.wo-v:empty::before, .kpi-v:empty::before{ content:'—'; opacity:.45 }
