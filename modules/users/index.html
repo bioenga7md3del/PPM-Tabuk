@@ -3,262 +3,173 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>PPM TABUK • تهيئة النظام (System Owner)</title>
-
-  <!-- Tailwind + Theme -->
+  <title>PPM TABUK • Bootstrap System Owner</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="../../css/theme-light.css">
-  <script src="../../js/theme.js" defer></script>
-  <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
-  <link rel="icon" href="/PPM-Tabuk/assets/favicon.ico"/>
-
   <style>
-    #mainNav a.active{
-      position:relative;font-weight:900;letter-spacing:.3px;
-      background:linear-gradient(90deg,#60a5fa,#3b82f6,#60a5fa);
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-      animation:shimmer 3s linear infinite;
-    }
-    @keyframes shimmer{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-
-    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.06)}
+    body{background:#f8fafc;color:#0f172a}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 10px 28px rgba(2,6,23,.06)}
+    .inp{border:1px solid #e2e8f0;border-radius:10px;padding:.7rem .9rem;width:100%}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:10px;padding:.7rem 1rem;font-weight:700}
+    .btn-primary{background:#2563eb;color:#fff}
     .muted{color:#64748b}
-    .inp{border:1px solid #e5e7eb;border-radius:12px;padding:.7rem .9rem;width:100%}
-    .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:12px;padding:.7rem 1rem;font-weight:700}
-    .btn-primary{background:#2563eb;color:white}
-    .btn-soft{background:#f1f5f9}
-    .badge{display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .6rem;border-radius:999px;font-size:.75rem}
-    .badge-green{background:rgba(16,185,129,.12);color:#047857}
-
-    /* Modal */
-    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.45);z-index:60}
-    .modal.show{display:flex}
-    .modal .panel{width:min(680px,92vw)}
-    .x{cursor:pointer}
+    .badge{display:inline-flex;align-items:center;gap:.4rem;border-radius:999px;padding:.2rem .6rem;font-size:.8rem}
+    .ok{background:rgba(16,185,129,.12);color:#047857}
+    .err{background:rgba(239,68,68,.12);color:#b91c1c}
+    .kbd{border:1px solid #e2e8f0;border-bottom-width:2px;border-radius:8px;padding:.05rem .45rem;background:#f1f5f9}
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
-  <!-- الهيدر الجاهز -->
-  <div data-include="../../partials/header.html"></div>
+<body>
+  <main class="mx-auto max-w-xl p-6">
+    <h1 class="text-xl font-extrabold mb-2">تهيئة سريعة – System Owner</h1>
+    <p class="muted text-sm mb-4">الاختبار ده بسيط علشان نتأكد من الاتصال بـ Firebase وننشئ أول مالك نظام بيوزرنيم وباسورد.</p>
 
-  <!-- العنوان -->
-  <section class="mx-auto max-w-7xl px-4 pt-6 pb-2">
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-extrabold tracking-tight">تهيئة النظام</h1>
-        <p class="mt-1 text-sm text-slate-500">إنشاء أول مستخدم بصفة <b>System Owner</b> باسم مستخدم وكلمة سر. (الإيميل إشعارات فقط)</p>
-      </div>
-      <nav class="text-sm text-slate-500">
-        <a href="/PPM-Tabuk/index.html" class="hover:underline">الرئيسية</a>
-        <span class="mx-2">/</span>
-        <span class="font-semibold text-slate-700">Users</span>
-      </nav>
+    <!-- حالة الاتصال -->
+    <div class="card p-4 mb-4">
+      <div id="conn" class="badge err">⏳ جاري فحص الاتصال...</div>
+      <div id="connInfo" class="text-xs mt-2 muted"></div>
     </div>
 
-    <div class="mt-4 flex flex-wrap gap-3">
-      <button id="btnOpenAddOwner" class="btn btn-primary">👑 إضافة مالك النظام (System Owner)</button>
-    </div>
-
-    <div id="pageMsg" class="mt-3 text-sm"></div>
-  </section>
-
-  <!-- ملاحظات وقواعد التهيئة -->
-  <main class="mx-auto max-w-7xl px-4 py-4 space-y-4">
-    <div class="card p-4">
-      <h2 class="font-bold mb-2">قواعد Firestore المؤقتة (للتهيئة فقط)</h2>
-<pre class="text-xs bg-slate-100 p-3 rounded-lg overflow-auto"><code>// BOOTSTRAP RULES — مؤقتة للتهيئة الأولى
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-
-    match /users/{uid} {
-      allow read: if true; // للتمكن من فحص وجود مالك
-      allow create: if request.auth != null
-                    && request.auth.uid == uid
-                    && request.resource.data.role == 'SystemOwner';
-      allow update, delete: if false;
-    }
-
-    match /usernames/{uname} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      allow update, delete: if false;
-    }
-  }
-}
-</code></pre>
-      <p class="mt-2 text-xs text-slate-500">بعد نجاح الإنشاء، سنبدّلها بقواعد الإنتاج الخاصة بالأدوار.</p>
-    </div>
-  </main>
-
-  <!-- مودال: إضافة System Owner -->
-  <div id="modalOwner" class="modal">
-    <div class="panel card p-5">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-bold">إضافة مالك النظام (System Owner)</h3>
-        <button class="x text-slate-500" data-close="modalOwner">✕</button>
-      </div>
-      <p class="text-xs muted mb-4">زر مخصص للتهيئة — يُنشئ أول مالك للنظام باسم مستخدم وكلمة سر.</p>
-
-      <form id="formOwner" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- نموذج إضافة مالك النظام -->
+    <div class="card p-5">
+      <h2 class="font-bold mb-3">إنشاء System Owner</h2>
+      <form id="formOwner" class="grid grid-cols-1 gap-3">
         <div>
-          <label class="block text-sm mb-1">اسم المستخدم <span class="text-red-600">*</span></label>
-          <input id="o_username" class="inp" placeholder="مثال: owner" required>
-          <p class="text-xs muted mt-1">٤–٢٤ حرف/رقم/شرطة/شرطة سفلية (EN).</p>
-        </div>
-        <div>
-          <label class="block text-sm mb-1">البريد الإلكتروني (اختياري)</label>
-          <input id="o_email" type="email" class="inp" placeholder="example@domain.com">
+          <label class="block text-sm mb-1">اسم المستخدم (EN) <span class="text-red-600">*</span></label>
+          <input id="username" class="inp" placeholder="مثال: owner" required>
+          <p class="text-xs muted mt-1">٤–٢٤ حرف/رقم/شرطة/شرطة سفلية. الدخول بيوزرنيم فقط.</p>
         </div>
         <div>
           <label class="block text-sm mb-1">كلمة المرور <span class="text-red-600">*</span></label>
-          <input id="o_password" type="password" class="inp" placeholder="••••••••" required>
+          <input id="password" type="password" class="inp" placeholder="••••••••" required>
         </div>
         <div>
           <label class="block text-sm mb-1">تأكيد كلمة المرور <span class="text-red-600">*</span></label>
-          <input id="o_password2" type="password" class="inp" placeholder="••••••••" required>
+          <input id="password2" type="password" class="inp" placeholder="••••••••" required>
         </div>
         <div>
-          <label class="block text-sm mb-1">الاسم (عربي)</label>
-          <input id="o_nameAr" class="inp" placeholder="الاسم بالعربية">
+          <label class="block text-sm mb-1">البريد (اختياري للإشعارات)</label>
+          <input id="email" type="email" class="inp" placeholder="example@domain.com">
         </div>
-        <div>
-          <label class="block text-sm mb-1">Name (English)</label>
-          <input id="o_nameEn" class="inp" placeholder="Full Name (EN)">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm mb-1">الاسم (عربي)</label>
+            <input id="nameAr" class="inp" placeholder="الاسم بالعربية">
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Name (English)</label>
+            <input id="nameEn" class="inp" placeholder="Full Name (EN)">
+          </div>
         </div>
-        <div class="md:col-span-2 mt-2 flex items-center gap-3">
-          <span class="badge badge-green">الدور: SystemOwner</span>
-          <span class="badge">النطاق: كافة المواقع</span>
-        </div>
-        <div class="md:col-span-2 mt-2 flex gap-3">
-          <button class="btn btn-primary" type="submit">إنشاء System Owner</button>
-          <button class="btn btn-soft" type="button" data-close="modalOwner">إلغاء</button>
-        </div>
-        <div class="md:col-span-2"><div id="o_msg" class="text-sm"></div></div>
+
+        <button class="btn btn-primary mt-1" type="submit">إنشاء System Owner</button>
+        <div id="msg" class="text-sm mt-2"></div>
       </form>
     </div>
-  </div>
+  </main>
 
-  <!-- منطق الصفحة -->
   <script type="module">
-    // استخدام ملف مشروعك الرسمي كموديول (مسار مطلق)
-    import { auth, db } from "/PPM-Tabuk/js/firebase.js";
+    // 1) استخدم ملف مشروعك الرسمي (مسار نسبي من /modules/users/bootstrap.html)
+    import { auth, db } from "../../js/firebase.js";
     import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
     import {
-      collection, getDocs, getDoc, setDoc, doc, serverTimestamp,
-      query, where, limit
+      collection, doc, getDoc, getDocs, setDoc, serverTimestamp, query, where, limit
     } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js";
 
-    // ===== Helpers =====
-    const $ = (id) => document.getElementById(id);
+    const $ = (id)=>document.getElementById(id);
     const rxUser = /^[a-z0-9_-]{4,24}$/;
-    const normalize = (u) => (u || "").trim().toLowerCase();
-    const synthEmail = (u) => `${normalize(u)}@ppm.local`;
-    const show = (id) => $(id).classList.add("show");
-    const hide = (id) => $(id).classList.remove("show");
-    document.querySelectorAll("[data-close]").forEach(btn=>{
-      btn.addEventListener("click", ()=> hide(btn.dataset.close));
-    });
+    const normalize = (u)=> (u||"").trim().toLowerCase();
+    const synthEmail = (u)=> `${normalize(u)}@ppm.local`;
 
-    const pageMsg = $("pageMsg");
-
-    // تشخيص مبكر لو في مشكلة استيراد
-    if (!auth || !db) {
-      pageMsg.innerHTML = '<span class="text-red-600">⚠️ لم يتم تحميل Firebase. تأكد من أن <b>/PPM-Tabuk/js/firebase.js</b> يصدّر <b>auth</b> و <b>db</b>، وأن الدومين مسموح في Auth.</span>';
-    }
-
-    // إخفاء زر المالك إذا كان موجودًا بالفعل
-    async function toggleOwnerButton(){
+    // 2) فحص الاتصال بـ Firebase (إشعار واضح)
+    async function checkFirebaseConnection(){
+      const badge = $("conn");
+      const info  = $("connInfo");
       try{
-        const snap = await getDocs(query(collection(db,"users"), where("role","==","SystemOwner"), limit(1)));
-        if (snap.size > 0) $("btnOpenAddOwner").style.display = "none";
-      }catch(err){
-        console.error(err);
-        pageMsg.innerHTML = '<span class="text-red-600">تعذر فحص وجود مالك. راجع قواعد Firestore المؤقتة أعلاه.</span>';
+        if (!auth || !db) throw new Error("auth/db undefined");
+        // استعلام خفيف (بدون صلاحيات خاصة) – مجرد اختبار وصول
+        await getDocs(query(collection(db,"users"), limit(1)));
+        badge.classList.remove("err"); badge.classList.add("ok");
+        badge.textContent = "✅ متصل بـ Firebase";
+        info.textContent = `projectId: ${(auth.app && auth.app.options && auth.app.options.projectId) || "?"}`;
+        console.log("Firebase connected ✓", { projectId: auth.app?.options?.projectId });
+      }catch(e){
+        badge.classList.remove("ok"); badge.classList.add("err");
+        badge.textContent = "❌ غير متصل بـ Firebase";
+        info.textContent = "تحقق من /js/firebase.js و Authorized domains و Firestore Rules.";
+        console.error("Firebase connection error:", e);
       }
     }
-    toggleOwnerButton();
+    checkFirebaseConnection();
 
-    // فتح المودال
-    $("btnOpenAddOwner").addEventListener("click", ()=> show("modalOwner"));
-
-    // أدوات Firestore
+    // Utilities for usernames
     async function isUsernameFree(username){
       const id = normalize(username);
-      const d = await getDoc(doc(db,"usernames", id));
-      return !d.exists();
+      const ref = doc(db,"usernames", id);
+      const snap = await getDoc(ref);
+      return !snap.exists();
     }
     async function reserveUsername(username, payload){
       const id = normalize(username);
-      await setDoc(doc(db,"usernames", id), payload, { merge: false });
+      await setDoc(doc(db,"usernames", id), payload, { merge:false });
     }
-    async function createUserDocument(uid, payload){
-      await setDoc(doc(db,"users", uid), payload, { merge: false });
+    async function createUserDoc(uid, payload){
+      await setDoc(doc(db,"users", uid), payload, { merge:false });
     }
 
-    // Submit: إضافة System Owner
+    // 3) إنشاء System Owner (بسيط)
     $("formOwner").addEventListener("submit", async (e)=>{
       e.preventDefault();
-      const msg = $("o_msg");
+      const msg = $("msg");
       msg.textContent = "";
 
-      const username = normalize($("o_username").value);
-      const email    = $("o_email").value || null;
-      const pwd      = $("o_password").value;
-      const pwd2     = $("o_password2").value;
-      const nameAr   = $("o_nameAr").value || "";
-      const nameEn   = $("o_nameEn").value || "";
+      const username = normalize($("username").value);
+      const email    = $("email").value || null;
+      const pwd      = $("password").value;
+      const pwd2     = $("password2").value;
+      const nameAr   = $("nameAr").value || "";
+      const nameEn   = $("nameEn").value || "";
 
-      if(!rxUser.test(username)) { msg.textContent = "اسم المستخدم غير صالح."; return; }
-      if(pwd !== pwd2)           { msg.textContent = "كلمتا المرور غير متطابقتين."; return; }
+      if(!rxUser.test(username)){ msg.textContent = "❗ اسم المستخدم غير صالح."; return; }
+      if(pwd !== pwd2){ msg.textContent = "❗ كلمتا المرور غير متطابقتين."; return; }
 
+      // ممنوع إنشاء مالك تاني
       try{
-        // تأكد أنه لا يوجد مالك من قبل
-        const snap = await getDocs(query(collection(db,"users"), where("role","==","SystemOwner"), limit(1)));
-        if (snap.size > 0) { msg.textContent = "يوجد بالفعل مالك للنظام."; return; }
-      }catch(err){
-        console.error(err);
-        msg.textContent = "خطأ أثناء التحقق من المالك (Rules).";
-        return;
-      }
+        const hasOwner = await getDocs(query(collection(db,"users"), where("role","==","SystemOwner"), limit(1)));
+        if (hasOwner.size > 0){ msg.textContent = "⚠️ يوجد بالفعل System Owner."; return; }
+      }catch(err){ /* لو القواعد تمنع القراءة، سيظهر فشل الاتصال في الأعلى */ }
 
       // تفرد اليوزرنيم
-      if(!(await isUsernameFree(username))) {
-        msg.textContent = "اسم المستخدم محجوز مسبقًا.";
-        return;
-      }
+      if(!(await isUsernameFree(username))){ msg.textContent = "⚠️ اسم المستخدم محجوز."; return; }
 
+      msg.textContent = "جارٍ إنشاء الحساب...";
       try{
         // إنشاء حساب الدخول ببريد صناعي
         const cred = await createUserWithEmailAndPassword(auth, synthEmail(username), pwd);
-        const uid  = cred.user.uid;
+        const uid = cred.user.uid;
 
-        // حجز اسم المستخدم ثم كتابة وثيقة المستخدم
+        // حجز اليوزرنيم
         await reserveUsername(username, { uid, userId: uid, createdAt: serverTimestamp() });
 
+        // وثيقة المستخدم
         const payload = {
           username, normalizedUsername: username, email,
-          role: "SystemOwner",
-          siteScope: ["*"], deptScope: ["*"],
+          role: "SystemOwner", siteScope: ["*"], deptScope: ["*"],
           isActive: true,
           account: {
-            linked: true, status: "active", provider: "firebase",
-            uid, lastLoginAt: null, forcePwdChange: true,
+            linked: true, status: "active", provider: "firebase", uid,
+            lastLoginAt: null, forcePwdChange: true,
             lastPwdChangeAt: serverTimestamp(), passwordSetByAdmin: true
           },
           nameAr, nameEn, avatarUrl: null, locale: "ar", theme: "light",
           createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
           notes: "Bootstrap SystemOwner"
         };
+        await createUserDoc(uid, payload);
 
-        await createUserDocument(uid, payload);
-
-        msg.textContent = "تم إنشاء مالك النظام بنجاح ✅";
-        $("btnOpenAddOwner").style.display = "none";
-        setTimeout(()=> hide("modalOwner"), 700);
+        msg.innerHTML = "✅ تم إنشاء <b>System Owner</b> بنجاح — ادخل باسم المستخدم <span class='kbd'>"+username+"</span>";
       }catch(err){
         console.error(err);
-        msg.textContent = "تعذّر إنشاء مالك النظام: " + (err?.message || err);
+        msg.textContent = "❌ تعذر الإنشاء: " + (err?.message || err);
       }
     });
   </script>
