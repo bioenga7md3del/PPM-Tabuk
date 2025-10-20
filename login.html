@@ -33,11 +33,11 @@
 
       <!-- حالة الاتصال -->
       <div class="card p-3 mb-4">
-        <div id="connBadge" class="badge badge-err">⏳ فحص الاتصال...</div>
+        <div id="connBadge" class="badge">⏳ فحص الاتصال...</div>
         <div id="connInfo" class="text-xs mt-2 muted"></div>
       </div>
 
-      <!-- تنبيه إنشاء المالك إن لم يوجد -->
+      <!-- تنبيه إنشاء المالك إن لم يوجد (اختياري) -->
       <div id="ownerAlert" class="card p-3 mb-4 hidden">
         <div class="text-sm">
           لا يوجد <b>System Owner</b> بالنظام بعد. ابدأ بإنشاء المالك أولاً.
@@ -88,7 +88,6 @@
     const synthEmail = (u)=> `${normalize(u)}@ppm.local`;
     $("year").textContent = new Date().getFullYear();
 
-    // خريطة توجيه حسب الدور (عدّل المسارات لو حابب)
     const ROLE_REDIRECTS = {
       "SystemOwner": "/PPM-Tabuk/index.html",
       "Admin": "/PPM-Tabuk/index.html",
@@ -101,30 +100,49 @@
       "SystemMonitor": "/PPM-Tabuk/index.html"
     };
 
-    // ===== حالة الاتصال
+    // ===== util: timeout wrapper يمنع التعليق
+    function withTimeout(promise, ms=4000){
+      return new Promise((resolve, reject)=>{
+        const t = setTimeout(()=> reject(new Error("timeout")), ms);
+        promise.then(v=>{ clearTimeout(t); resolve(v); })
+               .catch(e=>{ clearTimeout(t); reject(e); });
+      });
+    }
+
+    // ===== حالة الاتصال (لا تعلق أبداً)
     async function checkConnection(){
       const badge = $("connBadge");
       const info  = $("connInfo");
+
+      // لو الـ SDK محمّل أصلاً، نعرض projectId فورًا
+      const pid = auth?.app?.options?.projectId || "?";
+      info.textContent = `projectId: ${pid}`;
+
       try{
-        await getDocs(query(collection(db,"users"), limit(1)));
+        // محاولة سريعة تقرأ أول مستند (قد تُمنع بالقواعد)
+        await withTimeout(getDocs(query(collection(db,"users"), limit(1))), 4000);
         badge.classList.remove("badge-err"); badge.classList.add("badge-ok");
         badge.textContent = "✅ متصل بـ Firebase";
-        info.textContent = `projectId: ${auth.app?.options?.projectId || "?"}`;
       }catch(e){
+        // إما timeout أو PERMISSION_DENIED → ده طبيعي لغير المسجّلين
         badge.classList.remove("badge-ok"); badge.classList.add("badge-err");
-        badge.textContent = "❌ غير متصل بـ Firebase";
-        info.textContent = "تحقق من Authorized domains و Firestore Rules و الملف ../../js/firebase.js";
-        console.error(e);
+        const reason = (String(e?.message||"").includes("timeout")) ? "انتهت المهلة" : "ممنوع حسب القواعد";
+        badge.textContent = `⚠️ SDK متصل، لكن فشل فحص Firestore (${reason})`;
+        // نكمّل بشكل عادي — الواجهة مش هتقف
+        console.warn("Connection check warning:", e);
       }
     }
     checkConnection();
 
-    // ===== تنبيه لو مفيش SystemOwner
+    // ===== تنبيه لو مفيش SystemOwner (نحاول بهدوء، ونتجاهل الخطأ لو القواعد تمنع)
     async function ensureOwnerExists(){
       try{
-        const snap = await getDocs(query(collection(db,"users"), where("role","==","SystemOwner"), limit(1)));
+        const snap = await withTimeout(getDocs(query(collection(db,"users"), where("role","==","SystemOwner"), limit(1))), 4000);
         if (snap.size === 0) $("ownerAlert").classList.remove("hidden");
-      }catch(e){ /* ignore */ }
+      }catch(e){
+        // لو القواعد تمنع القراءة بدون Auth أو timeout — نسيب التنبيه مخفي
+        console.info("Owner probe skipped:", e?.code || e?.message || e);
+      }
     }
     ensureOwnerExists();
 
@@ -140,7 +158,6 @@
     const lastU = localStorage.getItem("ppm:lastUsername");
     if (lastU) { $("username").value = lastU; $("remember").checked = true; }
 
-    // إيقاف/تشغيل زر الارسال
     function setSubmitting(v){
       const btn = $("submitBtn");
       btn.disabled = v;
@@ -150,8 +167,7 @@
     // ===== الدخول
     $("loginForm").addEventListener("submit", async (e)=>{
       e.preventDefault();
-      const msg = $("msg");
-      msg.textContent = "";
+      const msg = $("msg"); msg.textContent = "";
 
       const username = normalize($("username").value);
       const password = $("password").value;
@@ -203,15 +219,12 @@
           return;
         }
 
-        // 5) تحديث آخر دخول (اختياري لكنه مفيد)
+        // 5) تحديث آخر دخول (اختياري)
         try{
-          await updateDoc(sref, {
-            "account.lastLoginAt": serverTimestamp(),
-            updatedAt: serverTimestamp()
-          });
+          await updateDoc(sref, { "account.lastLoginAt": serverTimestamp(), updatedAt: serverTimestamp() });
         }catch(_e){ /* تجاهل لو القواعد تمنع */ }
 
-        // 6) توجيه حسب الدور (أو الديفولت)
+        // 6) توجيه
         const role = String(user.role || "").trim();
         const dest = ROLE_REDIRECTS[role] || "/PPM-Tabuk/index.html";
         location.href = dest;
@@ -222,7 +235,7 @@
         if (code.includes("auth/invalid-credential") || code.includes("auth/wrong-password")) text = "اسم المستخدم أو كلمة المرور غير صحيحة.";
         if (code.includes("auth/user-not-found")) text = "لا يوجد مستخدم بهذا الاسم.";
         if (code.includes("auth/too-many-requests")) text = "محاولات كثيرة. حاول لاحقًا.";
-        msg.innerHTML = '<span class="text-red-600">'+text+'</span>';
+        $("msg").innerHTML = '<span class="text-red-600">'+text+'</span>';
         setSubmitting(false);
       }
     });
