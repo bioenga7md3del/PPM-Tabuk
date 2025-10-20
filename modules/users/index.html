@@ -19,7 +19,6 @@
       animation:shimmer 3s linear infinite;
     }
     @keyframes shimmer{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-
     .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.06)}
     .muted{color:#64748b}
     .inp{border:1px solid #e5e7eb;border-radius:12px;padding:.7rem .9rem;width:100%}
@@ -86,11 +85,15 @@
         </div>
         <div>
           <label class="block text-sm mb-1">SiteScope</label>
-          <input id="f_site" class="inp" placeholder="مثال: hospital-a">
+          <select id="f_siteSel" class="inp">
+            <option value="">الكل</option>
+          </select>
         </div>
         <div>
           <label class="block text-sm mb-1">DeptScope</label>
-          <input id="f_dept" class="inp" placeholder="مثال: radiology">
+          <select id="f_deptSel" class="inp">
+            <option value="">الكل</option>
+          </select>
         </div>
         <div class="md:col-span-2">
           <label class="block text-sm mb-1">بحث (اسم/يوزرنيم/إيميل)</label>
@@ -162,6 +165,16 @@
           <label class="block text-sm mb-1">تأكيد كلمة المرور <span class="text-red-600">*</span></label>
           <input id="u_password2" type="password" class="inp" placeholder="••••••••" required>
         </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">SiteScope (اختر واحد أو أكثر)</label>
+          <select id="u_siteSel" class="inp" multiple size="5"></select>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">DeptScope (اختر واحد أو أكثر)</label>
+          <select id="u_deptSel" class="inp" multiple size="5"></select>
+        </div>
+
         <div>
           <label class="block text-sm mb-1">الاسم (عربي)</label>
           <input id="u_nameAr" class="inp" placeholder="الاسم بالعربية">
@@ -174,14 +187,7 @@
           <label class="block text-sm mb-1">البريد (اختياري)</label>
           <input id="u_email" type="email" class="inp" placeholder="example@domain.com">
         </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm mb-1">SiteScope (قائمة مفصولة بفواصل)</label>
-          <input id="u_site" class="inp" placeholder="site-a, site-b">
-        </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm mb-1">DeptScope (قائمة مفصولة بفواصل)</label>
-          <input id="u_dept" class="inp" placeholder="radiology, lab">
-        </div>
+
         <div class="md:col-span-2 mt-2 flex gap-3">
           <button class="btn btn-primary" type="submit">حفظ المستخدم</button>
           <button class="btn btn-soft" type="button" data-close="modalUser">إلغاء</button>
@@ -213,6 +219,16 @@
             <option>SystemMonitor</option><option>SystemOwner</option>
           </select>
         </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">SiteScope</label>
+          <select id="e_siteSel" class="inp" multiple size="5"></select>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">DeptScope</label>
+          <select id="e_deptSel" class="inp" multiple size="5"></select>
+        </div>
+
         <div>
           <label class="block text-sm mb-1">الاسم (عربي)</label>
           <input id="e_nameAr" class="inp">
@@ -225,14 +241,7 @@
           <label class="block text-sm mb-1">البريد (اختياري)</label>
           <input id="e_email" type="email" class="inp">
         </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm mb-1">SiteScope (قائمة بفواصل)</label>
-          <input id="e_site" class="inp">
-        </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm mb-1">DeptScope (قائمة بفواصل)</label>
-          <input id="e_dept" class="inp">
-        </div>
+
         <div class="md:col-span-2 mt-2 flex gap-3">
           <button class="btn btn-primary" type="submit">حفظ التعديلات</button>
           <button class="btn btn-soft" type="button" data-close="modalEdit">إلغاء</button>
@@ -242,7 +251,6 @@
     </div>
   </div>
 
-  <!-- منطق الصفحة -->
   <script type="module">
     import { auth, db } from "../../js/firebase.js";
     import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -258,12 +266,113 @@
     const show=id=>$(id).classList.add("show");
     const hide=id=>$(id).classList.remove("show");
 
-    // فتح/إغلاق مودالات
     document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click", ()=>hide(b.dataset.close)));
     $("btnOpenAddUser").addEventListener("click", ()=>show("modalUser"));
-    $("btnOpenAddOwner").addEventListener("click", ()=>show("modalOwner")); // لو لسه محتفظ بيه من نسخة سابقة
+    $("btnOpenAddOwner").addEventListener("click", ()=>show("modalOwner"));
 
     const pageMsg = $("pageMsg");
+
+    // ====== تحميل قوائم المواقع والأقسام ======
+    const siteSelects = ["u_siteSel","e_siteSel","f_siteSel"];
+    const deptSelects = ["u_deptSel","e_deptSel","f_deptSel"];
+
+    function labelOf(obj){
+      // يحاول إيجاد اسم من حقول مختلفة
+      const candidates = [
+        "name","label","title","site","siteName","site_name","site_code","code",
+        "department","dept","deptName","departmentName","department_name"
+      ];
+      for (const k of candidates){
+        if (obj && obj[k]) return String(obj[k]);
+      }
+      return "";
+    }
+
+    function uniqueSorted(arr){
+      return [...new Set(arr.map(s=> String(s||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
+    }
+
+    async function fetchSitesList(){
+      let list = [];
+      // 1) من collection('sites')
+      try{
+        const s = await getDocs(collection(db,"sites"));
+        s.forEach(d=> list.push(labelOf({ ...d.data(), id:d.id })));
+      }catch(_){}
+      // 2) fallback: من assets
+      if (list.length===0){
+        try{
+          const s = await getDocs(collection(db,"assets"));
+          s.forEach(d=>{
+            const data=d.data();
+            const guess = data?.site || data?.siteName || data?.site_name || data?.site_code || data?.siteCode || data?.site_id;
+            if (guess) list.push(String(guess));
+          });
+        }catch(_){}
+      }
+      return uniqueSorted(list);
+    }
+
+    async function fetchDeptsList(){
+      let list = [];
+      // 1) من collection('departments')
+      try{
+        const s = await getDocs(collection(db,"departments"));
+        s.forEach(d=> list.push(labelOf({ ...d.data(), id:d.id })));
+      }catch(_){}
+      // 2) fallback: من assets
+      if (list.length===0){
+        try{
+          const s = await getDocs(collection(db,"assets"));
+          s.forEach(d=>{
+            const data=d.data();
+            const guess = data?.department || data?.dept || data?.deptName || data?.departmentName || data?.department_code;
+            if (guess) list.push(String(guess));
+          });
+        }catch(_){}
+      }
+      return uniqueSorted(list);
+    }
+
+    function populateSelect(elId, items, {multiple=false, includeAll=false}={}){
+      const el = $(elId);
+      if(!el) return;
+      el.innerHTML = "";
+      if (includeAll) {
+        const opt = document.createElement("option");
+        opt.value = ""; opt.textContent = "الكل";
+        el.appendChild(opt);
+      }
+      items.forEach(v=>{
+        const opt = document.createElement("option");
+        opt.value = v; opt.textContent = v;
+        el.appendChild(opt);
+      });
+      if (multiple) el.setAttribute("multiple","multiple");
+    }
+
+    function getMultiValues(elId){
+      const el = $(elId);
+      return Array.from(el.selectedOptions).map(o=>o.value).filter(Boolean);
+    }
+
+    function setMultiValues(elId, values){
+      const el = $(elId);
+      const set = new Set((values||[]).map(v=>String(v)));
+      Array.from(el.options).forEach(o=> o.selected = set.has(o.value));
+    }
+
+    async function loadLookups(){
+      const [sites,depts] = await Promise.all([fetchSitesList(), fetchDeptsList()]);
+      // ملء القوائم (إضافة/تعديل: multiple) — (فلتر: single)
+      populateSelect("u_siteSel", sites, {multiple:true});
+      populateSelect("u_deptSel", depts, {multiple:true});
+      populateSelect("e_siteSel", sites, {multiple:true});
+      populateSelect("e_deptSel", depts, {multiple:true});
+      populateSelect("f_siteSel", sites, {includeAll:true});
+      populateSelect("f_deptSel", depts, {includeAll:true});
+    }
+    loadLookups().catch(e=>{ console.error(e); pageMsg.innerHTML='<span class="text-red-600">تعذّر تحميل القوائم (Sites/Depts)</span>'; });
 
     // اختفاء زر المالك لو موجود
     (async()=>{
@@ -273,13 +382,11 @@
       }catch(e){ pageMsg.innerHTML='<span class="text-red-600">تعذر فحص وجود المالك.</span>'; }
     })();
 
-    // utils
     async function isUsernameFree(username){
       const id=normalize(username);
       const d=await getDoc(doc(db,"usernames",id));
       return !d.exists();
     }
-    function strToArr(s){ return (s||"").split(",").map(x=>x.trim()).filter(Boolean); }
 
     // إنشاء مستخدم
     $("formUser").addEventListener("submit", async (e)=>{
@@ -292,8 +399,8 @@
       const pwd2=$("u_password2").value;
       const nameAr=$("u_nameAr").value||"";
       const nameEn=$("u_nameEn").value||"";
-      const siteScope=strToArr($("u_site").value);
-      const deptScope=strToArr($("u_dept").value);
+      const siteScope=getMultiValues("u_siteSel");
+      const deptScope=getMultiValues("u_deptSel");
 
       if(!rxUser.test(username)){ msg.textContent="اسم المستخدم غير صالح."; return; }
       if(!role){ msg.textContent="اختر الدور."; return; }
@@ -319,7 +426,7 @@
 
     // ===== جدول + فلاتر + Pagination =====
     const tbody=$("usersTbody");
-    const fRole=$("f_role"), fStatus=$("f_status"), fSite=$("f_site"), fDept=$("f_dept"), fSearch=$("f_search");
+    const fRole=$("f_role"), fStatus=$("f_status"), fSiteSel=$("f_siteSel"), fDeptSel=$("f_deptSel"), fSearch=$("f_search");
     const btnRef=$("btnRefresh"), btnPrev=$("prevPage"), btnNext=$("nextPage"), pageInfo=$("pageInfo");
     const PAGE_SIZE=20; let cursors=[], page=0;
 
@@ -365,16 +472,15 @@
       const term=fSearch.value.trim().toLowerCase();
       const r=fRole.value.trim().toLowerCase();
       const s=fStatus.value.trim().toLowerCase();
-      const site=fSite.value.trim().toLowerCase();
-      const dept=fDept.value.trim().toLowerCase();
+      const siteVal=fSiteSel.value.trim().toLowerCase();
+      const deptVal=fDeptSel.value.trim().toLowerCase();
 
       let rows=snap.docs.map(d=>({ id:d.id, ...d.data() }));
 
-      // فلترة بعد الجلب (بدون الحاجة لفهارس مركبة الآن)
       if(r) rows=rows.filter(x=> safe(x.role,"").toLowerCase()===r);
       if(s) rows=rows.filter(x=> displayStatus(x).toLowerCase()===s);
-      if(site) rows=rows.filter(x=> (Array.isArray(x.siteScope)?x.siteScope:[]).some(v=> String(v).toLowerCase().includes(site)));
-      if(dept) rows=rows.filter(x=> (Array.isArray(x.deptScope)?x.deptScope:[]).some(v=> String(v).toLowerCase().includes(dept)));
+      if(siteVal) rows=rows.filter(x=> (Array.isArray(x.siteScope)?x.siteScope:[]).some(v=> String(v).toLowerCase()===siteVal));
+      if(deptVal) rows=rows.filter(x=> (Array.isArray(x.deptScope)?x.deptScope:[]).some(v=> String(v).toLowerCase()===deptVal));
       if(term){
         rows=rows.filter(x=>{
           const hay=(displayName(x)+" "+displayUsername(x)+" "+displayEmail(x)).toLowerCase();
@@ -403,11 +509,10 @@
     btnNext.addEventListener("click", async()=>{ page++; await loadPage(false); });
     btnRef.addEventListener("click", ()=> loadPage(true));
     let tt; fSearch.addEventListener("input", ()=>{ clearTimeout(tt); tt=setTimeout(()=>loadPage(true),300); });
-    [fRole,fStatus,fSite,fDept].forEach(el=> el.addEventListener("change", ()=>loadPage(true)));
+    [fRole,fStatus,fSiteSel,fDeptSel].forEach(el=> el.addEventListener("change", ()=>loadPage(true)));
     loadPage(true).catch(e=>{ console.error(e); pageMsg.innerHTML='<span class="text-red-600">تعذّر تحميل المستخدمين.</span>'; });
 
     // ===== أكشنات الصف =====
-    // فتح تعديل
     function openEditModal(row){
       $("e_uid").value=row.id;
       $("e_username").value=row.username||"";
@@ -415,12 +520,22 @@
       $("e_nameAr").value=row.nameAr||"";
       $("e_nameEn").value=row.nameEn||"";
       $("e_email").value=row.email||"";
-      $("e_site").value=(Array.isArray(row.siteScope)?row.siteScope:[]).join(", ");
-      $("e_dept").value=(Array.isArray(row.deptScope)?row.deptScope:[]).join(", ");
+      // اضبط اختيارات الـ multi-select
+      setMultiValues("e_siteSel", Array.isArray(row.siteScope)?row.siteScope:[]);
+      setMultiValues("e_deptSel", Array.isArray(row.deptScope)?row.deptScope:[]);
       show("modalEdit");
     }
 
-    // حفظ تعديل
+    function setMultiValues(elId, values){
+      const el=$(elId);
+      const set=new Set((values||[]).map(v=>String(v)));
+      Array.from(el.options).forEach(o=> o.selected = set.has(o.value));
+    }
+    function getMultiValues(elId){
+      const el=$(elId);
+      return Array.from(el.selectedOptions).map(o=>o.value).filter(Boolean);
+    }
+
     $("formEdit").addEventListener("submit", async (e)=>{
       e.preventDefault();
       const msg=$("e_msg"); msg.textContent="";
@@ -430,8 +545,8 @@
         nameAr:$("e_nameAr").value||"",
         nameEn:$("e_nameEn").value||"",
         email:$("e_email").value||null,
-        siteScope:strToArr($("e_site").value),
-        deptScope:strToArr($("e_dept").value),
+        siteScope:getMultiValues("e_siteSel"),
+        deptScope:getMultiValues("e_deptSel"),
         updatedAt:serverTimestamp()
       };
       try{
@@ -441,9 +556,8 @@
       }catch(err){ console.error(err); msg.textContent="تعذّر الحفظ: "+(err?.message||err); }
     });
 
-    // تفعيل/تعطيل
     async function toggleUser(uid, currentData){
-      const active = (displayStatus(currentData)==="active");
+      const active = (currentData.account?.status||"active")==="active";
       const newStatus = active ? "disabled" : "active";
       try{
         await updateDoc(doc(db,"users",uid), {
@@ -455,7 +569,6 @@
       }catch(err){ console.error(err); alert("تعذّر التحديث: "+(err?.message||err)); }
     }
 
-    // Reset Password (عميل فقط – لا يغيّر كلمة المرور في Auth)
     function generateTempPwd(len=10){
       const chars="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@$%*";
       let out=""; for(let i=0;i<len;i++) out+=chars[Math.floor(Math.random()*chars.length)];
@@ -463,29 +576,21 @@
     }
     async function resetPassword(uid){
       const temp = generateTempPwd();
-      // نفعّل إجبار تغيير كلمة المرور ونحفظ الباسورد المؤقت كملاحظة (اختياري)
       try{
         await updateDoc(doc(db,"users",uid), {
           "account.forcePwdChange": true,
           notes: `TempPwd(${new Date().toISOString()}): ${temp}`,
           updatedAt: serverTimestamp()
         });
-        alert("Temporary password (سلمها للمستخدم يدويًا):\n\n"+temp+"\n\n*لتطبيق تغيير كلمة المرور تلقائيًا لازم Cloud Function/Admin SDK*");
+        alert("Temporary password (سلّمها للمستخدم يدويًا):\n\n"+temp+"\n\n*لتطبيق الباسورد فعليًا في Auth نحتاج Cloud Function*");
       }catch(err){ console.error(err); alert("تعذّر التحديث: "+(err?.message||err)); }
     }
 
-    // التقاط الأكشنات بالـ delegation
     tbody.addEventListener("click", async (e)=>{
-      const btn = e.target.closest("button[data-act]");
-      if(!btn) return;
-      const id = btn.dataset.id;
-      const act= btn.dataset.act;
-
-      // نحتاج بيانات الصف المختصرة من الـDOM؟ الأفضل نجيب Snapshot حديث
-      const d = await getDoc(doc(db,"users",id));
-      if(!d.exists()){ alert("المستخدم غير موجود"); return; }
-      const data = d.data();
-
+      const btn=e.target.closest("button[data-act]"); if(!btn) return;
+      const id=btn.dataset.id, act=btn.dataset.act;
+      const d=await getDoc(doc(db,"users",id)); if(!d.exists()){ alert("المستخدم غير موجود"); return; }
+      const data=d.data();
       if(act==="edit"){ openEditModal({id, ...data}); }
       if(act==="toggle"){ await toggleUser(id, data); }
       if(act==="reset"){ await resetPassword(id); }
