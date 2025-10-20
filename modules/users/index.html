@@ -3,171 +3,361 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>PPM TABUK • Bootstrap System Owner</title>
+  <title>PPM TABUK • إدارة المستخدمين</title>
+
+  <!-- Tailwind + Theme -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../../css/theme-light.css">
+  <script src="../../js/theme.js" defer></script>
+  <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
+  <link rel="icon" href="/PPM-Tabuk/assets/favicon.ico"/>
+
   <style>
-    body{background:#f8fafc;color:#0f172a}
-    .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 10px 28px rgba(2,6,23,.06)}
-    .inp{border:1px solid #e2e8f0;border-radius:10px;padding:.7rem .9rem;width:100%}
-    .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:10px;padding:.7rem 1rem;font-weight:700}
-    .btn-primary{background:#2563eb;color:#fff}
+    #mainNav a.active{
+      position:relative;font-weight:900;letter-spacing:.3px;
+      background:linear-gradient(90deg,#60a5fa,#3b82f6,#60a5fa);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      animation:shimmer 3s linear infinite;
+    }
+    @keyframes shimmer{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.06)}
     .muted{color:#64748b}
-    .badge{display:inline-flex;align-items:center;gap:.4rem;border-radius:999px;padding:.25rem .7rem;font-size:.8rem}
-    .ok{background:rgba(16,185,129,.12);color:#047857}
-    .err{background:rgba(239,68,68,.12);color:#b91c1c}
-    .kbd{border:1px solid #e2e8f0;border-bottom-width:2px;border-radius:8px;padding:.05rem .45rem;background:#f1f5f9}
+    .inp{border:1px solid #e5e7eb;border-radius:12px;padding:.7rem .9rem;width:100%}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:12px;padding:.7rem 1rem;font-weight:700}
+    .btn-primary{background:#2563eb;color:white}
+    .btn-danger{background:#ef4444;color:white}
+    .btn-soft{background:#f1f5f9}
+    .badge{display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .6rem;border-radius:999px;font-size:.75rem}
+    .badge-green{background:rgba(16,185,129,.12);color:#047857}
+    .kbd{border:1px solid #e5e7eb;border-bottom-width:2px;border-radius:8px;padding:.05rem .45rem;background:#f8fafc}
+
+    /* Modal */
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.45);z-index:60}
+    .modal.show{display:flex}
+    .modal .panel{width:min(680px,92vw)}
+    .x{cursor:pointer}
+    .table-kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:.8rem; padding:.15rem .35rem; border:1px solid #e5e7eb; border-radius:6px; background:#f8fafc}
   </style>
 </head>
-<body>
-  <main class="mx-auto max-w-xl p-6">
-    <h1 class="text-xl font-extrabold mb-2">تهيئة سريعة – System Owner</h1>
-    <p class="muted text-sm mb-4">هنختبر الاتصال بـ Firebase وننشئ أول مالك نظام بيوزرنيم وباسورد.</p>
+<body class="bg-slate-50 text-slate-800">
+  <!-- الهيدر الجاهز -->
+  <div data-include="../../partials/header.html"></div>
 
-    <!-- حالة الاتصال -->
-    <div class="card p-4 mb-4">
-      <div id="conn" class="badge err">⏳ جاري فحص الاتصال...</div>
-      <div id="connInfo" class="text-xs mt-2 muted"></div>
+  <!-- العنوان والأزرار -->
+  <section class="mx-auto max-w-7xl px-4 pt-6 pb-2">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-extrabold tracking-tight">إدارة المستخدمين</h1>
+        <p class="mt-1 text-sm text-slate-500">إضافة مستخدمين بـ <b>Username + Password</b> — الإيميل إشعارات فقط.</p>
+      </div>
+      <nav class="text-sm text-slate-500">
+        <a href="/PPM-Tabuk/index.html" class="hover:underline">الرئيسية</a>
+        <span class="mx-2">/</span>
+        <span class="font-semibold text-slate-700">Users</span>
+      </nav>
     </div>
 
-    <!-- نموذج System Owner -->
-    <div class="card p-5">
-      <h2 class="font-bold mb-3">إنشاء System Owner</h2>
-      <form id="formOwner" class="grid grid-cols-1 gap-3">
-        <div>
-          <label class="block text-sm mb-1">اسم المستخدم (EN) <span class="text-red-600">*</span></label>
-          <input id="username" class="inp" placeholder="مثال: owner" required>
-          <p class="text-xs muted mt-1">٤–٢٤ حرف/رقم/شرطة/شرطة سفلية. الدخول بيوزرنيم فقط.</p>
-        </div>
-        <div>
-          <label class="block text-sm mb-1">كلمة المرور <span class="text-red-600">*</span></label>
-          <input id="password" type="password" class="inp" placeholder="••••••••" required>
-        </div>
-        <div>
-          <label class="block text-sm mb-1">تأكيد كلمة المرور <span class="text-red-600">*</span></label>
-          <input id="password2" type="password" class="inp" placeholder="••••••••" required>
-        </div>
-        <div>
-          <label class="block text-sm mb-1">البريد (اختياري للإشعارات)</label>
-          <input id="email" type="email" class="inp" placeholder="example@domain.com">
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm mb-1">الاسم (عربي)</label>
-            <input id="nameAr" class="inp" placeholder="الاسم بالعربية">
-          </div>
-          <div>
-            <label class="block text-sm mb-1">Name (English)</label>
-            <input id="nameEn" class="inp" placeholder="Full Name (EN)">
-          </div>
-        </div>
+    <div class="mt-4 flex flex-wrap gap-3">
+      <button id="btnOpenAddUser" class="btn btn-primary">➕ إضافة مستخدم</button>
+      <button id="btnOpenAddOwner" class="btn btn-danger" title="مرة واحدة عند التهيئة">👑 إضافة مالك النظام (System Owner)</button>
+    </div>
 
-        <button class="btn btn-primary mt-1" type="submit">إنشاء System Owner</button>
-        <div id="msg" class="text-sm mt-2"></div>
-      </form>
+    <div id="pageMsg" class="mt-3 text-sm"></div>
+  </section>
+
+  <!-- فلاتر + جدول + ترقيم صفحات -->
+  <main class="mx-auto max-w-7xl px-4 py-4 space-y-4">
+    <!-- فلاتر -->
+    <div class="card p-4">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div>
+          <label class="block text-sm mb-1">الدور</label>
+          <select id="f_role" class="inp">
+            <option value="">الكل</option>
+            <option>Admin</option>
+            <option>Supervisor</option>
+            <option>Staff</option>
+            <option>Technician</option>
+            <option>DepartmentHead</option>
+            <option>MaintenanceDeptSupervisor</option>
+            <option>WarehouseGuard</option>
+            <option>SystemMonitor</option>
+            <option>SystemOwner</option>
+          </select>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">بحث (اسم / يوزرنيم / إيميل)</label>
+          <input id="f_search" class="inp" placeholder="اكتب للبحث...">
+        </div>
+        <div class="flex items-end">
+          <button id="btnRefresh" class="btn btn-soft w-full">تحديث</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- الجدول -->
+    <div class="card p-0 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50">
+            <tr class="text-slate-600">
+              <th class="px-4 py-3 text-start">Username</th>
+              <th class="px-4 py-3 text-start">Name</th>
+              <th class="px-4 py-3 text-start">Role</th>
+              <th class="px-4 py-3 text-start">Email</th>
+              <th class="px-4 py-3 text-start">Status</th>
+              <th class="px-4 py-3 text-start">Created</th>
+            </tr>
+          </thead>
+          <tbody id="usersTbody"></tbody>
+        </table>
+      </div>
+      <!-- Pagination -->
+      <div class="flex items-center justify-between px-4 py-3 border-t">
+        <div class="text-xs text-slate-500">يعرض 20 في الصفحة</div>
+        <div class="flex items-center gap-2">
+          <button id="prevPage" class="btn btn-soft">⟵ السابق</button>
+          <span id="pageInfo" class="text-sm"></span>
+          <button id="nextPage" class="btn btn-soft">التالي ⟶</button>
+        </div>
+      </div>
     </div>
   </main>
 
+  <!-- مودال: إضافة مستخدم -->
+  <div id="modalUser" class="modal">
+    <div class="panel card p-5">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold">إضافة مستخدم</h3>
+        <button class="x text-slate-500" data-close="modalUser">✕</button>
+      </div>
+      <p class="text-xs muted mb-4">سيتم إنشاء حساب دخول باسم مستخدم وكلمة مرور (الإيميل إشعارات فقط).</p>
+
+      <form id="formUser" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm mb-1">اسم المستخدم <span class="text-red-600">*</span></label>
+          <input id="u_username" class="inp" placeholder="مثال: m.ali" required>
+          <p class="text-xs muted mt-1">٤–٢٤ حرف/رقم/شرطة/شرطة سفلية (EN).</p>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">الدور <span class="text-red-600">*</span></label>
+          <select id="u_role" class="inp" required>
+            <option value="" disabled selected>اختر الدور</option>
+            <option>Admin</option>
+            <option>Supervisor</option>
+            <option>Staff</option>
+            <option>Technician</option>
+            <option>DepartmentHead</option>
+            <option>MaintenanceDeptSupervisor</option>
+            <option>WarehouseGuard</option>
+            <option>SystemMonitor</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">كلمة المرور <span class="text-red-600">*</span></label>
+          <input id="u_password" type="password" class="inp" placeholder="••••••••" required>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">تأكيد كلمة المرور <span class="text-red-600">*</span></label>
+          <input id="u_password2" type="password" class="inp" placeholder="••••••••" required>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">الاسم (عربي)</label>
+          <input id="u_nameAr" class="inp" placeholder="الاسم بالعربية">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Name (English)</label>
+          <input id="u_nameEn" class="inp" placeholder="Full Name (EN)">
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">البريد الإلكتروني (اختياري)</label>
+          <input id="u_email" type="email" class="inp" placeholder="example@domain.com">
+        </div>
+        <div class="md:col-span-2 mt-2 flex gap-3">
+          <span class="badge badge-green">تفعيل الدخول تلقائي</span>
+          <span class="badge">إجبار تغيير كلمة المرور عند أول دخول</span>
+        </div>
+        <div class="md:col-span-2 mt-2 flex gap-3">
+          <button class="btn btn-primary" type="submit">حفظ المستخدم</button>
+          <button class="btn btn-soft" type="button" data-close="modalUser">إلغاء</button>
+        </div>
+        <div class="md:col-span-2"><div id="u_msg" class="text-sm"></div></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- مودال: إضافة System Owner -->
+  <div id="modalOwner" class="modal">
+    <div class="panel card p-5">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold">إضافة مالك النظام (System Owner)</h3>
+        <button class="x text-slate-500" data-close="modalOwner">✕</button>
+      </div>
+      <p class="text-xs muted mb-4">يُستخدم مرة واحدة عند التهيئة.</p>
+
+      <form id="formOwner" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm mb-1">اسم المستخدم <span class="text-red-600">*</span></label>
+          <input id="o_username" class="inp" placeholder="مثال: owner" required>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">البريد الإلكتروني (اختياري)</label>
+          <input id="o_email" type="email" class="inp" placeholder="example@domain.com">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">كلمة المرور <span class="text-red-600">*</span></label>
+          <input id="o_password" type="password" class="inp" placeholder="••••••••" required>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">تأكيد كلمة المرور <span class="text-red-600">*</span></label>
+          <input id="o_password2" type="password" class="inp" placeholder="••••••••" required>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">الاسم (عربي)</label>
+          <input id="o_nameAr" class="inp" placeholder="الاسم بالعربية">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Name (English)</label>
+          <input id="o_nameEn" class="inp" placeholder="Full Name (EN)">
+        </div>
+        <div class="md:col-span-2 mt-2 flex gap-3">
+          <span class="badge badge-green">الدور: SystemOwner</span>
+          <span class="badge">النطاق: كافة المواقع</span>
+        </div>
+        <div class="md:col-span-2 mt-2 flex gap-3">
+          <button class="btn btn-danger" type="submit">إنشاء System Owner</button>
+          <button class="btn btn-soft" type="button" data-close="modalOwner">إلغاء</button>
+        </div>
+        <div class="md:col-span-2"><div id="o_msg" class="text-sm"></div></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- منطق الصفحة -->
   <script type="module">
-    // ===== محاولة الاستيراد من ملف مشروعك + Fallback تلقائي =====
-    let auth, db, source = "project-module";
-    try {
-      const mod = await import("../../js/firebase.js");
-      auth = mod?.auth; db = mod?.db;
-      console.log("Loaded from ../../js/firebase.js →", {auth, db});
-      if (!auth || !db) throw new Error("auth/db undefined from project module");
-    } catch (e) {
-      console.warn("Fallback to inline Firebase config due to:", e);
-      source = "inline-config";
-      const { initializeApp, getApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js");
-      const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
-      const { getFirestore } = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js");
+    // Firebase من مشروعك
+    import { auth, db } from "../../js/firebase.js";
+    import { createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      collection, getDocs, getDoc, setDoc, deleteDoc, doc, serverTimestamp,
+      query, where, limit, orderBy, startAfter
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-      const firebaseConfig = {
-        apiKey: "AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
-        authDomain: "pmqrtabuk.firebaseapp.com",
-        projectId: "pmqrtabuk",
-        storageBucket: "pmqrtabuk.firebasestorage.app",
-        messagingSenderId: "305570616285",
-        appId: "1:305570616285:web:4f6839fd08b8b5aa131c34"
-      };
-      const app = (getApps().length ? getApp() : initializeApp(firebaseConfig));
-      auth = getAuth(app);
-      db   = getFirestore(app);
-    }
-
-    // ===== UI helpers =====
+    // Helpers
     const $ = (id)=>document.getElementById(id);
     const rxUser = /^[a-z0-9_-]{4,24}$/;
     const normalize = (u)=> (u||"").trim().toLowerCase();
     const synthEmail = (u)=> `${normalize(u)}@ppm.local`;
+    const show = (id)=>$(id).classList.add("show");
+    const hide = (id)=>$(id).classList.remove("show");
+    document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click", ()=> hide(b.dataset.close)));
+    $("btnOpenAddUser").addEventListener("click", ()=> show("modalUser"));
+    $("btnOpenAddOwner").addEventListener("click", ()=> show("modalOwner"));
 
-    // ===== فحص الاتصال مع إشعار واضح =====
-    import { collection, getDocs, query, limit, doc, getDoc, setDoc, serverTimestamp, where } 
-      from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-    import { createUserWithEmailAndPassword } 
-      from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    const pageMsg = $("pageMsg");
 
-    async function checkFirebaseConnection(){
-      const badge = $("conn");
-      const info  = $("connInfo");
+    // ===== زر SystemOwner يختفي لو موجود =====
+    async function toggleOwnerButton(){
       try{
-        await getDocs(query(collection(db,"users"), limit(1)));
-        badge.classList.remove("err"); badge.classList.add("ok");
-        badge.textContent = "✅ متصل بـ Firebase";
-        info.textContent  = `source: ${source} • projectId: ${auth.app?.options?.projectId || "?"}`;
-        console.log("Firebase connected ✓", { source, projectId: auth.app?.options?.projectId });
-      }catch(e){
-        badge.classList.remove("ok"); badge.classList.add("err");
-        badge.textContent = "❌ غير متصل بـ Firebase";
-        info.textContent  = "تحقق من authorized domains + Firestore Rules + network.";
-        console.error("Firebase connection error:", e);
+        const snap = await getDocs(query(collection(db,"users"), where("role","==","SystemOwner"), limit(1)));
+        if (snap.size > 0) $("btnOpenAddOwner").style.display = "none";
+      }catch(err){
+        console.error(err);
+        pageMsg.innerHTML = '<span class="text-red-600">تعذر فحص وجود المالك. راجع قواعد Firestore.</span>';
       }
     }
-    checkFirebaseConnection();
+    toggleOwnerButton();
 
-    // ===== أدوات usernames/users =====
+    // ===== util: usernames & users =====
     async function isUsernameFree(username){
       const id = normalize(username);
-      const ref = doc(db,"usernames", id);
-      const snap = await getDoc(ref);
-      return !snap.exists();
+      const d = await getDoc(doc(db,"usernames", id));
+      return !d.exists();
     }
     async function reserveUsername(username, payload){
-      const id = normalize(username);
-      await setDoc(doc(db,"usernames", id), payload, { merge:false });
+      await setDoc(doc(db,"usernames", normalize(username)), payload, { merge:false });
     }
     async function createUserDoc(uid, payload){
       await setDoc(doc(db,"users", uid), payload, { merge:false });
     }
 
+    // ===== إنشاء مستخدم عادي =====
+    $("formUser").addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      const msg = $("u_msg"); msg.textContent = "";
+
+      const username = normalize($("u_username").value);
+      const role     = $("u_role").value;
+      const email    = $("u_email").value || null;
+      const pwd      = $("u_password").value;
+      const pwd2     = $("u_password2").value;
+      const nameAr   = $("u_nameAr").value || "";
+      const nameEn   = $("u_nameEn").value || "";
+
+      if(!rxUser.test(username)) { msg.textContent = "اسم المستخدم غير صالح."; return; }
+      if(!role) { msg.textContent = "اختر الدور."; return; }
+      if(pwd !== pwd2) { msg.textContent = "كلمتا المرور غير متطابقتين."; return; }
+      if(!(await isUsernameFree(username))) { msg.textContent = "اسم المستخدم محجوز."; return; }
+
+      try{
+        const cred = await createUserWithEmailAndPassword(auth, synthEmail(username), pwd);
+        const uid = cred.user.uid;
+
+        await reserveUsername(username, { uid, userId: uid, createdAt: serverTimestamp() });
+
+        const payload = {
+          username, normalizedUsername: username, email,
+          role, siteScope: [], deptScope: [],
+          isActive: true,
+          account: {
+            linked: true, status: "active", provider: "firebase",
+            uid, lastLoginAt: null, forcePwdChange: true,
+            lastPwdChangeAt: serverTimestamp(), passwordSetByAdmin: true
+          },
+          nameAr, nameEn, avatarUrl: null, locale: "ar", theme: "light",
+          createdAt: serverTimestamp(), updatedAt: serverTimestamp(), notes: ""
+        };
+        await createUserDoc(uid, payload);
+
+        msg.textContent = "تم حفظ المستخدم بنجاح ✅";
+        setTimeout(()=> hide("modalUser"), 600);
+        await loadPage(true);
+      }catch(err){
+        console.error(err);
+        msg.textContent = "تعذّر إنشاء المستخدم: " + (err?.message || err);
+      }
+    });
+
     // ===== إنشاء System Owner =====
     $("formOwner").addEventListener("submit", async (e)=>{
       e.preventDefault();
-      const msg = $("msg");
-      msg.textContent = "";
+      const msg = $("o_msg"); msg.textContent = "";
 
-      const username = normalize($("username").value);
-      const email    = $("email").value || null;
-      const pwd      = $("password").value;
-      const pwd2     = $("password2").value;
-      const nameAr   = $("nameAr").value || "";
-      const nameEn   = $("nameEn").value || "";
+      const username = normalize($("o_username").value);
+      const email    = $("o_email").value || null;
+      const pwd      = $("o_password").value;
+      const pwd2     = $("o_password2").value;
+      const nameAr   = $("o_nameAr").value || "";
+      const nameEn   = $("o_nameEn").value || "";
 
-      if(!rxUser.test(username)){ msg.textContent = "❗ اسم المستخدم غير صالح."; return; }
-      if(pwd !== pwd2){ msg.textContent = "❗ كلمتا المرور غير متطابقتين."; return; }
+      if(!rxUser.test(username)) { msg.textContent = "اسم المستخدم غير صالح."; return; }
+      if(pwd !== pwd2) { msg.textContent = "كلمتا المرور غير متطابقتين."; return; }
 
-      // تأكد عدم وجود مالك
       try{
-        const hasOwner = await getDocs(query(collection(db,"users"), where("role","==","SystemOwner"), limit(1)));
-        if (hasOwner.size > 0){ msg.textContent = "⚠️ يوجد بالفعل System Owner."; return; }
-      }catch(_){ /* لو القواعد تمنع القراءة، هنعتمد على محاولة الإنشاء */ }
+        const snap = await getDocs(query(collection(db,"users"), where("role","==","SystemOwner"), limit(1)));
+        if (snap.size > 0) { msg.textContent = "يوجد بالفعل مالك للنظام."; return; }
+      }catch(err){
+        console.error(err);
+        msg.textContent = "خطأ أثناء التحقق من المالك (Rules).";
+        return;
+      }
 
-      if(!(await isUsernameFree(username))){ msg.textContent = "⚠️ اسم المستخدم محجوز."; return; }
+      if(!(await isUsernameFree(username))) { msg.textContent = "اسم المستخدم محجوز."; return; }
 
-      msg.textContent = "جارٍ الإنشاء...";
       try{
         const cred = await createUserWithEmailAndPassword(auth, synthEmail(username), pwd);
-        const uid  = cred.user.uid;
+        const uid = cred.user.uid;
 
         await reserveUsername(username, { uid, userId: uid, createdAt: serverTimestamp() });
 
@@ -176,8 +366,8 @@
           role: "SystemOwner", siteScope: ["*"], deptScope: ["*"],
           isActive: true,
           account: {
-            linked: true, status: "active", provider: "firebase", uid,
-            lastLoginAt: null, forcePwdChange: true,
+            linked: true, status: "active", provider: "firebase",
+            uid, lastLoginAt: null, forcePwdChange: true,
             lastPwdChangeAt: serverTimestamp(), passwordSetByAdmin: true
           },
           nameAr, nameEn, avatarUrl: null, locale: "ar", theme: "light",
@@ -186,11 +376,101 @@
         };
         await createUserDoc(uid, payload);
 
-        msg.innerHTML = "✅ تم إنشاء <b>System Owner</b> — ادخل باسم المستخدم <span class='kbd'>"+username+"</span>";
+        msg.textContent = "تم إنشاء مالك النظام بنجاح ✅";
+        $("btnOpenAddOwner").style.display = "none";
+        setTimeout(()=> hide("modalOwner"), 600);
+        await loadPage(true);
       }catch(err){
         console.error(err);
-        msg.textContent = "❌ تعذر الإنشاء: " + (err?.message || err);
+        msg.textContent = "تعذّر إنشاء مالك النظام: " + (err?.message || err);
       }
+    });
+
+    // ====== جدول + فلاتر + Pagination (20/صفحة) ======
+    const tbody   = $("usersTbody");
+    const fRole   = $("f_role");
+    const fSearch = $("f_search");
+    const btnRef  = $("btnRefresh");
+    const btnPrev = $("prevPage");
+    const btnNext = $("nextPage");
+    const pageInfo= $("pageInfo");
+    const PAGE_SIZE = 20;
+
+    let cursors = []; // آخِر مستند لكل صفحة
+    let page = 0;
+
+    function safe(v, def=""){ return (v===undefined || v===null) ? def : v; }
+    function displayName(d){
+      return safe(d.nameAr) || safe(d.nameEn) || safe(d.name) || "—";
+    }
+    function displayUsername(d){
+      return safe(d.username) || (safe(d.email).split("@")[0] || "—");
+    }
+    function displayRole(d){ return safe(d.role,"—"); }
+    function displayEmail(d){ return safe(d.email,"—"); }
+    function displayStatus(d){
+      if (d.account?.status) return d.account.status;
+      if (typeof d.enabled === "boolean") return d.enabled ? "active" : "disabled";
+      return "—";
+    }
+    function displayCreated(d){
+      const v = d.createdAt;
+      try{
+        if (v?.toDate) return v.toDate().toLocaleString();
+        if (typeof v === "string") return v;
+      }catch(_){}
+      return "—";
+    }
+
+    async function loadPage(reset=false){
+      let qRef = query(collection(db,"users"), orderBy("createdAt","desc"));
+      if (reset) { page = 0; cursors = []; }
+      if (page > 0 && cursors[page-1]) qRef = query(qRef, startAfter(cursors[page-1]));
+      qRef = query(qRef, limit(PAGE_SIZE));
+
+      const snap = await getDocs(qRef);
+      const last = snap.docs[snap.docs.length-1] || null;
+      cursors[page] = last;
+
+      const term = fSearch.value.trim().toLowerCase();
+      const roleVal = fRole.value.trim().toLowerCase();
+
+      let rows = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+
+      if (roleVal) rows = rows.filter(r => safe(r.role,"").toLowerCase() === roleVal);
+      if (term) {
+        rows = rows.filter(r=>{
+          const hay = (displayName(r)+" "+displayUsername(r)+" "+displayEmail(r)).toLowerCase();
+          return hay.includes(term);
+        });
+      }
+
+      tbody.innerHTML = rows.map(r => `
+        <tr class="border-t">
+          <td class="px-4 py-3"><span class="table-kbd">${displayUsername(r)}</span></td>
+          <td class="px-4 py-3">${displayName(r)}</td>
+          <td class="px-4 py-3">${displayRole(r)}</td>
+          <td class="px-4 py-3">${displayEmail(r)}</td>
+          <td class="px-4 py-3">${displayStatus(r)}</td>
+          <td class="px-4 py-3">${displayCreated(r)}</td>
+        </tr>
+      `).join("");
+
+      pageInfo.textContent = `صفحة ${page+1}`;
+      btnPrev.disabled = (page === 0);
+      btnNext.disabled = (rows.length < PAGE_SIZE || !last);
+    }
+
+    btnPrev.addEventListener("click", async ()=>{ if(page>0){ page--; await loadPage(false); }});
+    btnNext.addEventListener("click", async ()=>{ page++; await loadPage(false); });
+    btnRef .addEventListener("click", ()=> loadPage(true));
+    let t; fSearch.addEventListener("input", ()=>{ clearTimeout(t); t=setTimeout(()=> loadPage(true), 300); });
+    fRole  .addEventListener("change", ()=> loadPage(true));
+
+    // أول تحميل
+    loadPage(true).catch(err=>{
+      console.error(err);
+      pageMsg.innerHTML = '<span class="text-red-600">تعذّر تحميل قائمة المستخدمين. راجع الصلاحيات أو الفهارس.</span>';
     });
   </script>
 </body>
