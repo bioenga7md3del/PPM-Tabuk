@@ -216,3 +216,48 @@ td, th { vertical-align: middle; }
     border-radius: 16px;
   }
 }
+
+/* ===== Dropdowns in header ===== */
+.topbar { position: relative; overflow: visible; }
+
+#mainNav .dd { position: relative; }
+#mainNav .dd .dd-btn{
+  background: rgba(255,255,255,.15);
+  padding: .35rem .6rem;
+  border-radius: 10px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: .15s;
+}
+#mainNav .dd .dd-btn:hover{ background: rgba(255,255,255,.25); }
+
+/* اللوحة المنسدلة لازم تكون مطلقة ومخفيّة افتراضيًا */
+#mainNav .dd .dd-panel{
+  position: absolute;
+  top: calc(100% + 10px);
+  inset-inline-end: 0;   /* يمين مع RTL */
+  inset-inline-start: auto;
+  width: 280px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: none;
+  z-index: 1000;
+}
+
+/* إظهارها عند الفتح (click أو hover-open) */
+#mainNav .dd.open .dd-panel,
+#mainNav .dd.hover-open .dd-panel{ display: block; }
+
+/* عناصر القائمة */
+#mainNav .dd .dd-item{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border-radius:10px; color:var(--text);
+}
+#mainNav .dd .dd-item:hover{ background:#f1f5f9; }
+#mainNav .dd .dd-item span:first-child{ width:22px; text-align:center; }
+
