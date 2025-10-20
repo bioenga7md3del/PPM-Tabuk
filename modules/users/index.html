@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="../../css/theme-light.css">
   <script src="../../js/theme.js" defer></script>
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
+  <link rel="icon" href="/PPM-Tabuk/assets/favicon.ico"/>
 
   <style>
     #mainNav a.active{
@@ -42,12 +43,12 @@
   <!-- الهيدر الجاهز -->
   <div data-include="../../partials/header.html"></div>
 
-  <!-- العنوان والشريط العلوي -->
+  <!-- العنوان والأزرار -->
   <section class="mx-auto max-w-7xl px-4 pt-6 pb-2">
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-xl font-extrabold tracking-tight">إدارة المستخدمين</h1>
-        <p class="mt-1 text-sm text-slate-500">أضف مستخدمين بنظام <b>Username + Password</b>، والإيميل للإشعارات فقط.</p>
+        <p class="mt-1 text-sm text-slate-500">إضافة مستخدمين بـ <b>Username + Password</b> — الإيميل إشعارات فقط.</p>
       </div>
       <nav class="text-sm text-slate-500">
         <a href="/PPM-Tabuk/index.html" class="hover:underline">الرئيسية</a>
@@ -56,22 +57,15 @@
       </nav>
     </div>
 
-    <!-- الأزرار الرئيسية -->
     <div class="mt-4 flex flex-wrap gap-3">
-      <button id="btnOpenAddUser" class="btn btn-primary">
-        ➕ إضافة مستخدم
-      </button>
-
-      <button id="btnOpenAddOwner" class="btn btn-danger" title="مرّة واحدة فقط عند التهيئة">
-        👑 إضافة مالك النظام (System Owner)
-      </button>
+      <button id="btnOpenAddUser" class="btn btn-primary">➕ إضافة مستخدم</button>
+      <button id="btnOpenAddOwner" class="btn btn-danger" title="مرة واحدة عند التهيئة">👑 إضافة مالك النظام (System Owner)</button>
     </div>
 
-    <!-- رسالة عامة -->
     <div id="pageMsg" class="mt-3 text-sm"></div>
   </section>
 
-  <!-- مكان الجدول والفلاتر (نركّبه لاحقًا) -->
+  <!-- مساحة الجدول لاحقًا -->
   <main class="mx-auto max-w-7xl px-4 py-4 space-y-4">
     <div class="card p-4">
       <div class="flex items-center justify-between">
@@ -79,7 +73,7 @@
         <div class="text-sm text-slate-500">الفلترة والصفحات سيتم تفعيلها لاحقًا.</div>
       </div>
       <div class="mt-3 p-6 border border-dashed border-slate-200 rounded-xl text-center text-slate-500">
-        جاهز لإضافة جدول المستخدمين + الفلاتر + ترقيم الصفحات (20/صفحة). قلّي: <span class="kbd">كمّل الجدول</span>
+        جاهز لإضافة جدول المستخدمين + الفلاتر + ترقيم الصفحات (20/صفحة). اكتب: <span class="kbd">كمّل الجدول</span>
       </div>
     </div>
   </main>
@@ -91,7 +85,7 @@
         <h3 class="text-lg font-bold">إضافة مستخدم</h3>
         <button class="x text-slate-500" data-close="modalUser">✕</button>
       </div>
-      <p class="text-xs muted mb-4">سيتم إنشاء حساب دخول بـ <b>username</b> + <b>password</b> (الإيميل إشعارات فقط).</p>
+      <p class="text-xs muted mb-4">سيتم إنشاء حساب دخول باسم مستخدم وكلمة مرور.</p>
 
       <form id="formUser" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -133,7 +127,7 @@
           <label class="block text-sm mb-1">البريد الإلكتروني (اختياري للإشعارات)</label>
           <input id="u_email" type="email" class="inp" placeholder="example@domain.com">
         </div>
-        <div class="md:col-span-2 flex items-center gap-3">
+        <div class="md:col-span-2 mt-2 flex gap-3">
           <span class="badge badge-green">تفعيل الدخول تلقائي</span>
           <span class="badge">إجبار تغيير كلمة المرور عند أول دخول</span>
         </div>
@@ -195,88 +189,87 @@
 
   <!-- منطق الصفحة -->
   <script type="module">
-    // Firebase الموحد من مشروعك
-    import { auth, db } from "../../js/firebase.js";
+    // استخدم ملف المشروع الرسمي كموديول (مسار مطلق يجنّب مشاكل الريلاتيف على GitHub Pages)
+    import { auth, db } from "/PPM-Tabuk/js/firebase.js";
     import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
     import {
-      collection, getDocs, getDoc, setDoc, deleteDoc, doc, serverTimestamp, query, limit
+      collection, getDocs, getDoc, setDoc, deleteDoc, doc, serverTimestamp, query, where, limit
     } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js";
 
-    // ===== Helpers =====
-    const $ = (id) => document.getElementById(id);
-    const pageMsg = $("pageMsg");
+    // تشخيص مبكر
+    const pageMsg = document.getElementById("pageMsg");
+    if (!auth || !db) {
+      pageMsg.innerHTML = '<span class="text-red-600">⚠️ لم يتم تحميل Firebase بشكل صحيح. تأكد أن الملف <b>/PPM-Tabuk/js/firebase.js</b> يُصدّر <b>auth</b> و <b>db</b>، وأن المسار صحيح.</span>';
+      console.error("Firebase module not loaded properly", { auth, db });
+    }
 
-    const rxUser = /^[a-z0-9_-]{4,24}$/; // username policy
+    // Helpers
+    const $ = (id) => document.getElementById(id);
+    const rxUser = /^[a-z0-9_-]{4,24}$/;
     const normalize = (u) => (u || "").trim().toLowerCase();
     const authEmail = (u) => `${normalize(u)}@ppm.local`;
-
     const show = (id) => $(id).classList.add("show");
     const hide = (id) => $(id).classList.remove("show");
     document.querySelectorAll("[data-close]").forEach(btn=>{
       btn.addEventListener("click", ()=> hide(btn.dataset.close));
     });
 
-    // ===== UI Buttons =====
-    $("btnOpenAddUser").addEventListener("click", ()=> show("modalUser"));
-    $("btnOpenAddOwner").addEventListener("click", ()=> show("modalOwner"));
-
-    // إخفاء زر إضافة المالك إذا كان موجودًا بالفعل
+    // إظهار/إخفاء زر المالك
     async function toggleOwnerButton(){
-      const snap = await getDocs(query(collection(db, "users"), limit(1)));
-      // فحص أدق: هل يوجد SystemOwner تحديدًا؟
-      let hasOwner = false;
-      const all = await getDocs(collection(db,"users"));
-      all.forEach(d => { if ((d.data().role || "") === "SystemOwner") hasOwner = true; });
-      if(hasOwner) $("btnOpenAddOwner").style.display = "none";
+      try{
+        const snap = await getDocs(query(collection(db, "users"), where("role", "==", "SystemOwner"), limit(1)));
+        if (snap.size > 0) document.getElementById("btnOpenAddOwner").style.display = "none";
+      }catch(err){
+        console.error(err);
+        pageMsg.innerHTML = '<span class="text-red-600">تعذر فحص وجود مالك للنظام. تحقق من صلاحيات Firestore.</span>';
+      }
     }
-    toggleOwnerButton().catch(console.error);
+    toggleOwnerButton();
 
-    // ===== Firestore Utils =====
+    // فتح المودالات
+    document.getElementById("btnOpenAddUser").addEventListener("click", ()=> show("modalUser"));
+    document.getElementById("btnOpenAddOwner").addEventListener("click", ()=> show("modalOwner"));
+
+    // Firestore utils
     async function isUsernameFree(username){
       const id = normalize(username);
       const d = await getDoc(doc(db,"usernames", id));
       return !d.exists();
     }
-
     async function reserveUsername(username, payload){
       const id = normalize(username);
       await setDoc(doc(db,"usernames", id), payload, { merge: false });
     }
-
     async function createUserDocument(uid, payload){
       await setDoc(doc(db,"users", uid), payload, { merge: false });
     }
 
-    // ===== Forms: Add User =====
-    $("formUser").addEventListener("submit", async (e)=>{
+    // Submit: إضافة مستخدم
+    document.getElementById("formUser").addEventListener("submit", async (e)=>{
       e.preventDefault();
-      const msg = $("u_msg");
+      const msg = document.getElementById("u_msg");
       msg.textContent = "";
 
-      const username = normalize($("u_username").value);
-      const role = $("u_role").value;
-      const email = $("u_email").value || null;
-      const pwd = $("u_password").value;
-      const pwd2 = $("u_password2").value;
-      const nameAr = $("u_nameAr").value || "";
-      const nameEn = $("u_nameEn").value || "";
+      const username = normalize(document.getElementById("u_username").value);
+      const role = document.getElementById("u_role").value;
+      const email = document.getElementById("u_email").value || null;
+      const pwd = document.getElementById("u_password").value;
+      const pwd2 = document.getElementById("u_password2").value;
+      const nameAr = document.getElementById("u_nameAr").value || "";
+      const nameEn = document.getElementById("u_nameEn").value || "";
 
-      if(!rxUser.test(username)){ msg.textContent = "اسم المستخدم غير صالح."; return; }
-      if(!role){ msg.textContent = "اختر الدور."; return; }
-      if(pwd !== pwd2){ msg.textContent = "كلمتا المرور غير متطابقتين."; return; }
+      if(!rxUser.test(username)) { msg.textContent = "اسم المستخدم غير صالح."; return; }
+      if(!role) { msg.textContent = "اختر الدور."; return; }
+      if(pwd !== pwd2) { msg.textContent = "كلمتا المرور غير متطابقتين."; return; }
 
-      // تأكد من تفرد اليوزرنيم
-      if(!(await isUsernameFree(username))){ msg.textContent = "اسم المستخدم محجوز مسبقًا."; return; }
+      if(!(await isUsernameFree(username))) { msg.textContent = "اسم المستخدم محجوز."; return; }
 
       try{
-        // أنشئ حساب الدخول ببريد صناعي
         const cred = await createUserWithEmailAndPassword(auth, authEmail(username), pwd);
         const uid = cred.user.uid;
 
-        // احجز اسم المستخدم
         await reserveUsername(username, { uid, userId: uid, createdAt: serverTimestamp() });
 
-        // وثيقة اليوزر
         const payload = {
           username, normalizedUsername: username, email,
           role, siteScope: [], deptScope: [],
@@ -289,8 +282,8 @@
           nameAr, nameEn, avatarUrl: null, locale: "ar", theme: "light",
           createdAt: serverTimestamp(), updatedAt: serverTimestamp(), notes: ""
         };
-
         await createUserDocument(uid, payload);
+
         msg.textContent = "تم حفظ المستخدم بنجاح ✅";
         setTimeout(()=> hide("modalUser"), 600);
       }catch(err){
@@ -299,30 +292,33 @@
       }
     });
 
-    // ===== Forms: Add System Owner =====
-    $("formOwner").addEventListener("submit", async (e)=>{
+    // Submit: إضافة System Owner
+    document.getElementById("formOwner").addEventListener("submit", async (e)=>{
       e.preventDefault();
-      const msg = $("o_msg");
+      const msg = document.getElementById("o_msg");
       msg.textContent = "";
 
-      const username = normalize($("o_username").value);
-      const email = $("o_email").value || null;
-      const pwd = $("o_password").value;
-      const pwd2 = $("o_password2").value;
-      const nameAr = $("o_nameAr").value || "";
-      const nameEn = $("o_nameEn").value || "";
+      const username = normalize(document.getElementById("o_username").value);
+      const email = document.getElementById("o_email").value || null;
+      const pwd = document.getElementById("o_password").value;
+      const pwd2 = document.getElementById("o_password2").value;
+      const nameAr = document.getElementById("o_nameAr").value || "";
+      const nameEn = document.getElementById("o_nameEn").value || "";
 
-      if(!rxUser.test(username)){ msg.textContent = "اسم المستخدم غير صالح."; return; }
-      if(pwd !== pwd2){ msg.textContent = "كلمتا المرور غير متطابقتين."; return; }
+      if(!rxUser.test(username)) { msg.textContent = "اسم المستخدم غير صالح."; return; }
+      if(pwd !== pwd2) { msg.textContent = "كلمتا المرور غير متطابقتين."; return; }
 
-      // تأكد ما فيش مالك أصلاً
-      const all = await getDocs(collection(db,"users"));
-      let hasOwner = false;
-      all.forEach(d => { if ((d.data().role || "") === "SystemOwner") hasOwner = true; });
-      if(hasOwner){ msg.textContent = "يوجد بالفعل مالك للنظام. هذا الزر للتـهيئة فقط."; return; }
+      // تأكد ما فيش مالك
+      try{
+        const snap = await getDocs(query(collection(db, "users"), where("role", "==", "SystemOwner"), limit(1)));
+        if (snap.size > 0) { msg.textContent = "يوجد بالفعل مالك للنظام."; return; }
+      }catch(err){
+        console.error(err);
+        msg.textContent = "خطأ أثناء التحقق من المالك: " + (err?.message || err);
+        return;
+      }
 
-      // تأكد من تفرد اليوزرنيم
-      if(!(await isUsernameFree(username))){ msg.textContent = "اسم المستخدم محجوز مسبقًا."; return; }
+      if(!(await isUsernameFree(username))) { msg.textContent = "اسم المستخدم محجوز."; return; }
 
       try{
         const cred = await createUserWithEmailAndPassword(auth, authEmail(username), pwd);
@@ -343,11 +339,10 @@
           createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
           notes: "Bootstrap SystemOwner"
         };
-
         await createUserDocument(uid, payload);
+
         msg.textContent = "تم إنشاء مالك النظام بنجاح ✅";
-        // أخفِ الزر بعد الإنشاء
-        $("btnOpenAddOwner").style.display = "none";
+        document.getElementById("btnOpenAddOwner").style.display = "none";
         setTimeout(()=> hide("modalOwner"), 600);
       }catch(err){
         console.error(err);
