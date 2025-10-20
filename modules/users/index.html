@@ -2,34 +2,335 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>PPM TABUK • المستخدمون</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>PPM TABUK • تهيئة المستخدمين</title>
+
+  <!-- Tailwind + Theme -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="../css/theme-light.css">
+  <link rel="stylesheet" href="../../css/theme-light.css">
+  <script src="../../js/theme.js" defer></script>
+  <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
+
+  <style>
+    /* تمييز اللينك النشط في الهيدر الجاهز */
+    #mainNav a.active{
+      position:relative;font-weight:900;letter-spacing:.3px;
+      background:linear-gradient(90deg,#60a5fa,#3b82f6,#60a5fa);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      animation:shimmer 3s linear infinite;
+    }
+    @keyframes shimmer{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.06)}
+    .muted{color:#64748b}
+    .inp{border:1px solid #e5e7eb;border-radius:12px;padding:.7rem .9rem;width:100%}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:12px;padding:.7rem 1rem;font-weight:700}
+    .btn-primary{background:#2563eb;color:white}
+    .btn-danger{background:#ef4444;color:white}
+    .btn-soft{background:#f1f5f9}
+    .badge{display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .6rem;border-radius:999px;font-size:.75rem}
+    .badge-green{background:rgba(16,185,129,.12);color:#047857}
+    .badge-red{background:rgba(239,68,68,.12);color:#b91c1c}
+    .kbd{border:1px solid #e5e7eb;border-bottom-width:2px;border-radius:8px;padding:.05rem .45rem;background:#f8fafc}
+  </style>
 </head>
-<body>
-  <header class="max-w-7xl mx-auto px-3 md:px-6 mt-3">
-  <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <button class="icon-btn" title="القائمة">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M4 6h16M4 12h16M4 18h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
+<body class="bg-slate-50 text-slate-800">
+  <!-- الهيدر الجاهز -->
+  <div data-include="../../partials/header.html"></div>
+
+  <!-- عنوان الصفحة داخل الكونتينر القياسي -->
+  <section class="mx-auto max-w-7xl px-4 py-6">
+    <div class="flex items-center justify-between">
+      <h1 class="text-xl font-extrabold tracking-tight">تهيئة المستخدمين (Users)</h1>
+      <nav class="text-sm text-slate-500">
+        <a href="/PPM-Tabuk/index.html" class="hover:underline">الرئيسية</a>
+        <span class="mx-2">/</span>
+        <span class="font-semibold text-slate-700">Users</span>
+      </nav>
     </div>
-    <nav class="flex items-center gap-3 text-white/90">
-      <a href="../dashboard/index.html">Dashboard</a>
-      <a href="../assets/index.html">الأجهزة</a>
-      <a href="../preventive/index.html">الصيانة الوقائية</a>
-      <a href="../corrective/index.html">الصيانة التصحيحية</a>
-      <a href="../sites/index.html">المواقع</a>
-      <a href="../users/index.html" id="navAdmin">المستخدمون</a>
-    </nav>
-    <div class="avatar">👤</div>
-  </div>
-</header>
-  <main class="max-w-7xl mx-auto p-3 md:p-6 space-y-6">
-<section class='card p-6'>نسخة المستخدمين.</section>
+    <p class="mt-1 text-sm text-slate-500">ابدأ بمسح البيانات القديمة (إن وجدت) ثم أنشئ أول مستخدم <b>System Owner</b>.</p>
+  </section>
+
+  <main class="mx-auto max-w-7xl px-4 py-2 space-y-6"> class="mx-auto max-w-5xl px-4 py-6 space-y-6">
+    <!-- تنبيه -->
+    <div class="card p-4">
+      <div class="flex items-start gap-3">
+        <div class="badge badge-red">تحذير</div>
+        <p class="text-sm leading-6">الزر التالي <b>يمسح كل وثائق</b> مجموعة <span class="font-mono">users</span> وأيضًا حجوزات أسماء المستخدمين في مجموعة <span class="font-mono">usernames</span>. استخدمه مرة واحدة فقط عند التهيئة.</p>
+      </div>
+      <div class="mt-3 flex gap-3">
+        <button id="btnWipe" class="btn btn-danger">مسح جميع المستخدمين الحاليين</button>
+        <span class="text-sm muted">ستظهر نافذة تأكيد قبل التنفيذ.</span>
+      </div>
+    </div>
+
+    <!-- فورم إنشاء System Owner -->
+    <div class="card p-5">
+      <h2 class="text-lg font-bold mb-4">إنشاء أول مستخدم (System Owner)</h2>
+      <form id="ownerForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm mb-1">اسم المستخدم (Username) <span class="text-red-600">*</span></label>
+          <input id="username" class="inp" placeholder="مثال: a.ahmed" required>
+          <p class="text-xs muted mt-1">يُسجّل الدخول باسم المستخدم فقط. البريد للإشعارات لاحقًا.</p>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">البريد الإلكتروني (اختياري للإشعارات)</label>
+          <input id="email" type="email" class="inp" placeholder="example@domain.com">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">كلمة المرور <span class="text-red-600">*</span></label>
+          <input id="password" type="password" class="inp" placeholder="••••••••" required>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">تأكيد كلمة المرور <span class="text-red-600">*</span></label>
+          <input id="password2" type="password" class="inp" placeholder="••••••••" required>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">الاسم (عربي)</label>
+          <input id="nameAr" class="inp" placeholder="الاسم بالعربية">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Name (English)</label>
+          <input id="nameEn" class="inp" placeholder="Full Name (EN)">
+        </div>
+        <div class="md:col-span-2 flex items-center gap-3 mt-2">
+          <span class="badge badge-green">الدور تلقائيًا: SystemOwner</span>
+          <span class="badge">نطاق الرؤية: كافة المواقع</span>
+        </div>
+        <div class="md:col-span-2 mt-2 flex gap-3">
+          <button class="btn btn-primary" id="btnCreateOwner" type="submit">إنشاء System Owner</button>
+          <button class="btn btn-soft" id="btnSignOut" type="button">تسجيل خروج بعد الإنشاء</button>
+        </div>
+        <div class="md:col-span-2">
+          <div id="msg" class="text-sm"></div>
+        </div>
+      </form>
+    </div>
+
+    <details class="card p-5">
+      <summary class="cursor-pointer font-bold">إعداد Firebase (ضع القيم لديك)</summary>
+<pre class="text-xs bg-slate-100 p-3 rounded-lg overflow-auto"><code>// 1) ضع إعدادات مشروعك هنا
+const firebaseConfig = {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
+};
+
+// 2) سياسة أسماء المستخدمين
+// نستخدم بريد صناعي لتوثيق Firebase: username@ppm.local
+// الدخول في الواجهة = Username + Password فقط.
+</code></pre>
+    </details>
+
+    <details class="card p-5">
+      <summary class="cursor-pointer font-bold">قواعد Firestore (المُعتمدة لنطاق Users)</summary>
+<pre class="text-xs bg-slate-100 p-3 rounded-lg overflow-auto"><code>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() { return request.auth != null; }
+    function userDoc() { return isSignedIn() ? get(/databases/$(database)/documents/users/$(request.auth.uid)) : null; }
+    function role() { return userDoc() == null ? '' : (userDoc().data.role); }
+    function isRole(r) { return role() == r; }
+    function roleIn(arr) { return arr.hasAny([role()]); }
+
+    // USERS collection
+    match /users/{uid} {
+      allow read: if isSignedIn() && (
+        isRole('SystemOwner') ||
+        isRole('SystemMonitor') ||
+        isRole('MaintenanceDeptSupervisor') ||
+        isRole('Admin') ||
+        isRole('Supervisor') ||
+        // نفس الشخص يشوف/يقرأ بياناته
+        (request.auth.uid == uid)
+      );
+
+      // إنشاء: SystemOwner/Admin/Supervisor/DepartmentHead (ضمن نطاقهم)
+      allow create: if isSignedIn() && (
+        isRole('SystemOwner') || isRole('Admin') || isRole('Supervisor') || isRole('DepartmentHead')
+      );
+
+      // تحديث
+      allow update: if isSignedIn() && (
+        // SystemOwner مطلق
+        isRole('SystemOwner') ||
+        // Admin داخل نطاق موقعه (التحقق التفصيلي يتم في الكلاود فنكشن/السيرفر)
+        isRole('Admin') ||
+        // Supervisor بدون حذف/تغيير أدوار حساسة: يسمح بتعديل حقول غير حساسة فقط
+        (isRole('Supervisor') && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'nameAr','nameEn','email','phone','siteScope','deptScope','isActive','locale','theme','avatarUrl','notes'
+        ])) ||
+        // المستخدم يعدّل بروفايله الشخصي على حقول آمنة فقط
   </main>
+
+  <!-- Firebase + منطق الصفحة -->
+  <script type="module">
+    // استيراد Firebase SDK v10 (modular)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
+    import { getFirestore, collection, getDocs, deleteDoc, doc, setDoc, serverTimestamp, query, limit, where } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js";
+
+    // TODO: ضع إعدادات مشروعك هنا
+    const firebaseConfig = {
+      apiKey: "",
+      authDomain: "",
+      projectId: "",
+      storageBucket: "",
+      messagingSenderId: "",
+      appId: ""
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const el = (id) => document.getElementById(id);
+    const msg = el('msg');
+
+    function normalizeUsername(u){
+      return (u || '').trim().toLowerCase();
+    }
+
+    function synthEmailFromUsername(u){
+      return `${normalizeUsername(u)}@ppm.local`;
+    }
+
+    async function wipeUsers(){
+      const sure = confirm('سيتم حذف كل وثائق users و usernames. هل أنت متأكد؟');
+      if(!sure) return;
+      msg.textContent = 'جارِ المسح...';
+
+      const colUsers = collection(db, 'users');
+      const snapUsers = await getDocs(colUsers);
+      let n1 = 0;
+      for(const d of snapUsers.docs){
+        await deleteDoc(doc(db, 'users', d.id));
+        n1++;
+      }
+
+      const colUN = collection(db, 'usernames');
+      const snapUN = await getDocs(colUN);
+      let n2 = 0;
+      for(const d of snapUN.docs){
+        await deleteDoc(doc(db, 'usernames', d.id));
+        n2++;
+      }
+
+      msg.textContent = `تم المسح: users=${n1}, usernames=${n2}. يمكنك الآن إنشاء System Owner.`;
+    }
+
+    async function createSystemOwner(ev){
+      ev.preventDefault();
+
+      // تحقق لا يوجد مستخدمين موجودين
+      const qUsers = query(collection(db,'users'), limit(1));
+      const existing = await getDocs(qUsers);
+      if(existing.size > 0){
+        if(!confirm('يوجد مستخدمون بالفعل. هل تود المتابعة وإنشاء System Owner آخر؟')) return;
+      }
+
+      const username = el('username').value;
+      const email = el('email').value || null;
+      const password = el('password').value;
+      const password2 = el('password2').value;
+      const nameAr = el('nameAr').value || '';
+      const nameEn = el('nameEn').value || '';
+
+      if(password !== password2){
+        msg.textContent = 'كلمتا المرور غير متطابقتين';
+        return;
+      }
+
+      const normalized = normalizeUsername(username);
+      if(!/^[a-z0-9_-]{4,24}$/.test(normalized)){
+        msg.textContent = 'اسم المستخدم يجب أن يكون 4-24 حروف/أرقام/شرطة أو شرطة سفلية (إنجليزي فقط).';
+        return;
+      }
+
+      // حجز اسم المستخدم في usernames
+      const unameDocRef = doc(db, 'usernames', normalized);
+      // نحاول كتابة doc الحجز أولًا
+      try{
+        await setDoc(unameDocRef, {
+          reservedAt: serverTimestamp(),
+          by: 'bootstrap',
+        }, { merge: true });
+      }catch(e){
+        msg.textContent = 'اسم المستخدم محجوز مسبقًا.';
+        return;
+      }
+
+      msg.textContent = 'جاري إنشاء حساب الدخول...';
+
+      // ننشئ حساب Firebase Auth ببريد صناعي
+      const authEmail = synthEmailFromUsername(normalized);
+      let cred;
+      try{
+        cred = await createUserWithEmailAndPassword(auth, authEmail, password);
+      }catch(e){
+        msg.textContent = 'فشل إنشاء حساب الدخول: ' + (e?.message || e);
+        return;
+      }
+
+      const uid = cred.user.uid;
+      const userId = uid; // نستخدم uid كمفتاح لوثيقة users لسهولة الربط
+
+      const userDoc = {
+        username: normalized,
+        normalizedUsername: normalized,
+        email: email,
+        role: 'SystemOwner',
+        siteScope: ['*'],
+        deptScope: ['*'],
+        isActive: true,
+        account: {
+          linked: true,
+          status: 'active',
+          provider: 'firebase',
+          uid: uid,
+          lastLoginAt: null,
+          forcePwdChange: true,
+          lastPwdChangeAt: serverTimestamp(),
+          passwordSetByAdmin: true
+        },
+        nameAr: nameAr,
+        nameEn: nameEn,
+        avatarUrl: null,
+        locale: 'ar',
+        theme: 'light',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        notes: 'Bootstrap SystemOwner'
+      };
+
+      try{
+        await setDoc(doc(db,'users', userId), userDoc);
+        await setDoc(doc(db,'usernames', normalized), {
+          uid: uid,
+          userId: userId,
+          createdAt: serverTimestamp()
+        }, { merge: true });
+      }catch(e){
+        msg.textContent = 'تم إنشاء حساب الدخول لكن فشل حفظ وثيقة المستخدم: ' + (e?.message || e);
+        return;
+      }
+
+      msg.innerHTML = 'تم إنشاء <b>System Owner</b> بنجاح ✅ — بإمكانك استخدام اسم المستخدم <span class="kbd">' + normalized + '</span> للدخول.';
+    }
+
+    async function doSignOut(){
+      try{ await signOut(auth); msg.textContent = 'تم تسجيل الخروج.'; }
+      catch(e){ msg.textContent = 'تعذر تسجيل الخروج: ' + (e?.message || e); }
+    }
+
+    // Hooks
+    document.getElementById('btnWipe').addEventListener('click', wipeUsers);
+    document.getElementById('ownerForm').addEventListener('submit', createSystemOwner);
+    document.getElementById('btnSignOut').addEventListener('click', doSignOut);
+  </script>
 </body>
 </html>
