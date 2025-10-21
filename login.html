@@ -11,166 +11,169 @@
   <!-- خط عربي واضح -->
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 
-  <!-- فافيكون (اختياري) -->
-  <link rel="icon" href="/PPM-Tabuk/assets/favicon.ico"/>
+  <!-- فافيكون (نسبي) -->
+  <link rel="icon" href="assets/favicon.ico"/>
 
   <style>
     :root{
-      --tabuk-blue:#38bdf8;
-      --tabuk-dblue:#0ea5e9;
-      --glass-bg:rgba(15, 23, 42, .76);
-      --glass-brd:rgba(148,163,184,.28);
+      --ink:#0f172a;            /* نص داكن */
+      --muted:#475569;          /* نص ثانوي */
+      --panel:#ffffff;          /* بانلز فاتحة */
+      --line:#e2e8f0;           /* حدود خفيفة */
+      --bglight:#f5f9ff;        /* خلفية فاتحة */
+      --grad1:#eaf2ff;          /* جراديانت خلفية */
+      --grad2:#f8fbff;
+      --blueA:#3b82f6;          /* أزرق رئيسي */
+      --blueB:#22d3ee;          /* سماوي للتدرّج */
     }
     html,body{height:100%}
     body{
-      font-family:"Tajawal",ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
-      color:#e5e7eb; background:#0b1220; overflow-x:hidden;
+      font-family:"Tajawal", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color:var(--ink);
+      background: radial-gradient(1200px 700px at 10% -10%, rgba(59,130,246,.10), transparent 60%),
+                  radial-gradient(900px 600px at 110% 120%, rgba(34,211,238,.10), transparent 60%),
+                  linear-gradient(180deg, var(--grad1), var(--grad2));
+      overflow-x:hidden;
     }
 
-    /* 🎯 ووترمارك شعار التجمّع */
-    .wm-logo{
-      position:fixed; inset:0; z-index:-1; pointer-events:none;
-      background:
-        radial-gradient(900px 600px at 120% -10%, rgba(56,189,248,.10), transparent 60%),
-        radial-gradient(700px 480px at -10% 120%, rgba(14,165,233,.08), transparent 55%),
-        linear-gradient(180deg, #0b1220 0%, #0e1626 65%, #0b1220 100%);
+    /* ووترمارك ناعمة جدًا على يمين الفورم */
+    .wm{
+      position:fixed; inset:0; pointer-events:none; z-index:-1;
     }
-    .wm-logo::after{
-      content:"";
-      position:absolute; inset:auto 2vw 2vw auto; /* أسفل يمين */
-      width:min(80vmin, 820px); height:min(80vmin, 820px);
-      background:url("/PPM-Tabuk/assets/TabukCluster.jpeg") center/contain no-repeat;
-      opacity:.06; filter:grayscale(100%) contrast(110%);
+    .wm::after{
+      content:""; position:absolute; right:5vw; top:20vh;
+      width:min(60vmin,620px); height:min(60vmin,620px);
+      background:url("assets/TabukCluster.jpeg") center/contain no-repeat;
+      opacity:.04; filter:grayscale(100%) contrast(110%);
     }
 
-    /* بطل الصفحة يمين */
-    .hero{
-      background:linear-gradient(180deg, rgba(30,58,138,.22), rgba(2,6,23,0) 40%);
+    /* كارد زجاجي خفييف – فاتح */
+    .card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:0 18px 40px rgba(15,23,42,.08);
     }
 
-    /* زجاجي أنيق للفورم */
-    .glass{
-      background:var(--glass-bg);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      border:1px solid var(--glass-brd);
-      border-radius:22px;
-      box-shadow:0 18px 48px rgba(2,6,23,.35);
-    }
     .inp{
-      border:1px solid #1f2937; background:#0b1220;
-      border-radius:14px; padding:1rem 1rem; width:100%;
-      font-size:16px; color:#e5e7eb;
+      width:100%; padding:14px 16px; border-radius:14px;
+      background:#fff; border:1px solid var(--line); color:var(--ink);
     }
     .inp::placeholder{color:#94a3b8}
-    .inp:focus{outline:none; border-color:#38bdf8; box-shadow:0 0 0 4px rgba(56,189,248,.15)}
+    .inp:focus{outline:none; border-color:#bfdbfe; box-shadow:0 0 0 4px rgba(59,130,246,.16)}
+
     .btn{display:inline-flex; align-items:center; justify-content:center; gap:.6rem; border-radius:14px;
-         padding:1rem 1.2rem; font-weight:800}
-    .btn-primary{background:linear-gradient(90deg, var(--tabuk-dblue), var(--tabuk-blue)); color:#001018}
+         padding:14px 18px; font-weight:800}
+    .btn-primary{background:linear-gradient(90deg, var(--blueA), var(--blueB)); color:#001018}
     .btn-primary:hover{filter:brightness(.98)}
-    .muted{color:#94a3b8}
-    .badge{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .7rem;border-radius:999px;font-size:.78rem}
-    .badge-ok{background:rgba(16,185,129,.18);color:#22c55e}
-    .badge-warn{background:rgba(250,204,21,.18);color:#facc15}
-    .logo-ring{box-shadow:0 12px 28px rgba(2,6,23,.55); border:4px solid rgba(255,255,255,.06)}
-    .card{
-      border-radius: 22px;
-      box-shadow: 0 22px 60px rgba(0,0,0,.45);
-      border:1px solid rgba(148,163,184,.18);
-      background: linear-gradient(180deg, rgba(15,23,42,.85), rgba(15,23,42,.92));
+    .muted{color:var(--muted)}
+
+    /* شارة الحالة */
+    .badge{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .7rem;border-radius:999px;font-size:.78rem}
+    .ok{background:rgba(16,185,129,.12); color:#047857; border:1px solid #bbf7d0}
+    .warn{background:rgba(234,179,8,.12);  color:#92400e; border:1px solid #fde68a}
+
+    /* عناصر الهيرو */
+    .logo-frame{
+      width:92px;height:92px;border-radius:22px;
+      background:#ffffff; border:1px solid var(--line); display:grid; place-items:center;
+      box-shadow:0 14px 36px rgba(15,23,42,.12);
     }
+    .feat{display:flex; align-items:center; gap:.6rem}
+    .tick{width:18px;height:18px;border-radius:999px;background:#10b981; color:#fff; display:grid; place-items:center; font-size:12px}
   </style>
 </head>
 <body>
 
-  <!-- خلفية الشعار -->
-  <div class="wm-logo" aria-hidden="true"></div>
+  <!-- ووترمارك -->
+  <div class="wm" aria-hidden="true"></div>
 
   <main class="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-    <!-- يمين: هوية وبانر -->
-    <section class="hero relative overflow-hidden order-2 lg:order-2 px-8 lg:px-14 py-10 flex items-center">
-      <div class="max-w-2xl ms-auto">
+    <!-- يسار: Hero فاتح ومحترف -->
+    <section class="order-2 lg:order-1 px-8 lg:px-14 py-12 flex items-center">
+      <div class="max-w-2xl">
         <div class="flex items-center gap-5">
-          <img
-            src="/PPM-Tabuk/assets/TabukCluster.jpeg"
-            alt="Tabuk Cluster"
-            class="bg-white/5 rounded-[28px] logo-ring object-contain
-                   w-28 h-28 md:w-32 md:h-32 lg:w-40 lg:h-40 xl:w-44 xl:h-44
-                   p-2 md:p-3 lg:p-4"
-          />
+          <div class="logo-frame">
+            <img src="assets/TabukCluster.jpeg" alt="Tabuk Cluster" style="width:72px;height:72px;object-fit:contain"/>
+          </div>
           <div>
-            <h1 class="text-3xl font-black leading-tight">PPM TABUK Cluster</h1>
-            <p class="text-sm text-white/80 -mt-1">Medical Maintenance Platform</p>
+            <h1 class="text-3xl font-extrabold tracking-tight">PPM TABUK Cluster</h1>
+            <p class="text-sm muted -mt-1">Medical Maintenance Platform</p>
           </div>
         </div>
 
-        <h2 class="mt-10 text-4xl xl:text-5xl font-black leading-[1.15]">
+        <h2 class="mt-8 text-4xl xl:text-5xl font-black leading-[1.15] text-slate-800">
           Securely manage your assets<br>
-          with <span class="underline decoration-white/30">PPM TABUK</span>
+          with <span class="underline decoration-slate-300">PPM TABUK</span>
         </h2>
 
-        <div class="mt-8 glass p-5 max-w-xl text-slate-200">
-          <p class="text-lg font-extrabold">Biomedical Department</p>
-          <p class="text-lg font-extrabold -mt-1">Tabuk Cluster</p>
-          <p class="mt-2 text-sm text-slate-300">Use your <b>Username + Password</b> to sign in. Email is for notifications only.</p>
-          <div class="mt-3 flex items-center gap-2 text-sm text-slate-300/90">
-            <span>• Fast</span><span>• Secure</span><span>• Role-based access</span>
+        <!-- كارد تعريفي خفيف + مزايا -->
+        <div class="mt-8 grid gap-4">
+          <div class="card p-5">
+            <p class="text-lg font-extrabold text-slate-800">Biomedical Department</p>
+            <p class="text-lg font-extrabold -mt-1 text-slate-800">Tabuk Cluster</p>
+            <p class="mt-2 text-sm muted">Use your <b>Username + Password</b> to sign in. Email is for notifications only.</p>
+            <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+              <div class="feat"><span class="tick">✓</span><span>Role-based access</span></div>
+              <div class="feat"><span class="tick">✓</span><span>Secure</span></div>
+              <div class="feat"><span class="tick">✓</span><span>Fast</span></div>
+            </div>
           </div>
-        </div>
 
-        <div class="absolute bottom-6 left-8 right-8 flex items-center gap-3 text-xs">
-          <span id="connBadge" class="badge badge-warn">⏳ فحص الاتصال...</span>
-          <span id="connInfo" class="text-white/90"></span>
+          <div class="flex items-center gap-3 text-xs">
+            <span id="connBadge" class="badge warn">⏳ فحص الاتصال...</span>
+            <span id="connInfo" class="muted"></span>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- يسار: الفورم -->
-    <section class="order-1 lg:order-1 flex items-center justify-center px-6 lg:px-10 py-10">
+    <!-- يمين: فورم أخف وأوضح -->
+    <section class="order-1 lg:order-2 flex items-center justify-center px-6 lg:px-10 py-12">
       <div class="w-full max-w-md">
         <div class="mb-6 text-center lg:text-right">
-          <h3 class="text-2xl font-black tracking-tight">Welcome to PPM TABUK</h3>
+          <h3 class="text-2xl font-black tracking-tight text-slate-800">Welcome to PPM TABUK</h3>
           <p class="text-sm muted mt-1">سجّل الدخول باستخدام <b>اسم المستخدم + كلمة المرور</b>.</p>
         </div>
 
         <div class="card p-6">
           <form id="loginForm" class="space-y-5">
             <div>
-              <label class="block text-sm mb-1 text-slate-300">اسم المستخدم</label>
+              <label class="block text-sm mb-1 text-slate-700">اسم المستخدم</label>
               <input id="username" class="inp" placeholder="مثال: owner" autocomplete="username" required>
             </div>
             <div>
-              <label class="block text-sm mb-1 text-slate-300">كلمة المرور</label>
+              <label class="block text-sm mb-1 text-slate-700">كلمة المرور</label>
               <div class="relative">
                 <input id="password" type="password" class="inp pe-28" placeholder="••••••••" autocomplete="current-password" required>
                 <button type="button" id="togglePwd"
-                        class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 hover:text-slate-200">إظهار</button>
+                        class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500 hover:text-slate-700">إظهار</button>
               </div>
             </div>
             <div class="flex items-center justify-between">
-              <label class="inline-flex items-center gap-2 text-sm text-slate-300">
+              <label class="inline-flex items-center gap-2 text-sm text-slate-700">
                 <input id="remember" type="checkbox" class="rounded"> تذكّرني
               </label>
-              <a href="#" id="forgot" class="text-sm text-slate-400 hover:underline">نسيت كلمة المرور؟</a>
+              <a href="#" id="forgot" class="text-sm text-slate-500 hover:underline">نسيت كلمة المرور؟</a>
             </div>
 
             <button id="submitBtn" class="btn btn-primary w-full" type="submit">تسجيل الدخول</button>
-            <div id="msg" class="text-sm mt-1"></div>
+            <div id="msg" class="text-sm mt-1 text-red-600"></div>
           </form>
 
           <div id="ownerAlert" class="hidden mt-4">
-            <a href="/PPM-Tabuk/modules/users/bootstrap.html" class="btn w-full" style="background:#111827; color:#e5e7eb">👑 إنشاء مالك النظام</a>
+            <a href="modules/users/bootstrap.html" class="btn w-full" style="background:#eef2f7; color:#0f172a">👑 إنشاء مالك النظام</a>
           </div>
         </div>
 
-        <p class="mt-6 text-center text-xs text-slate-400">© <span id="year"></span> PPM TABUK</p>
+        <p class="mt-6 text-center text-xs text-slate-500">© <span id="year"></span> PPM TABUK</p>
       </div>
     </section>
   </main>
 
-  <!-- منطق الصفحة (كما هو مع تحسينات بسيطة) -->
+  <!-- منطق الصفحة: نفس كودك مع روابط نسبية -->
   <script type="module">
-    import { auth, db } from "/PPM-Tabuk/js/firebase.js";
+    import { auth, db } from "./js/firebase.js";
     import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import { doc, getDoc, collection, getDocs, query, where, limit, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
@@ -180,7 +183,7 @@
     const synthEmail = u=> `${normalize(u)}@ppm.local`;
     $("year").textContent = new Date().getFullYear();
 
-    const DEFAULT_REDIRECT = "/PPM-Tabuk/modules/dashboard/index.html";
+    const DEFAULT_REDIRECT = "modules/dashboard/index.html";
     const ROLE_REDIRECTS = {
       "SystemOwner": DEFAULT_REDIRECT, "Admin": DEFAULT_REDIRECT, "Supervisor": DEFAULT_REDIRECT,
       "DepartmentHead": DEFAULT_REDIRECT, "Technician": DEFAULT_REDIRECT, "Staff": DEFAULT_REDIRECT,
@@ -199,12 +202,12 @@
       info.textContent = `projectId: ${auth?.app?.options?.projectId || "?"}`;
       try{
         await withTimeout(getDocs(query(collection(db,"users"), limit(1))), 4000);
-        badge.textContent="✅ متصل بـ Firebase";
-        badge.classList.remove("badge-warn"); badge.classList.add("badge-ok");
+        badge.textContent="متصل بـ Firebase ✓";
+        badge.classList.remove("warn"); badge.classList.add("ok");
       }catch(e){
         const reason = String(e?.message||"").includes("timeout") ? "انتهت المهلة" : "ممنوع حسب القواعد";
-        badge.textContent=`⚠️ SDK متصل، لكن فشل فحص Firestore (${reason})`;
-        badge.classList.remove("badge-ok"); badge.classList.add("badge-warn");
+        badge.textContent=`SDK متصل، لكن فشل فحص Firestore (${reason})`;
+        badge.classList.remove("ok"); badge.classList.add("warn");
       }
     }
     checkConnection();
@@ -234,8 +237,8 @@
       const password=$("password").value;
       const remember=$("remember").checked;
 
-      if(!rxUser.test(username)){ msg.innerHTML='<span class="text-red-400">اسم المستخدم غير صالح.</span>'; return; }
-      if(!password){ msg.innerHTML='<span class="text-red-400">أدخل كلمة المرور.</span>'; return; }
+      if(!rxUser.test(username)){ msg.textContent='اسم المستخدم غير صالح.'; return; }
+      if(!password){ msg.textContent='أدخل كلمة المرور.'; return; }
       if(remember) localStorage.setItem("ppm:lastUsername", username); else localStorage.removeItem("ppm:lastUsername");
 
       setSubmitting(true);
@@ -246,15 +249,13 @@
         const sref=doc(db,"users",uid);
         const snap=await getDoc(sref);
         if(!snap.exists()){
-          msg.innerHTML='<span class="text-red-400">لا توجد وثيقة مستخدم لهذا الحساب.</span>';
-          await signOut(auth); setSubmitting(false); return;
+          msg.textContent='لا توجد وثيقة مستخدم لهذا الحساب.'; await signOut(auth); setSubmitting(false); return;
         }
         const user=snap.data();
 
         const status=(user.account&&user.account.status)||(user.isActive?"active":"disabled");
         if(status==="disabled" || user.isActive===false){
-          msg.innerHTML='<span class="text-red-400">الحساب معطّل. تواصل مع المسؤول.</span>';
-          await signOut(auth); setSubmitting(false); return;
+          msg.textContent='الحساب معطّل. تواصل مع المسؤول.'; await signOut(auth); setSubmitting(false); return;
         }
 
         if(user.account?.forcePwdChange===true){
@@ -262,9 +263,7 @@
           location.href=DEFAULT_REDIRECT; return;
         }
 
-        try{
-          await updateDoc(sref,{ "account.lastLoginAt": serverTimestamp(), updatedAt: serverTimestamp() });
-        }catch(_){}
+        try{ await updateDoc(sref,{ "account.lastLoginAt": serverTimestamp(), updatedAt: serverTimestamp() }); }catch(_){}
 
         const role=String(user.role||"").trim();
         const next=new URLSearchParams(location.search).get("next");
@@ -276,8 +275,7 @@
         if(code.includes("auth/invalid-credential")||code.includes("auth/wrong-password")) text="اسم المستخدم أو كلمة المرور غير صحيحة.";
         if(code.includes("auth/user-not-found")) text="لا يوجد مستخدم بهذا الاسم.";
         if(code.includes("auth/too-many-requests")) text="محاولات كثيرة. حاول لاحقًا.";
-        document.getElementById('msg').innerHTML='<span class="text-red-400">'+text+'</span>';
-        setSubmitting(false);
+        msg.textContent=text; setSubmitting(false);
       }
     });
 
