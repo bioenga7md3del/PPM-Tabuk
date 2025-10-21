@@ -14,128 +14,104 @@
 
   <style>
     :root{
-      --ink:#0f172a; --ink-2:#1e293b; --muted:#64748b;
-      --line:#e2e8f0; --panel:#ffffff;
-      --grad1:#f7fbff; --grad2:#f0f7ff;
-      --accA:#3b82f6; --accB:#22d3ee;
+      --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --panel:#ffffff;
+      --grad1:#f7fbff; --grad2:#f0f7ff; --accA:#3b82f6; --accB:#22d3ee;
     }
     html,body{height:100%}
     body{
       font-family:"Tajawal",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial;
       color:var(--ink);
-      background:
-        radial-gradient(1200px 700px at 10% -10%, rgba(59,130,246,.10), transparent 60%),
-        radial-gradient(900px 600px at 110% 120%, rgba(34,211,238,.10), transparent 60%),
-        linear-gradient(180deg, var(--grad1), var(--grad2));
+      background:linear-gradient(180deg, var(--grad1), var(--grad2));
       overflow-x:hidden;
     }
 
-    /* 🟦 ووترمارك شعار التجمّع كخلفية */
+    /* 🟦 ووترمارك شعار التجمع يغطّي الصفحة كلها */
     .wm{
       position:fixed; inset:0; z-index:-1; pointer-events:none;
     }
+    .wm::before{
+      /* تدرّج خلفي خفيف لإضاءة الوسط */
+      content:""; position:absolute; inset:0;
+      background:
+        radial-gradient(60vmax 60vmax at 50% 35%, rgba(59,130,246,.10), transparent 65%),
+        radial-gradient(50vmax 50vmax at 80% 75%, rgba(34,211,238,.08), transparent 60%);
+    }
     .wm::after{
-      content:""; position:absolute;
-      right:8vw; top:10vh; width:min(70vmin,820px); height:min(70vmin,820px);
-      background:url("assets/TabukCluster.jpeg") center/contain no-repeat;
-      opacity:.06; filter:grayscale(100%) contrast(110%);
-      /* تلاشي الأطراف */
+      content:""; position:absolute; inset:0;
+      /* شعار كبير جدًا في المنتصف */
+      background:url("assets/TabukCluster.jpeg") center center / min(120vmin, 1200px) no-repeat;
+      opacity:.07; filter:grayscale(100%) contrast(110%);
+      /* تلاشي الحواف */
       -webkit-mask-image: radial-gradient(closest-side, #000 70%, transparent 100%);
       mask-image: radial-gradient(closest-side, #000 70%, transparent 100%);
     }
- /* كارت نظيف احترافي */
+
+    /* كارت اللوج إن */
     .card{
       background:var(--panel);
       border:1px solid var(--line);
-      border-radius:20px;
-      box-shadow:0 24px 60px rgba(15,23,42,.10);
+      border-radius:22px;
+      box-shadow:0 26px 64px rgba(15,23,42,.10);
     }
     .inp{
       width:100%; padding:14px 16px; border-radius:14px;
-      background:#fff; border:1px solid var(--line); color:var(--ink-2);
+      background:#fff; border:1px solid var(--line); color:var(--ink);
       transition:border-color .15s, box-shadow .15s;
     }
     .inp::placeholder{color:#94a3b8}
     .inp:focus{outline:none;border-color:#bfdbfe;box-shadow:0 0 0 4px rgba(59,130,246,.16)}
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:.6rem;border-radius:14px;
          padding:14px 18px;font-weight:800}
-    .btn-primary{background:linear-gradient(90deg, var(--accA), var(--accB));color:#001018}
+    .btn-primary{background:linear-gradient(90deg, var(--accA), var(--accB)); color:#001018}
     .btn-primary:hover{filter:brightness(.98)}
-    .badge{display:inline-flex;align-items:center;gap:.45rem;padding:.35rem .7rem;border-radius:999px;font-size:.78rem}
-    .ok{background:rgba(16,185,129,.12); color:#047857; border:1px solid #bbf7d0}
-    .warn{background:rgba(234,179,8,.12); color:#92400e; border:1px solid #fde68a}
-   
   </style>
 </head>
 <body>
 
-  <!-- خلفية الشعار -->
+  <!-- خلفية الشعار تغطي الصفحة -->
   <div class="wm" aria-hidden="true"></div>
 
-  <main class="min-h-screen grid grid-cols-1 xl:grid-cols-12">
-   
-        <div class="mt-8 card p-5">
-          <p class="text-lg font-extrabold text-slate-800">Biomedical Department</p>
-          <p class="text-lg font-extrabold -mt-1 text-slate-800">Tabuk Cluster</p>
-          <p class="mt-2 text-sm text-slate-600">
-            Use your <b>Username + Password</b> to sign in. Email is for notifications only.
-          </p>
-          <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-slate-700">
-            <div class="flex items-center gap-2"><span class="i">✅</span><span>Role-based access</span></div>
-            <div class="flex items-center gap-2"><span class="i">✅</span><span>Secure</span></div>
-            <div class="flex items-center gap-2"><span class="i">✅</span><span>Fast</span></div>
-          </div>
-        </div>
-
-        <div class="mt-4 flex items-center gap-3 text-xs">
-          <span id="connBadge" class="badge warn">⏳ فحص الاتصال...</span>
-          <span id="connInfo" class="text-slate-600"></span>
-        </div>
-      </div>
-    </section>
-
-    <!-- يمين: كارت الدخول -->
-    <section class="xl:col-span-6 order-1 xl:order-2 px-6 xl:pe-16 py-14 flex items-center justify-center">
-      <div class="w-full max-w-md">
-        <div class="mb-6 text-center xl:text-right">
+  <!-- كارت اللوج إن في المنتصف -->
+  <main class="min-h-screen flex items-center justify-center px-6 py-12">
+    <div class="w-full max-w-md">
+      <div class="card p-6">
+        <div class="mb-6 text-center">
           <h3 class="text-2xl font-black tracking-tight text-slate-800">Welcome to PPM TABUK</h3>
-          <p class="text-sm text-slate-600 mt-1">سجّل الدخول باستخدام <b>اسم المستخدم + كلمة المرور</b>.</p>
+          <p class="text-sm mt-1 text-slate-600">سجّل الدخول باستخدام <b>اسم المستخدم + كلمة المرور</b>.</p>
         </div>
 
-        <div class="card p-6">
-          <form id="loginForm" class="space-y-5" novalidate>
-            <div>
-              <label class="block text-sm mb-1 text-slate-700">اسم المستخدم</label>
-              <input id="username" class="inp" placeholder="مثال: owner" autocomplete="username" required>
-            </div>
-            <div>
-              <label class="block text-sm mb-1 text-slate-700">كلمة المرور</label>
-              <div class="relative">
-                <input id="password" type="password" class="inp pe-28" placeholder="••••••••" autocomplete="current-password" required>
-                <button type="button" id="togglePwd"
-                        class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500 hover:text-slate-700">إظهار</button>
-              </div>
-            </div>
-            <div class="flex items-center justify-between">
-              <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-                <input id="remember" type="checkbox" class="rounded"> تذكّرني
-              </label>
-              <a href="#" id="forgot" class="text-sm text-slate-500 hover:underline">نسيت كلمة المرور؟</a>
-            </div>
-
-            <button id="submitBtn" class="btn btn-primary w-full" type="submit">تسجيل الدخول</button>
-            <div id="msg" class="text-sm mt-1 text-red-600"></div>
-          </form>
-
-          <div id="ownerAlert" class="hidden mt-4">
-            <a href="modules/users/bootstrap.html" class="btn w-full"
-               style="background:#eef2f7;color:#0f172a">👑 إنشاء مالك النظام</a>
+        <form id="loginForm" class="space-y-5" novalidate>
+          <div>
+            <label class="block text-sm mb-1 text-slate-700">اسم المستخدم</label>
+            <input id="username" class="inp" placeholder="مثال: owner" autocomplete="username" required>
           </div>
-        </div>
+          <div>
+            <label class="block text-sm mb-1 text-slate-700">كلمة المرور</label>
+            <div class="relative">
+              <input id="password" type="password" class="inp pe-28" placeholder="••••••••" autocomplete="current-password" required>
+              <button type="button" id="togglePwd"
+                      class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500 hover:text-slate-700">إظهار</button>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input id="remember" type="checkbox" class="rounded"> تذكّرني
+            </label>
+            <a href="#" id="forgot" class="text-sm text-slate-500 hover:underline">نسيت كلمة المرور؟</a>
+          </div>
 
-        <p class="mt-6 text-center text-xs text-slate-500">© <span id="year"></span> PPM TABUK</p>
+          <button id="submitBtn" class="btn btn-primary w-full" type="submit">تسجيل الدخول</button>
+          <div id="msg" class="text-sm mt-1 text-red-600"></div>
+        </form>
+
+        <!-- يظهر فقط لو مفيش SystemOwner -->
+        <div id="ownerAlert" class="hidden mt-4">
+          <a href="modules/users/bootstrap.html" class="btn w-full" style="background:#eef2f7; color:#0f172a">👑 إنشاء مالك النظام</a>
+        </div>
       </div>
-    </section>
+
+      <p class="mt-6 text-center text-xs text-slate-500">© <span id="year"></span> PPM TABUK</p>
+    </div>
   </main>
 
   <!-- منطق الدخول (Firebase) -->
@@ -164,21 +140,6 @@
         p.then(v=>{clearTimeout(t);res(v)}).catch(e=>{clearTimeout(t);rej(e)});
       });
     }
-
-    async function checkConnection(){
-      const badge=$("connBadge"), info=$("connInfo");
-      info.textContent = `projectId: ${auth?.app?.options?.projectId || "?"}`;
-      try{
-        await withTimeout(getDocs(query(collection(db,"users"), limit(1))), 4000);
-        badge.textContent="متصل بـ Firebase ✓";
-        badge.classList.remove("warn"); badge.classList.add("ok");
-      }catch(e){
-        const reason = String(e?.message||"").includes("timeout") ? "انتهت المهلة" : "ممنوع حسب القواعد";
-        badge.textContent=`SDK متصل، لكن فشل فحص Firestore (${reason})`;
-        badge.classList.remove("ok"); badge.classList.add("warn");
-      }
-    }
-    checkConnection();
 
     async function ensureOwnerExists(){
       try{
