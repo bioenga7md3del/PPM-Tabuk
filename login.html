@@ -8,136 +8,109 @@
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- خط عربي واضح -->
+  <!-- خط -->
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
-
-  <!-- فافيكون (نسبي) -->
   <link rel="icon" href="assets/favicon.ico"/>
 
   <style>
     :root{
-      --ink:#0f172a;            /* نص داكن */
-      --muted:#475569;          /* نص ثانوي */
-      --panel:#ffffff;          /* بانلز فاتحة */
-      --line:#e2e8f0;           /* حدود خفيفة */
-      --bglight:#f5f9ff;        /* خلفية فاتحة */
-      --grad1:#eaf2ff;          /* جراديانت خلفية */
-      --grad2:#f8fbff;
-      --blueA:#3b82f6;          /* أزرق رئيسي */
-      --blueB:#22d3ee;          /* سماوي للتدرّج */
+      --ink:#0f172a; --ink-2:#1e293b; --muted:#64748b;
+      --line:#e2e8f0; --panel:#ffffff;
+      --grad1:#f7fbff; --grad2:#f0f7ff;
+      --accA:#3b82f6; --accB:#22d3ee;
     }
     html,body{height:100%}
     body{
-      font-family:"Tajawal", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-family:"Tajawal",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial;
       color:var(--ink);
-      background: radial-gradient(1200px 700px at 10% -10%, rgba(59,130,246,.10), transparent 60%),
-                  radial-gradient(900px 600px at 110% 120%, rgba(34,211,238,.10), transparent 60%),
-                  linear-gradient(180deg, var(--grad1), var(--grad2));
+      background:
+        radial-gradient(1200px 700px at 10% -10%, rgba(59,130,246,.10), transparent 60%),
+        radial-gradient(900px 600px at 110% 120%, rgba(34,211,238,.10), transparent 60%),
+        linear-gradient(180deg, var(--grad1), var(--grad2));
       overflow-x:hidden;
     }
 
-    /* ووترمارك ناعمة جدًا على يمين الفورم */
+    /* 🟦 ووترمارك شعار التجمّع كخلفية */
     .wm{
-      position:fixed; inset:0; pointer-events:none; z-index:-1;
+      position:fixed; inset:0; z-index:-1; pointer-events:none;
     }
     .wm::after{
-      content:""; position:absolute; right:5vw; top:20vh;
-      width:min(60vmin,620px); height:min(60vmin,620px);
+      content:""; position:absolute;
+      right:8vw; top:10vh; width:min(70vmin,820px); height:min(70vmin,820px);
       background:url("assets/TabukCluster.jpeg") center/contain no-repeat;
-      opacity:.04; filter:grayscale(100%) contrast(110%);
+      opacity:.06; filter:grayscale(100%) contrast(110%);
+      /* تلاشي الأطراف */
+      -webkit-mask-image: radial-gradient(closest-side, #000 70%, transparent 100%);
+      mask-image: radial-gradient(closest-side, #000 70%, transparent 100%);
     }
 
-    /* كارد زجاجي خفييف – فاتح */
+    /* كارت نظيف احترافي */
     .card{
       background:var(--panel);
       border:1px solid var(--line);
-      border-radius:18px;
-      box-shadow:0 18px 40px rgba(15,23,42,.08);
+      border-radius:20px;
+      box-shadow:0 24px 60px rgba(15,23,42,.10);
     }
-
     .inp{
       width:100%; padding:14px 16px; border-radius:14px;
-      background:#fff; border:1px solid var(--line); color:var(--ink);
+      background:#fff; border:1px solid var(--line); color:var(--ink-2);
+      transition:border-color .15s, box-shadow .15s;
     }
     .inp::placeholder{color:#94a3b8}
-    .inp:focus{outline:none; border-color:#bfdbfe; box-shadow:0 0 0 4px rgba(59,130,246,.16)}
-
-    .btn{display:inline-flex; align-items:center; justify-content:center; gap:.6rem; border-radius:14px;
-         padding:14px 18px; font-weight:800}
-    .btn-primary{background:linear-gradient(90deg, var(--blueA), var(--blueB)); color:#001018}
+    .inp:focus{outline:none;border-color:#bfdbfe;box-shadow:0 0 0 4px rgba(59,130,246,.16)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.6rem;border-radius:14px;
+         padding:14px 18px;font-weight:800}
+    .btn-primary{background:linear-gradient(90deg, var(--accA), var(--accB));color:#001018}
     .btn-primary:hover{filter:brightness(.98)}
-    .muted{color:var(--muted)}
-
-    /* شارة الحالة */
-    .badge{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .7rem;border-radius:999px;font-size:.78rem}
+    .badge{display:inline-flex;align-items:center;gap:.45rem;padding:.35rem .7rem;border-radius:999px;font-size:.78rem}
     .ok{background:rgba(16,185,129,.12); color:#047857; border:1px solid #bbf7d0}
-    .warn{background:rgba(234,179,8,.12);  color:#92400e; border:1px solid #fde68a}
-
-    /* عناصر الهيرو */
-    .logo-frame{
-      width:92px;height:92px;border-radius:22px;
-      background:#ffffff; border:1px solid var(--line); display:grid; place-items:center;
-      box-shadow:0 14px 36px rgba(15,23,42,.12);
-    }
-    .feat{display:flex; align-items:center; gap:.6rem}
-    .tick{width:18px;height:18px;border-radius:999px;background:#10b981; color:#fff; display:grid; place-items:center; font-size:12px}
+    .warn{background:rgba(234,179,8,.12); color:#92400e; border:1px solid #fde68a}
   </style>
 </head>
 <body>
 
-  <!-- ووترمارك -->
+  <!-- خلفية الشعار -->
   <div class="wm" aria-hidden="true"></div>
 
-  <main class="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-    <!-- يسار: Hero فاتح ومحترف -->
-    <section class="order-2 lg:order-1 px-8 lg:px-14 py-12 flex items-center">
+  <main class="min-h-screen grid grid-cols-1 xl:grid-cols-12">
+    <!-- يسار: هيرو نصّي فقط (بدون لوجو) -->
+    <section class="xl:col-span-6 order-2 xl:order-1 px-8 xl:ps-16 py-14 flex items-center">
       <div class="max-w-2xl">
-        <div class="flex items-center gap-5">
-          <div class="logo-frame">
-            <img src="assets/TabukCluster.jpeg" alt="Tabuk Cluster" style="width:72px;height:72px;object-fit:contain"/>
-          </div>
-          <div>
-            <h1 class="text-3xl font-extrabold tracking-tight">PPM TABUK Cluster</h1>
-            <p class="text-sm muted -mt-1">Medical Maintenance Platform</p>
+        <h1 class="text-5xl xl:text-6xl font-black leading-[1.15] text-slate-800">
+          Securely manage your assets<br>
+          with <span class="underline decoration-slate-300">PPM TABUK</span>
+        </h1>
+
+        <div class="mt-8 card p-5">
+          <p class="text-lg font-extrabold text-slate-800">Biomedical Department</p>
+          <p class="text-lg font-extrabold -mt-1 text-slate-800">Tabuk Cluster</p>
+          <p class="mt-2 text-sm text-slate-600">
+            Use your <b>Username + Password</b> to sign in. Email is for notifications only.
+          </p>
+          <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-slate-700">
+            <div class="flex items-center gap-2"><span class="i">✅</span><span>Role-based access</span></div>
+            <div class="flex items-center gap-2"><span class="i">✅</span><span>Secure</span></div>
+            <div class="flex items-center gap-2"><span class="i">✅</span><span>Fast</span></div>
           </div>
         </div>
 
-        <h2 class="mt-8 text-4xl xl:text-5xl font-black leading-[1.15] text-slate-800">
-          Securely manage your assets<br>
-          with <span class="underline decoration-slate-300">PPM TABUK</span>
-        </h2>
-
-        <!-- كارد تعريفي خفيف + مزايا -->
-        <div class="mt-8 grid gap-4">
-          <div class="card p-5">
-            <p class="text-lg font-extrabold text-slate-800">Biomedical Department</p>
-            <p class="text-lg font-extrabold -mt-1 text-slate-800">Tabuk Cluster</p>
-            <p class="mt-2 text-sm muted">Use your <b>Username + Password</b> to sign in. Email is for notifications only.</p>
-            <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-              <div class="feat"><span class="tick">✓</span><span>Role-based access</span></div>
-              <div class="feat"><span class="tick">✓</span><span>Secure</span></div>
-              <div class="feat"><span class="tick">✓</span><span>Fast</span></div>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-3 text-xs">
-            <span id="connBadge" class="badge warn">⏳ فحص الاتصال...</span>
-            <span id="connInfo" class="muted"></span>
-          </div>
+        <div class="mt-4 flex items-center gap-3 text-xs">
+          <span id="connBadge" class="badge warn">⏳ فحص الاتصال...</span>
+          <span id="connInfo" class="text-slate-600"></span>
         </div>
       </div>
     </section>
 
-    <!-- يمين: فورم أخف وأوضح -->
-    <section class="order-1 lg:order-2 flex items-center justify-center px-6 lg:px-10 py-12">
+    <!-- يمين: كارت الدخول -->
+    <section class="xl:col-span-6 order-1 xl:order-2 px-6 xl:pe-16 py-14 flex items-center justify-center">
       <div class="w-full max-w-md">
-        <div class="mb-6 text-center lg:text-right">
+        <div class="mb-6 text-center xl:text-right">
           <h3 class="text-2xl font-black tracking-tight text-slate-800">Welcome to PPM TABUK</h3>
-          <p class="text-sm muted mt-1">سجّل الدخول باستخدام <b>اسم المستخدم + كلمة المرور</b>.</p>
+          <p class="text-sm text-slate-600 mt-1">سجّل الدخول باستخدام <b>اسم المستخدم + كلمة المرور</b>.</p>
         </div>
 
         <div class="card p-6">
-          <form id="loginForm" class="space-y-5">
+          <form id="loginForm" class="space-y-5" novalidate>
             <div>
               <label class="block text-sm mb-1 text-slate-700">اسم المستخدم</label>
               <input id="username" class="inp" placeholder="مثال: owner" autocomplete="username" required>
@@ -162,7 +135,8 @@
           </form>
 
           <div id="ownerAlert" class="hidden mt-4">
-            <a href="modules/users/bootstrap.html" class="btn w-full" style="background:#eef2f7; color:#0f172a">👑 إنشاء مالك النظام</a>
+            <a href="modules/users/bootstrap.html" class="btn w-full"
+               style="background:#eef2f7;color:#0f172a">👑 إنشاء مالك النظام</a>
           </div>
         </div>
 
@@ -171,7 +145,7 @@
     </section>
   </main>
 
-  <!-- منطق الصفحة: نفس كودك مع روابط نسبية -->
+  <!-- منطق الدخول (Firebase) -->
   <script type="module">
     import { auth, db } from "./js/firebase.js";
     import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -181,6 +155,7 @@
     const rxUser=/^[a-z0-9_-]{4,24}$/;
     const normalize = u=>(u||"").trim().toLowerCase();
     const synthEmail = u=> `${normalize(u)}@ppm.local`;
+
     $("year").textContent = new Date().getFullYear();
 
     const DEFAULT_REDIRECT = "modules/dashboard/index.html";
