@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -8,52 +8,41 @@
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- الثيم الموحد -->
+  <!-- Theme -->
   <link rel="stylesheet" href="../../css/theme-light.css">
-  <!-- (اختياري) مبدّل الثيم -->
   <script src="../../js/theme.js" defer></script>
 
-  <!-- Loader للـ partials -->
+  <!-- Partials loader -->
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
 
-  <!-- Leaflet (خريطة لالتقاط الإحداثيات بسهولة) -->
+  <!-- Leaflet (map picker) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- تنسيق اللينك النشط + إصلاح القوائم الفرعية -->
   <style>
-    /* فعّل الستايل على روابط المستوى الأول فقط */
+    /* Active link only on top-level links */
     #mainNav > a.active,
-    #mainNav .dd > a.active {
-      position: relative;
-      color: #93c5fd !important;
-      font-weight: 900 !important;
-      letter-spacing: 0.3px;
-      transition: color .25s;
+    #mainNav .dd > a.active{
+      position:relative;font-weight:900;letter-spacing:.3px;
+      color:#93c5fd !important;
     }
     #mainNav > a.active::after,
-    #mainNav .dd > a.active::after {
-      content:""; position:absolute; left:0; right:0; bottom:-4px; height:2px;
-      background:#60a5fa; border-radius:2px; transform:scaleX(0); transition:transform .25s;
+    #mainNav .dd > a.active::after{
+      content:"";position:absolute;left:0;right:0;bottom:-4px;height:2px;
+      background:#60a5fa;border-radius:2px;transform:scaleX(0);transition:transform .25s
     }
     #mainNav > a.active:hover::after,
-    #mainNav .dd > a.active:hover::after { transform:scaleX(1); }
+    #mainNav .dd > a.active:hover::after{transform:scaleX(1)}
+    /* Keep submenu items normal */
+    #mainNav .dd .dd-panel .dd-item{color:inherit!important;font-weight:600!important}
+    #mainNav .dd .dd-panel .dd-item:hover{color:#2563eb!important}
 
-    /* روابط القوائم الفرعية ترجع طبيعي */
-    #mainNav .dd .dd-panel .dd-item { color:inherit !important; font-weight:600 !important; }
-    #mainNav .dd .dd-panel .dd-item:hover { color:#2563eb !important; }
-
-    /* صلاحيات العرض */
     .read-only .for-edit{ display:none!important; }
-
-    /* الطباعة */
     @media print{ header,.no-print{display:none!important} table{width:100%} }
 
-    /* خريطة الملتقط */
     #mapPicker { height: 260px; border-radius: 12px; overflow: hidden; }
   </style>
 
-  <!-- سكربت الصفحة: Firebase + منطق Sites -->
   <script type="module">
     /* ===== Firebase ===== */
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
@@ -67,29 +56,28 @@
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
     import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
 
-    // إعداد Firebase (نفس مشروعك)
     const cfg = {
       apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
       authDomain:"pmqrtabuk.firebaseapp.com",
       projectId:"pmqrtabuk",
-      storageBucket:"pmqrtabuk.firebasestorage.app",  // لو لقيت مشاكل رفع، جرّب pmqrtabuk.appspot.com
+      storageBucket:"pmqrtabuk.appspot.com", // keep for metadata
       messagingSenderId:"305570616285",
       appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
     };
     const app = getApps().length ? getApps()[0] : initializeApp(cfg);
+
     const auth = getAuth(app);
     const db   = getFirestore(app);
-    const storage = getStorage(app);
+    // ✅ explicitly bind to the correct storage bucket
+    const storage = getStorage(app, "gs://pmqrtabuk.appspot.com");
 
-    /* ===== بعد تحميل الهيدر: تفعيل اللينك النشط ===== */
+    /* ===== mark Sites as active after header loads ===== */
     document.addEventListener("partials:loaded", () => {
-      // زر الخروج
       const btnLogout = document.getElementById("btnLogout");
       if (btnLogout) btnLogout.addEventListener("click", async () => {
         try { await signOut(auth); } finally { location.replace("../../login.html"); }
       });
 
-      // Sites: فعّل اللينك العلوي فقط
       const path = location.pathname.toLowerCase();
       if (path.endsWith("sites/index.html")) {
         const topSites = document.querySelector('#mainNav .dd[data-dd="sites"] > a[data-to="sites"]');
@@ -97,7 +85,7 @@
       }
     });
 
-    /* ===== عناصر الصفحة ===== */
+    /* ===== Elements ===== */
     const $ = (id)=>document.getElementById(id);
     const PAGE_SIZE = 10;
 
@@ -108,6 +96,7 @@
     const pageInfo = $('pageInfo');
     const prevBtn = $('prevPage');
     const nextBtn = $('nextPage');
+
     const btnAdd = $('btnAdd');
     const btnExport = $('btnExport');
     const btnPrint = $('btnPrint');
@@ -116,28 +105,29 @@
     const drawerTitle = $('drawerTitle');
     const siteForm = $('siteForm');
     const logoInput = $('logoInput');
+    const logoPreview = $('logoPreview');
     const primSel = $('primaryEngineer');
     const backSel = $('backupEngineer');
 
-    // خريطة
+    // Map
     let map, marker;
 
     let editCode = null;
     let STATE = { list:[], filtered:[], page:1, engineers:[], profile:null };
 
-    /* ===== صلاحيـات ===== */
-    function roleKey(v){ return (v||'').toString().toLowerCase().replace(/[\s_]/g,''); }
+    /* ===== Roles ===== */
+    function normRole(v){ return (v||'').toString().toLowerCase().replace(/[\s_]/g,''); }
     function canEdit(p){
       if(!p) return false;
-      const r = roleKey(p.role); // يدعم: SystemOwner / System Owner / system_owner
+      const r = normRole(p.role);
       return r==='admin' || r==='systemowner' || r==='owner';
     }
-    function toggleEditByRole(){
+    function reflectPermissions(){
       if(!canEdit(STATE.profile)) document.body.classList.add('read-only');
       else document.body.classList.remove('read-only');
     }
 
-    /* ===== حالة الدخول ===== */
+    /* ===== Auth ===== */
     onAuthStateChanged(auth, async (user)=>{
       if(!user){ location.replace("../../login.html"); return; }
       try{
@@ -149,21 +139,21 @@
           el.textContent=name||'';
         }
       }catch{ STATE.profile=null; }
-      toggleEditByRole();
+      reflectPermissions();
       await loadEngineers();
       await loadSites();
     });
 
-    /* ===== تحميل المهندسين (role = Supervisor) ===== */
+    /* ===== Load engineers (role = Supervisor) ===== */
     async function loadEngineers(){
       const qy = query(collection(db,'users'), where('role','==','Supervisor'));
       const snaps = await getDocs(qy);
       STATE.engineers = snaps.docs.map(d=>({ id:d.id, name:(d.data().nameEn || d.data().displayName || d.id) }));
-      const opts = '<option value="">— لا يوجد —</option>' + STATE.engineers.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+      const opts = '<option value="">— None —</option>' + STATE.engineers.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
       primSel.innerHTML = opts; backSel.innerHTML = opts;
     }
 
-    /* ===== تحميل المواقع ===== */
+    /* ===== Load sites ===== */
     async function loadSites(){
       const snaps = await getDocs(query(collection(db,'sites'), orderBy('name')));
       STATE.list = snaps.docs.map(d=> ({ code:d.id, ...d.data() }));
@@ -171,10 +161,10 @@
       fillContractorFilter();
     }
 
-    /* ===== فلاتر ===== */
+    /* ===== Filters ===== */
     function fillContractorFilter(){
       const set = new Set(STATE.list.map(x=>x.contractor).filter(Boolean));
-      fContractor.innerHTML = '<option value="">كل المقاولين</option>' + Array.from(set).sort().map(c=>`<option>${c}</option>`).join('');
+      fContractor.innerHTML = '<option value="">All contractors</option>' + Array.from(set).sort().map(c=>`<option>${c}</option>`).join('');
     }
     function applyFilters(){
       const q = (fName.value||'').toLowerCase().trim();
@@ -193,26 +183,26 @@
     fContractor.addEventListener('change', applyFilters);
     fType.addEventListener('change', applyFilters);
 
-    /* ===== جدول + صفحات ===== */
+    /* ===== Table & Paging ===== */
     function pageSlice(){ const s=(STATE.page-1)*PAGE_SIZE; return STATE.filtered.slice(s, s+PAGE_SIZE); }
     function userName(uid){ const m=STATE.engineers.find(u=>u.id===uid); return m? m.name : (uid||'-'); }
 
     function renderTable(){
       const rows = pageSlice().map(x=>{
-        const inactive = x.primaryActive===false
-          ? '<span class="px-2 py-0.5 text-xs rounded-full border border-red-300 text-red-700">غير فعّال</span>' : '';
+        const status = x.primaryActive===false
+          ? '<span class="px-2 py-0.5 text-xs rounded-full border border-red-300 text-red-700">Inactive</span>' : '';
         const logo = x.logoUrl
-          ? `<img src="${x.logoUrl}" class="w-8 h-8 rounded object-cover border"/>`
+          ? `<img src="${x.logoUrl}" class="w-8 h-8 rounded object-cover border" alt="logo"/>`
           : '<div class="w-8 h-8 rounded border bg-slate-100"></div>';
         const hasLoc = x.location && typeof x.location.lat==='number' && typeof x.location.lng==='number';
         const locTxt = hasLoc ? `${x.location.lat.toFixed(4)}, ${x.location.lng.toFixed(4)}` : '-';
         const mapsUrl = hasLoc ? `https://www.google.com/maps?q=${x.location.lat},${x.location.lng}` : null;
 
         const editBtns = canEdit(STATE.profile)
-          ? `<button data-act="edit" data-code="${x.code}" class="text-blue-600 hover:underline">تعديل</button>
+          ? `<button data-act="edit" data-code="${x.code}" class="text-blue-600 hover:underline">Edit</button>
              <span class="text-slate-300">•</span>
-             <button data-act="del" data-code="${x.code}" class="text-red-600 hover:underline">حذف</button>`
-          : '<span class="text-slate-400">عرض</span>';
+             <button data-act="del" data-code="${x.code}" class="text-red-600 hover:underline">Delete</button>`
+          : '<span class="text-slate-400">View</span>';
 
         return `
           <tr class="border-b">
@@ -225,24 +215,24 @@
                 </div>
               </div>
             </td>
-            <td class="px-4 py-3">${locTxt} ${mapsUrl?`<a href="${mapsUrl}" target="_blank" class="mr-2 text-xs text-blue-600 underline">فتح بالخريطة</a>`:''}</td>
+            <td class="px-4 py-3">${locTxt} ${mapsUrl?`<a href="${mapsUrl}" target="_blank" class="ml-2 text-xs text-blue-600 underline">Open map</a>`:''}</td>
             <td class="px-4 py-3">${x.type||'-'}</td>
             <td class="px-4 py-3">${x.contractor||'-'}</td>
             <td class="px-4 py-3">${x.primaryEngineerId ? userName(x.primaryEngineerId) : '-'}</td>
             <td class="px-4 py-3">${x.backupEngineerId ? userName(x.backupEngineerId) : '-'}</td>
-            <td class="px-4 py-3">${inactive}</td>
+            <td class="px-4 py-3">${status}</td>
             <td class="px-4 py-3">
               <a class="text-indigo-600 hover:underline"
-                 href="/PPM-Tabuk/modules/assets/index.html?site=${encodeURIComponent(x.name || x.code)}">أجهزة الموقع</a>
+                 href="/PPM-Tabuk/modules/assets/index.html?site=${encodeURIComponent(x.name || x.code)}">Site assets</a>
               <span class="text-slate-300">•</span>
               ${editBtns}
             </td>
           </tr>`;
       }).join('');
-      tbody.innerHTML = rows || `<tr><td class="px-4 py-6 text-center text-slate-500" colspan="8">لا توجد مواقع.</td></tr>`;
+      tbody.innerHTML = rows || `<tr><td class="px-4 py-6 text-center text-slate-500" colspan="8">No sites found.</td></tr>`;
 
       const totalPages = Math.max(1, Math.ceil(STATE.filtered.length / PAGE_SIZE));
-      pageInfo.textContent = `صفحة ${STATE.page} / ${totalPages} — ${STATE.filtered.length} إجمالي`;
+      pageInfo.textContent = `Page ${STATE.page} / ${totalPages} — ${STATE.filtered.length} total`;
       prevBtn.disabled = STATE.page<=1;
       nextBtn.disabled = STATE.page>=totalPages;
 
@@ -257,33 +247,31 @@
     prevBtn.addEventListener('click', ()=>{ STATE.page=Math.max(1,STATE.page-1); renderTable(); });
     nextBtn.addEventListener('click', ()=>{ const tp=Math.ceil(STATE.filtered.length/PAGE_SIZE); STATE.page=Math.min(tp,STATE.page+1); renderTable(); });
 
-    /* ===== فتح الدرج ===== */
+    /* ===== Drawer ===== */
     function openDrawer(){
       drawer.classList.remove('hidden');
-      drawerTitle.textContent = editCode ? `تعديل موقع (${editCode})` : 'موقع جديد';
+      drawerTitle.textContent = editCode ? `Edit site (${editCode})` : 'New site';
       if(!editCode){
         siteForm.reset();
-        const p = document.getElementById('logoPreview');
-        p && p.removeAttribute('src');
+        logoPreview.removeAttribute('src');
         logoInput.value = '';
-        delete logoInput.dataset.url;          // مهم: امسح أي URL قديم
+        delete logoInput.dataset.url;
         setTimeout(initOrResetMap, 50);
       } else {
         setTimeout(initOrResetMap, 50);
       }
     }
     function closeDrawer(){ editCode=null; drawer.classList.add('hidden'); }
-
     document.addEventListener('click', e=>{
       if(e.target?.dataset?.close !== undefined || e.target.closest('[data-close]')) closeDrawer();
     });
     btnAdd.addEventListener('click', ()=>{ if(!canEdit(STATE.profile)) return; openDrawer(); });
 
-    /* ===== خريطة الملتقط ===== */
+    /* ===== Map picker ===== */
     function initOrResetMap(){
       const latInput = siteForm.lat;
       const lngInput = siteForm.lng;
-      const def = [28.383, 36.566]; // تقريبياً تبوك
+      const def = [28.383, 36.566]; // Tabuk approx
       const has = Number.isFinite(parseFloat(latInput.value)) && Number.isFinite(parseFloat(lngInput.value));
       const center = has ? [parseFloat(latInput.value), parseFloat(lngInput.value)] : def;
 
@@ -292,15 +280,12 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19, attribution: '&copy; OpenStreetMap'
         }).addTo(map);
-        map.on('click', (e)=>{
-          setMarker(e.latlng.lat, e.latlng.lng, true);
-        });
+        map.on('click', (e)=> setMarker(e.latlng.lat, e.latlng.lng, true));
       } else {
         map.setView(center, has? 13 : 8);
       }
       if(has) setMarker(center[0], center[1], false);
     }
-
     function setMarker(lat, lng, fromMap){
       if(!marker) marker = L.marker([lat,lng]).addTo(map);
       else marker.setLatLng([lat,lng]);
@@ -309,25 +294,19 @@
         siteForm.lng.value = Number(lng.toFixed(6));
       }
     }
-
-    // زر "موقعي الآن"
     window.pickMyLocation = ()=>{
-      if(!navigator.geolocation){ alert('المتصفح لا يدعم تحديد الموقع'); return; }
+      if(!navigator.geolocation) return alert('Geolocation not supported');
       navigator.geolocation.getCurrentPosition(pos=>{
         const { latitude, longitude } = pos.coords;
         initOrResetMap();
         setMarker(latitude, longitude, true);
         map.setView([latitude, longitude], 15);
-      }, ()=>alert('تعذّر الحصول على الموقع'));
+      }, ()=>alert('Couldn’t get location'));
     };
-
-    // مزامنة الماركر لو المستخدم دخل قيم أو لصق لينك Google Maps
     function tryParseLatLng(txt){
       if(!txt) return null;
-      // صيغة "lat,lng"
       const m1 = txt.trim().match(/(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/);
       if(m1) return {lat:parseFloat(m1[1]), lng:parseFloat(m1[2])};
-      // لينك مابس فيه @lat,lng
       const m2 = txt.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
       if(m2) return {lat:parseFloat(m2[1]), lng:parseFloat(m2[2])};
       return null;
@@ -348,7 +327,7 @@
       }
     });
 
-    /* ===== فتح/تعديل/حذف ===== */
+    /* ===== CRUD ===== */
     async function openEdit(code){
       const snap = await getDoc(doc(db,'sites',code));
       if(!snap.exists()) return alert('Site not found');
@@ -365,36 +344,39 @@
       siteForm.backupEngineer.value = d.backupEngineerId||'';
       siteForm.primaryActive.checked = !!d.primaryActive;
 
-      const pv = document.getElementById('logoPreview');
-      pv.src = d.logoUrl || '';
+      logoPreview.src = d.logoUrl || '';
       logoInput.dataset.url = d.logoUrl || '';
 
       openDrawer();
     }
-
     async function confirmDelete(code){
       if(!canEdit(STATE.profile)) return;
-      if(!confirm(`حذف الموقع ${code}؟`)) return;
+      if(!confirm(`Delete site ${code}?`)) return;
       await deleteDoc(doc(db,'sites',code));
       await loadSites();
     }
 
-    // رفع اللوجو
+    // Upload logo
     logoInput.addEventListener('change', async ()=>{
       const file = logoInput.files?.[0];
       if(!file) return;
-      if(!canEdit(STATE.profile)) return alert('ليس لديك صلاحية الرفع.');
+      if(!canEdit(STATE.profile)) return alert('You are not allowed to upload.');
       const code = siteForm.code.value.trim();
-      if(!code){ alert('أدخل كود الموقع أولاً'); logoInput.value=''; return; }
+      if(!code){ alert('Enter Site Code first'); logoInput.value=''; return; }
 
-      const r = sref(storage, `sites/${code}/logo_${Date.now()}`);
-      await uploadBytes(r, file);
-      const url = await getDownloadURL(r);
-      document.getElementById('logoPreview').src = url;
-      logoInput.dataset.url = url;           // نستخدمه فقط في الحفظ
+      try{
+        const r = sref(storage, `sites/${code}/logo_${Date.now()}`);
+        await uploadBytes(r, file);
+        const url = await getDownloadURL(r);
+        logoPreview.src = url;
+        logoInput.dataset.url = url;   // ✅ only this will be saved
+      }catch(err){
+        console.error(err);
+        alert('Upload failed. Please check Storage bucket & rules.');
+      }
     });
 
-    // حفظ
+    // Save
     siteForm.addEventListener('submit', async (e)=>{
       e.preventDefault();
       if(!canEdit(STATE.profile)) return;
@@ -418,7 +400,6 @@
       await loadSites();
     });
 
-    // نجمع البيانات (نستخدم رابط الرفع فقط)
     function collectForm(){
       const code = siteForm.code.value.trim();
       const name = siteForm.name.value.trim();
@@ -433,8 +414,8 @@
       const uploadedUrl = logoInput.dataset.url || '';
       const logoUrl = (/^https?:/i.test(uploadedUrl)) ? uploadedUrl : '';
 
-      if(!code) throw alert('Site Code مطلوب');
-      if(!name) throw alert('Site Name مطلوب');
+      if(!code) throw alert('Site Code is required');
+      if(!name) throw alert('Site Name is required');
 
       return {
         _isNew: !editCode,
@@ -465,88 +446,84 @@
 </head>
 
 <body>
-  <!-- ✅ الهيدر الموحد من الـ partial -->
+  <!-- Header partial -->
   <header data-include="/PPM-Tabuk/partials/header.html?v=2" class="w-full max-w-none"></header>
 
   <main class="w-full max-w-none mx-auto p-3 md:p-6 space-y-6">
-    <!-- شريط الأزرار -->
+    <!-- Toolbar -->
     <div class="flex items-center gap-2 no-print">
       <button id="btnPrint" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm inline-flex items-center gap-2">
-        <!-- print icon -->
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 3 18 3 18 9"/><path d="M6 14H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="2"/></svg>
-        طباعة
+        Print
       </button>
       <button id="btnExport" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm inline-flex items-center gap-2">
-        <!-- export icon -->
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        تصدير Excel
+        Export Excel
       </button>
       <button id="btnAdd" class="for-edit px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm inline-flex items-center gap-2">
-        <!-- add icon -->
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        إضافة موقع
+        Add site
       </button>
     </div>
 
-    <!-- الفلاتر -->
+    <!-- Filters -->
     <section class="grid md:grid-cols-3 gap-3 no-print">
-      <input id="fName" type="text" placeholder="بحث بالاسم أو الكود" class="px-4 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <input id="fName" type="text" placeholder="Search by name or code" class="px-4 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
       <select id="fContractor" class="px-3 py-2.5 rounded-2xl border border-slate-300">
-        <option value="">كل المقاولين</option>
+        <option value="">All contractors</option>
       </select>
       <select id="fType" class="px-3 py-2.5 rounded-2xl border border-slate-300">
-        <option value="">كل الأنواع</option>
+        <option value="">All types</option>
         <option value="hospital">hospital</option>
         <option value="medical_center">medical_center</option>
       </select>
     </section>
 
-    <!-- الجدول -->
+    <!-- Table -->
     <section class="rounded-2xl border border-slate-200 overflow-hidden bg-white">
       <div class="overflow-x-auto">
         <table class="min-w-full text-sm">
           <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
             <tr>
-              <th class="text-right px-4 py-3">الموقع</th>
-              <th class="text-right px-4 py-3">الإحداثيات</th>
-              <th class="text-right px-4 py-3">النوع</th>
-              <th class="text-right px-4 py-3">المقاول</th>
-              <th class="text-right px-4 py-3">المسؤول</th>
-              <th class="text-right px-4 py-3">البديل</th>
-              <th class="text-right px-4 py-3">الحالة</th>
-              <th class="text-right px-4 py-3">إجراءات</th>
+              <th class="text-left px-4 py-3">Site</th>
+              <th class="text-left px-4 py-3">Location</th>
+              <th class="text-left px-4 py-3">Type</th>
+              <th class="text-left px-4 py-3">Contractor</th>
+              <th class="text-left px-4 py-3">Primary</th>
+              <th class="text-left px-4 py-3">Backup</th>
+              <th class="text-left px-4 py-3">Status</th>
+              <th class="text-left px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody id="sitesBody" class="divide-y divide-slate-200"></tbody>
         </table>
       </div>
 
-      <!-- الصفحات -->
       <div class="flex items-center justify-between px-4 py-3">
-        <div id="pageInfo" class="text-xs text-slate-500">صفحة 1</div>
+        <div id="pageInfo" class="text-xs text-slate-500">Page 1</div>
         <div class="flex gap-2">
-          <button id="prevPage" class="px-3 py-1.5 rounded-xl border border-slate-300 disabled:opacity-50">السابق</button>
-          <button id="nextPage" class="px-3 py-1.5 rounded-xl border border-slate-300 disabled:opacity-50">التالي</button>
+          <button id="prevPage" class="px-3 py-1.5 rounded-xl border border-slate-300 disabled:opacity-50">Prev</button>
+          <button id="nextPage" class="px-3 py-1.5 rounded-xl border border-slate-300 disabled:opacity-50">Next</button>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- درج الإضافة/التعديل -->
+  <!-- Drawer -->
   <div id="drawer" class="fixed inset-0 hidden">
     <div class="absolute inset-0 bg-black/30" data-close></div>
-    <div class="absolute left-0 top-0 h-full w-full sm:w-[620px] bg-white shadow-xl p-6 overflow-y-auto">
+    <div class="absolute right-0 top-0 h-full w-full sm:w-[620px] bg-white shadow-xl p-6 overflow-y-auto">
       <div class="flex items-center justify-between mb-4">
-        <h2 id="drawerTitle" class="text-xl font-bold">موقع جديد</h2>
-        <button class="px-3 py-1.5 rounded-xl border" data-close>إغلاق</button>
+        <h2 id="drawerTitle" class="text-xl font-bold">New site</h2>
+        <button class="px-3 py-1.5 rounded-xl border" data-close>Close</button>
       </div>
 
       <form id="siteForm" class="grid grid-cols-2 gap-3">
-        <label class="text-sm">كود الموقع
+        <label class="text-sm">Site code
           <input name="code" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="TBC-001" required>
         </label>
-        <label class="text-sm">اسم الموقع
-          <input name="name" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="مركز صحي ..." required>
+        <label class="text-sm">Site name
+          <input name="name" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="Al-Worood PHC" required>
         </label>
 
         <div class="col-span-2 grid grid-cols-2 gap-3">
@@ -556,50 +533,50 @@
           <label class="text-sm">Longitude
             <input name="lng" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="36.566" type="number" step="any">
           </label>
-          <label class="text-sm col-span-2">ألصق لينك Google Maps أو lat,lng (اختياري)
-            <input id="locPaste" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="https://maps.google.com/... أو 28.383,36.566">
+          <label class="text-sm col-span-2">Paste Google Maps link or "lat,lng" (optional)
+            <input id="locPaste" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="https://maps.google.com/... or 28.383,36.566">
           </label>
           <div class="col-span-2">
             <div id="mapPicker" class="w-full"></div>
             <div class="flex gap-2 mt-2">
-              <button type="button" onclick="pickMyLocation()" class="px-3 py-1.5 rounded-xl border">موقعي الآن</button>
+              <button type="button" onclick="pickMyLocation()" class="px-3 py-1.5 rounded-xl border">Use my location</button>
             </div>
           </div>
         </div>
 
-        <label class="text-sm">النوع
+        <label class="text-sm">Type
           <select name="type" class="mt-1 w-full px-3 py-2 rounded-xl border">
             <option value="hospital">hospital</option>
             <option value="medical_center">medical_center</option>
           </select>
         </label>
-        <label class="text-sm">المقاول
+        <label class="text-sm">Contractor
           <input name="contractor" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="First Gulf">
         </label>
 
-        <label class="text-sm col-span-2">المهندس المسؤول (Supervisor)
+        <label class="text-sm col-span-2">Primary engineer (Supervisor)
           <select id="primaryEngineer" name="primaryEngineer" class="mt-1 w-full px-3 py-2 rounded-xl border"></select>
         </label>
-        <label class="text-sm col-span-2">المهندس البديل (Supervisor)
+        <label class="text-sm col-span-2">Backup engineer (Supervisor)
           <select id="backupEngineer" name="backupEngineer" class="mt-1 w-full px-3 py-2 rounded-xl border"></select>
         </label>
 
         <label class="text-sm flex items-center gap-2 col-span-2">
-          <input type="checkbox" name="primaryActive" class="rounded"> المسؤول فعّال
+          <input type="checkbox" name="primaryActive" class="rounded"> Primary is active
         </label>
 
         <div class="col-span-2 grid grid-cols-[72px,1fr] gap-3 items-center">
           <img id="logoPreview" class="w-16 h-16 rounded border object-cover" alt="logo preview"/>
-          <label class="text-sm">لوجو الموقع (Storage)
+          <label class="text-sm">Site logo (Storage)
             <input id="logoInput" type="file" accept="image/*" class="mt-1 w-full px-3 py-2 rounded-xl border for-edit">
           </label>
         </div>
 
         <div class="col-span-2 flex gap-2 mt-2">
-          <button type="submit" class="for-edit px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white">حفظ</button>
-          <button type="button" data-close class="px-4 py-2 rounded-xl border">إلغاء</button>
+          <button type="submit" class="for-edit px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white">Save</button>
+          <button type="button" data-close class="px-4 py-2 rounded-xl border">Cancel</button>
         </div>
-        <p class="text-xs text-slate-500 col-span-2">سيكون رقم الوثيقة هو <strong>كود الموقع</strong>.</p>
+        <p class="text-xs text-slate-500 col-span-2">The document ID will be the <strong>site code</strong>.</p>
       </form>
     </div>
   </div>
