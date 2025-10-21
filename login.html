@@ -1,176 +1,97 @@
-// 📁 File: src/views/home.js
-import React, { useState } from 'react'
-import { Helmet } from 'react-helmet'
-import './home.css'
-
-export default function Home() {
-  const [user, setUser] = useState('')
-  const [pass, setPass] = useState('')
-  const [show, setShow] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [err, setErr] = useState('')
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    setErr('')
-
-    // ✅ (اختياري) تحقق بسيط
-    if (!user || !pass) {
-      setErr('من فضلك أدخل اسم المستخدم وكلمة المرور')
-      return
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>PPM TABUK • تسجيل الدخول</title>
+  <style>
+    :root{
+      --bg:#0b1220; --card:#0f172a; --ink:#e5e7eb; --muted:#9ca3af;
+      --acc:#22d3ee; --line:#1f2937; --radius:18px;
     }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"}
+    main{min-height:100%;display:grid;place-items:center;padding:24px;position:relative;overflow:hidden}
+    /* ووترمارك الخلفية من اللوجو */
+    .bg-logo{position:absolute;inset:-10% -10% auto -10%;height:120vh;
+      background:url("./assets/TabukCluster.jpeg") center/contain no-repeat;
+      opacity:.06;filter:grayscale(100%) contrast(110%);pointer-events:none}
+    .card{width:min(100%,880px);background:linear-gradient(180deg,rgba(15,23,42,.85),rgba(15,23,42,.92));
+      border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.45);
+      backdrop-filter:saturate(120%) blur(6px);padding:28px}
+    .brand{display:flex;gap:18px;align-items:center;margin-bottom:16px}
+    .brand-logo{width:84px;height:84px;object-fit:cover;border-radius:20px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .brand-text h1{margin:0;font-size:28px;letter-spacing:.8px}
+    .brand-text p{margin:4px 0 0;color:var(--muted)}
+    form{display:grid;gap:10px;margin-top:10px}
+    .label{font-weight:600;color:var(--muted)}
+    .input{width:100%;padding:14px 16px;border-radius:14px;background:#0b1220;border:1px solid var(--line);color:var(--ink);outline:none}
+    .input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(34,211,238,.15)}
+    .input-group{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px}
+    .toggle{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#0b1220;color:var(--muted);cursor:pointer}
+    .toggle:hover{border-color:#334155;color:#cbd5e1}
+    .error{margin:6px 2px 0;color:#fecaca;display:none}
+    .btn{margin-top:6px;padding:14px 18px;border-radius:14px;border:1px solid #155e75;
+      background:linear-gradient(90deg,#0ea5e9,#22d3ee);color:#001018;font-weight:800;cursor:pointer}
+    .hint{margin:10px 2px 0;color:var(--muted);font-size:.92rem}
+    footer{margin-top:16px;text-align:center;color:#94a3b8}
+    @media (max-width:640px){.brand{flex-direction:column;text-align:center}.brand-logo{width:72px;height:72px}}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="bg-logo" aria-hidden="true"></div>
 
-    setLoading(true)
+    <section class="card">
+      <header class="brand">
+        <img src="./assets/TabukCluster.jpeg" class="brand-logo" alt="Tabuk Cluster Logo">
+        <div class="brand-text">
+          <h1>PPM TABUK</h1>
+          <p>Biomedical Department – Tabuk Cluster</p>
+        </div>
+      </header>
 
-    // ✅ إعادة توجيه مباشرة بعد "تسجيل الدخول"
-    // لو مشروعك مرفوع على GitHub Pages داخل /PPM-Tabuk/ خليه بالمسار الكامل
-    const target = '/PPM-Tabuk/modules/dashboard/index.html'
-    window.location.href = target
-  }
+      <form id="loginForm" novalidate>
+        <label class="label" for="user">اسم المستخدم أو البريد</label>
+        <input id="user" class="input" type="text" placeholder="example@tabuk.sa" autocomplete="username"/>
 
-  return (
-    <main className="login-page" dir="rtl" lang="ar">
-      <Helmet>
-        <title>PPM TABUK • تسجيل الدخول</title>
-        <meta name="description" content="Biomedical Department Tabuk Cluster – تسجيل الدخول" />
-      </Helmet>
+        <label class="label" for="pass">كلمة المرور</label>
+        <div class="input-group">
+          <input id="pass" class="input" type="password" placeholder="••••••••" autocomplete="current-password"/>
+          <button type="button" class="toggle" id="toggleBtn">إظهار</button>
+        </div>
 
-      {/* خلفية شعار شفافة */}
-      <div className="bg-logo" aria-hidden="true" />
+        <p id="err" class="error">من فضلك أدخل اسم المستخدم وكلمة المرور</p>
 
-      <section className="card">
-        <header className="brand">
-          <img src="/assets/TabukCluster.jpeg" className="brand-logo" alt="Tabuk Cluster Logo" />
-          <div className="brand-text">
-            <h1>PPM TABUK</h1>
-            <p>Biomedical Department – Tabuk Cluster</p>
-          </div>
-        </header>
+        <button class="btn" type="submit">تسجيل الدخول</button>
+        <p class="hint">بالدخول، تقرّ بسياسات الاستخدام والخصوصية الخاصة بإدارة الصيانة الطبية.</p>
+      </form>
+    </section>
 
-        <form className="form" onSubmit={handleSubmit} noValidate>
-          <label className="label" htmlFor="user">اسم المستخدم أو البريد</label>
-          <input
-            id="user"
-            className="input"
-            type="text"
-            placeholder="example@tabuk.sa"
-            value={user}
-            onChange={(e) => setUser(e.target.value)}
-            autoComplete="username"
-          />
+    <footer>
+      <small>© <span id="y"></span> Biomedical Department – Tabuk Cluster</small>
+    </footer>
+  </main>
 
-          <label className="label" htmlFor="pass">كلمة المرور</label>
-          <div className="input-group">
-            <input
-              id="pass"
-              className="input"
-              type={show ? 'text' : 'password'}
-              placeholder="••••••••"
-              value={pass}
-              onChange={(e) => setPass(e.target.value)}
-              autoComplete="current-password"
-            />
-            <button
-              type="button"
-              className="toggle"
-              onClick={() => setShow((s) => !s)}
-              aria-label={show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
-            >{show ? 'إخفاء' : 'إظهار'}</button>
-          </div>
+  <script>
+    document.getElementById('y').textContent = new Date().getFullYear();
+    const pass = document.getElementById('pass');
+    const toggle = document.getElementById('toggleBtn');
+    toggle.addEventListener('click', ()=> {
+      const show = pass.type === 'password';
+      pass.type = show ? 'text' : 'password';
+      toggle.textContent = show ? 'إخفاء' : 'إظهار';
+    });
 
-          {err && <p className="error" role="alert">{err}</p>}
-
-          <button className="btn" type="submit" disabled={loading}>
-            {loading ? 'جارٍ التحميل…' : 'تسجيل الدخول'}
-          </button>
-
-          <p className="hint">بالدخول، تقرّ بسياسات الاستخدام والخصوصية الخاصة بإدارة الصيانة الطبية.</p>
-        </form>
-      </section>
-
-      <footer className="footer">
-        <small>© {new Date().getFullYear()} Biomedical Department – Tabuk Cluster</small>
-      </footer>
-    </main>
-  )
-}
-
-
-// 📁 File: src/views/home.css
-:root{
-  --bg:#0b1220;           /* خلفية داكنة راقية */
-  --card:#0f172a;         /* أزرق داكن */
-  --ink:#e5e7eb;          /* نص فاتح */
-  --muted:#9ca3af;        /* نص ثانوي */
-  --acc:#22d3ee;          /* سماوي */
-  --line:#1f2937;         /* حدود ناعمة */
-  --radius:18px;
-}
-
-*{box-sizing:border-box}
-html,body,#root{height:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"}
-
-.login-page{min-height:100%;display:grid;place-items:center;padding:24px;position:relative;overflow:hidden}
-
-/* ✅ خلفية اللوجو الكبيرة (ووترمارك) */
-.bg-logo{
-  position:absolute;inset:-10% -10% auto -10%;
-  height:120vh;
-  background:url('/assets/TabukCluster.jpeg') center/contain no-repeat;
-  opacity:.06;           /* شفافية منخفضة */
-  filter:grayscale(100%) contrast(110%);
-  pointer-events:none;
-}
-
-.card{
-  width:min(100%, 880px);
-  background:linear-gradient(180deg, rgba(15,23,42,.85), rgba(15,23,42,.92));
-  border:1px solid var(--line);
-  border-radius:var(--radius);
-  box-shadow:0 20px 60px rgba(0,0,0,.45);
-  backdrop-filter:saturate(120%) blur(6px);
-  padding:28px;
-}
-
-.brand{display:flex;gap:18px;align-items:center;margin-bottom:16px}
-.brand-logo{width:84px;height:84px;object-fit:cover;border-radius:20px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.35)}
-.brand-text h1{margin:0;font-size:28px;letter-spacing:.8px}
-.brand-text p{margin:4px 0 0;color:var(--muted)}
-
-.form{display:grid;gap:10px;margin-top:10px}
-.label{font-weight:600;color:var(--muted)}
-.input{width:100%;padding:14px 16px;border-radius:14px;background:#0b1220;border:1px solid var(--line);color:var(--ink);outline:none}
-.input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(34,211,238,.15)}
-
-.input-group{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px}
-.toggle{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#0b1220;color:var(--muted);cursor:pointer}
-.toggle:hover{border-color:#334155;color:#cbd5e1}
-
-.error{margin:6px 2px 0;color:#fecaca}
-
-.btn{margin-top:6px;padding:14px 18px;border-radius:14px;border:1px solid #155e75;background:linear-gradient(90deg,#0ea5e9,#22d3ee);color:#001018;font-weight:800;cursor:pointer}
-.btn:disabled{opacity:.7;cursor:not-allowed}
-
-.hint{margin:10px 2px 0;color:var(--muted);font-size:.92rem}
-
-.footer{margin-top:16px;text-align:center;color:#94a3b8}
-
-/* احترام تقليل الحركة */
-@media (prefers-reduced-motion:reduce){
-  .btn, .brand-logo{animation:none}
-}
-
-/* استجابة الهواتف */
-@media (max-width:640px){
-  .brand{flex-direction:column;text-align:center}
-  .brand-logo{width:72px;height:72px}
-}
-
-
-// ✅ تذكير بوضع الشعار في المسار التالي:
-// 📁 File: public/assets/TabukCluster.jpeg
-// ضع ملف الشعار الذي أعطيتني إياه داخل مجلد public/assets بنفس الاسم بالضبط.
-
-
-// (اختياري) لو أردت نسخ احتياطي لصفحة 404 كما هي في المشروع الأصلي اتركها دون تعديل.
+    document.getElementById('loginForm').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const u = document.getElementById('user').value.trim();
+      const p = document.getElementById('pass').value.trim();
+      const err = document.getElementById('err');
+      if(!u || !p){ err.style.display='block'; return; }
+      // إعادة توجيه
+      window.location.href = '/PPM-Tabuk/modules/dashboard/index.html';
+    });
+  </script>
+</body>
+</html>
