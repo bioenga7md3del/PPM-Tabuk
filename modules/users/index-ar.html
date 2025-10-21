@@ -1,1 +1,489 @@
 
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>PPM TABUK • Users </title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../../css/theme-light.css">
+  <script src="../../js/theme.js" defer></script>
+  <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
+  <link rel="icon" href="/PPM-Tabuk/assets/favicon.ico"/>
+
+  <style>
+    #mainNav a.active{
+      position:relative;font-weight:900;letter-spacing:.3px;
+      background:linear-gradient(90deg,#60a5fa,#3b82f6,#60a5fa);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      animation:shimmer 3s linear infinite;
+    }
+    @keyframes shimmer{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.06)}
+    .muted{color:#64748b}
+    .inp{border:1px solid #e5e7eb;border-radius:12px;padding:.7rem .9rem;width:100%}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:12px;padding:.7rem 1rem;font-weight:700}
+    .btn-primary{background:#2563eb;color:white}
+    .btn-danger{background:#ef4444;color:white}
+    .btn-soft{background:#f1f5f9}
+    .badge{display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .6rem;border-radius:999px;font-size:.75rem}
+    .badge-green{background:rgba(16,185,129,.12);color:#047857}
+    .kbd{border:1px solid #e5e7eb;border-bottom-width:2px;border-radius:8px;padding:.05rem .45rem;background:#f8fafc}
+    .table-kbd{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;padding:.15rem .35rem;border:1px solid #e5e7eb;border-radius:6px;background:#f8fafc}
+
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.45);z-index:60}
+    .modal.show{display:flex}
+    .modal .panel{width:min(720px,94vw)}
+    .x{cursor:pointer}
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div data-include="../../partials/header.html"></div>
+
+  <section class="mx-auto max-w-7xl px-4 pt-6 pb-2">
+    <div class="flex items-center justify-between">
+     
+    </div>
+
+    <div class="mt-4 flex flex-wrap gap-3">
+      <button id="btnOpenAddUser" class="btn btn-primary">➕ إضافة مستخدم</button>
+      <button id="btnOpenAddOwner" class="btn btn-danger" title="مرة واحدة عند التهيئة">👑 إضافة مالك النظام</button>
+    </div>
+
+    <div id="pageMsg" class="mt-3 text-sm"></div>
+  </section>
+
+  <main class="mx-auto max-w-7xl px-4 py-4 space-y-4">
+    <!-- فلاتر -->
+    <div class="card p-4">
+      <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+        <div>
+          <label class="block text-sm mb-1">الدور</label>
+          <select id="f_role" class="inp">
+            <option value="">الكل</option>
+            <option>Admin</option><option>Supervisor</option><option>Staff</option>
+            <option>Technician</option><option>DepartmentHead</option>
+            <option>MaintenanceDeptSupervisor</option><option>WarehouseGuard</option>
+            <option>SystemMonitor</option><option>SystemOwner</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">الحالة</label>
+          <select id="f_status" class="inp">
+            <option value="">الكل</option>
+            <option value="active">Active</option>
+            <option value="disabled">Disabled</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">SiteScope</label>
+          <input id="f_site" class="inp" placeholder="مثال: hospital-a">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">DeptScope</label>
+          <input id="f_dept" class="inp" placeholder="مثال: radiology">
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">بحث (اسم/يوزرنيم/إيميل)</label>
+          <input id="f_search" class="inp" placeholder="اكتب للبحث...">
+        </div>
+      </div>
+      <div class="flex justify-end mt-3">
+        <button id="btnRefresh" class="btn btn-soft">تحديث</button>
+      </div>
+    </div>
+
+    <!-- الجدول -->
+    <div class="card p-0 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50">
+            <tr class="text-slate-600">
+              <th class="px-4 py-3 text-start">Username</th>
+              <th class="px-4 py-3 text-start">Name</th>
+              <th class="px-4 py-3 text-start">Role</th>
+              <th class="px-4 py-3 text-start">Email</th>
+              <th class="px-4 py-3 text-start">Status</th>
+              <th class="px-4 py-3 text-start">Created</th>
+              <th class="px-4 py-3 text-start">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTbody"></tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between px-4 py-3 border-t">
+        <div class="text-xs text-slate-500">يعرض 20 في الصفحة</div>
+        <div class="flex items-center gap-2">
+          <button id="prevPage" class="btn btn-soft">⟵ السابق</button>
+          <span id="pageInfo" class="text-sm"></span>
+          <button id="nextPage" class="btn btn-soft">التالي ⟶</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- مودال: إضافة مستخدم -->
+  <div id="modalUser" class="modal">
+    <div class="panel card p-5">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold">إضافة مستخدم</h3>
+        <button class="x text-slate-500" data-close="modalUser">✕</button>
+      </div>
+      <form id="formUser" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+        <div>
+          <label class="block text-sm mb-1">اسم المستخدم <span class="text-red-600">*</span></label>
+          <input id="u_username" class="inp" placeholder="مثال: m.ali" required>
+          <p class="text-xs muted mt-1">٤–٢٤ حرف/رقم/شرطة/شرطة سفلية (EN).</p>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">الدور <span class="text-red-600">*</span></label>
+          <select id="u_role" class="inp" required>
+            <option value="" disabled selected>اختر الدور</option>
+            <option>Admin</option><option>Supervisor</option><option>Staff</option>
+            <option>Technician</option><option>DepartmentHead</option>
+            <option>MaintenanceDeptSupervisor</option><option>WarehouseGuard</option>
+            <option>SystemMonitor</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">كلمة المرور <span class="text-red-600">*</span></label>
+          <input id="u_password" type="password" class="inp" placeholder="••••••••" required>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">تأكيد كلمة المرور <span class="text-red-600">*</span></label>
+          <input id="u_password2" type="password" class="inp" placeholder="••••••••" required>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">الاسم (عربي)</label>
+          <input id="u_nameAr" class="inp" placeholder="الاسم بالعربية">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Name (English)</label>
+          <input id="u_nameEn" class="inp" placeholder="Full Name (EN)">
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">البريد (اختياري)</label>
+          <input id="u_email" type="email" class="inp" placeholder="example@domain.com">
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">SiteScope (قائمة مفصولة بفواصل)</label>
+          <input id="u_site" class="inp" placeholder="site-a, site-b">
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">DeptScope (قائمة مفصولة بفواصل)</label>
+          <input id="u_dept" class="inp" placeholder="radiology, lab">
+        </div>
+        <div class="md:col-span-2 mt-2 flex gap-3">
+          <button class="btn btn-primary" type="submit">حفظ المستخدم</button>
+          <button class="btn btn-soft" type="button" data-close="modalUser">إلغاء</button>
+        </div>
+        <div class="md:col-span-2"><div id="u_msg" class="text-sm"></div></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- مودال: تعديل بيانات -->
+  <div id="modalEdit" class="modal">
+    <div class="panel card p-5">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold">تعديل بيانات المستخدم</h3>
+        <button class="x text-slate-500" data-close="modalEdit">✕</button>
+      </div>
+      <form id="formEdit" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+        <input type="hidden" id="e_uid">
+        <div>
+          <label class="block text-sm mb-1">Username</label>
+          <input id="e_username" class="inp" disabled>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">الدور</label>
+          <select id="e_role" class="inp">
+            <option>Admin</option><option>Supervisor</option><option>Staff</option>
+            <option>Technician</option><option>DepartmentHead</option>
+            <option>MaintenanceDeptSupervisor</option><option>WarehouseGuard</option>
+            <option>SystemMonitor</option><option>SystemOwner</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">الاسم (عربي)</label>
+          <input id="e_nameAr" class="inp">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Name (English)</label>
+          <input id="e_nameEn" class="inp">
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">البريد (اختياري)</label>
+          <input id="e_email" type="email" class="inp">
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">SiteScope (قائمة بفواصل)</label>
+          <input id="e_site" class="inp">
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">DeptScope (قائمة بفواصل)</label>
+          <input id="e_dept" class="inp">
+        </div>
+        <div class="md:col-span-2 mt-2 flex gap-3">
+          <button class="btn btn-primary" type="submit">حفظ التعديلات</button>
+          <button class="btn btn-soft" type="button" data-close="modalEdit">إلغاء</button>
+        </div>
+        <div class="md:col-span-2"><div id="e_msg" class="text-sm"></div></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- منطق الصفحة -->
+  <script type="module">
+    import { auth, db } from "../../js/firebase.js";
+    import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      collection, getDocs, getDoc, setDoc, updateDoc, doc, serverTimestamp,
+      query, where, limit, orderBy, startAfter
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    const $ = id=>document.getElementById(id);
+    const rxUser=/^[a-z0-9_-]{4,24}$/;
+    const normalize = u=>(u||"").trim().toLowerCase();
+    const synthEmail = u=>`${normalize(u)}@ppm.local`;
+    const show=id=>$(id).classList.add("show");
+    const hide=id=>$(id).classList.remove("show");
+
+    // فتح/إغلاق مودالات
+    document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click", ()=>hide(b.dataset.close)));
+    $("btnOpenAddUser").addEventListener("click", ()=>show("modalUser"));
+    $("btnOpenAddOwner").addEventListener("click", ()=>show("modalOwner")); // لو لسه محتفظ بيه من نسخة سابقة
+
+    const pageMsg = $("pageMsg");
+
+    // اختفاء زر المالك لو موجود
+    (async()=>{
+      try{
+        const snap = await getDocs(query(collection(db,"users"), where("role","==","SystemOwner"), limit(1)));
+        if (snap.size>0) $("btnOpenAddOwner").style.display="none";
+      }catch(e){ pageMsg.innerHTML='<span class="text-red-600">تعذر فحص وجود المالك.</span>'; }
+    })();
+
+    // utils
+    async function isUsernameFree(username){
+      const id=normalize(username);
+      const d=await getDoc(doc(db,"usernames",id));
+      return !d.exists();
+    }
+    function strToArr(s){ return (s||"").split(",").map(x=>x.trim()).filter(Boolean); }
+
+    // إنشاء مستخدم
+    $("formUser").addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      const msg=$("u_msg"); msg.textContent="";
+      const username=normalize($("u_username").value);
+      const role=$("u_role").value;
+      const email=$("u_email").value||null;
+      const pwd=$("u_password").value;
+      const pwd2=$("u_password2").value;
+      const nameAr=$("u_nameAr").value||"";
+      const nameEn=$("u_nameEn").value||"";
+      const siteScope=strToArr($("u_site").value);
+      const deptScope=strToArr($("u_dept").value);
+
+      if(!rxUser.test(username)){ msg.textContent="اسم المستخدم غير صالح."; return; }
+      if(!role){ msg.textContent="اختر الدور."; return; }
+      if(pwd!==pwd2){ msg.textContent="كلمتا المرور غير متطابقتين."; return; }
+      if(!(await isUsernameFree(username))){ msg.textContent="اسم المستخدم محجوز."; return; }
+
+      try{
+        const cred=await createUserWithEmailAndPassword(auth, synthEmail(username), pwd);
+        const uid=cred.user.uid;
+        await setDoc(doc(db,"usernames",username), { uid, userId:uid, createdAt:serverTimestamp() });
+        await setDoc(doc(db,"users",uid), {
+          username, normalizedUsername:username, email,
+          role, siteScope, deptScope, isActive:true,
+          account:{ linked:true, status:"active", provider:"firebase", uid,
+            lastLoginAt:null, forcePwdChange:true, lastPwdChangeAt:serverTimestamp(), passwordSetByAdmin:true },
+          nameAr, nameEn, avatarUrl:null, locale:"ar", theme:"light",
+          createdAt:serverTimestamp(), updatedAt:serverTimestamp(), notes:""
+        });
+        msg.textContent="تم حفظ المستخدم ✅";
+        hide("modalUser"); await loadPage(true);
+      }catch(err){ console.error(err); msg.textContent="تعذّر الإنشاء: "+(err?.message||err); }
+    });
+
+    // ===== جدول + فلاتر + Pagination =====
+    const tbody=$("usersTbody");
+    const fRole=$("f_role"), fStatus=$("f_status"), fSite=$("f_site"), fDept=$("f_dept"), fSearch=$("f_search");
+    const btnRef=$("btnRefresh"), btnPrev=$("prevPage"), btnNext=$("nextPage"), pageInfo=$("pageInfo");
+    const PAGE_SIZE=20; let cursors=[], page=0;
+
+    const safe=(v,d="")=> (v===undefined||v===null)?d:v;
+    const displayName=d=> safe(d.nameAr)||safe(d.nameEn)||safe(d.name)||"—";
+    const displayUsername=d=> safe(d.username) || (safe(d.email).split("@")[0]||"—");
+    const displayRole=d=> safe(d.role,"—");
+    const displayEmail=d=> safe(d.email,"—");
+    const displayStatus=d=>{
+      if (d.account?.status) return d.account.status;
+      if (typeof d.isActive==="boolean") return d.isActive? "active":"disabled";
+      if (typeof d.enabled==="boolean") return d.enabled? "active":"disabled";
+      return "—";
+    };
+    const displayCreated=d=>{
+      const v=d.createdAt;
+      try{ if(v?.toDate) return v.toDate().toLocaleString(); if(typeof v==="string") return v; }catch(_){}
+      return "—";
+    };
+
+    function rowActionsHTML(id, data){
+      const active = (displayStatus(data)==="active");
+      return `
+        <div class="flex gap-2">
+          <button class="btn btn-soft" data-act="edit" data-id="${id}">تعديل</button>
+          <button class="btn ${active?'btn-danger':'btn-primary'}" data-act="toggle" data-id="${id}">
+            ${active?'تعطيل':'تفعيل'}
+          </button>
+          <button class="btn btn-soft" data-act="reset" data-id="${id}">Reset Password</button>
+        </div>`;
+    }
+
+    async function loadPage(reset=false){
+      let qRef=query(collection(db,"users"), orderBy("createdAt","desc"));
+      if(reset){ page=0; cursors=[]; }
+      if(page>0 && cursors[page-1]) qRef=query(qRef, startAfter(cursors[page-1]));
+      qRef=query(qRef, limit(PAGE_SIZE));
+
+      const snap=await getDocs(qRef);
+      const last=snap.docs[snap.docs.length-1]||null;
+      cursors[page]=last;
+
+      const term=fSearch.value.trim().toLowerCase();
+      const r=fRole.value.trim().toLowerCase();
+      const s=fStatus.value.trim().toLowerCase();
+      const site=fSite.value.trim().toLowerCase();
+      const dept=fDept.value.trim().toLowerCase();
+
+      let rows=snap.docs.map(d=>({ id:d.id, ...d.data() }));
+
+      // فلترة بعد الجلب (بدون الحاجة لفهارس مركبة الآن)
+      if(r) rows=rows.filter(x=> safe(x.role,"").toLowerCase()===r);
+      if(s) rows=rows.filter(x=> displayStatus(x).toLowerCase()===s);
+      if(site) rows=rows.filter(x=> (Array.isArray(x.siteScope)?x.siteScope:[]).some(v=> String(v).toLowerCase().includes(site)));
+      if(dept) rows=rows.filter(x=> (Array.isArray(x.deptScope)?x.deptScope:[]).some(v=> String(v).toLowerCase().includes(dept)));
+      if(term){
+        rows=rows.filter(x=>{
+          const hay=(displayName(x)+" "+displayUsername(x)+" "+displayEmail(x)).toLowerCase();
+          return hay.includes(term);
+        });
+      }
+
+      tbody.innerHTML = rows.map(r=>`
+        <tr class="border-t align-top">
+          <td class="px-4 py-3"><span class="table-kbd">${displayUsername(r)}</span></td>
+          <td class="px-4 py-3">${displayName(r)}</td>
+          <td class="px-4 py-3">${displayRole(r)}</td>
+          <td class="px-4 py-3">${displayEmail(r)}</td>
+          <td class="px-4 py-3">${displayStatus(r)}</td>
+          <td class="px-4 py-3">${displayCreated(r)}</td>
+          <td class="px-4 py-2">${rowActionsHTML(r.id, r)}</td>
+        </tr>
+      `).join("");
+
+      pageInfo.textContent=`صفحة ${page+1}`;
+      btnPrev.disabled=(page===0);
+      btnNext.disabled=(rows.length<PAGE_SIZE || !last);
+    }
+
+    btnPrev.addEventListener("click", async()=>{ if(page>0){ page--; await loadPage(false); }});
+    btnNext.addEventListener("click", async()=>{ page++; await loadPage(false); });
+    btnRef.addEventListener("click", ()=> loadPage(true));
+    let tt; fSearch.addEventListener("input", ()=>{ clearTimeout(tt); tt=setTimeout(()=>loadPage(true),300); });
+    [fRole,fStatus,fSite,fDept].forEach(el=> el.addEventListener("change", ()=>loadPage(true)));
+    loadPage(true).catch(e=>{ console.error(e); pageMsg.innerHTML='<span class="text-red-600">تعذّر تحميل المستخدمين.</span>'; });
+
+    // ===== أكشنات الصف =====
+    // فتح تعديل
+    function openEditModal(row){
+      $("e_uid").value=row.id;
+      $("e_username").value=row.username||"";
+      $("e_role").value=row.role||"";
+      $("e_nameAr").value=row.nameAr||"";
+      $("e_nameEn").value=row.nameEn||"";
+      $("e_email").value=row.email||"";
+      $("e_site").value=(Array.isArray(row.siteScope)?row.siteScope:[]).join(", ");
+      $("e_dept").value=(Array.isArray(row.deptScope)?row.deptScope:[]).join(", ");
+      show("modalEdit");
+    }
+
+    // حفظ تعديل
+    $("formEdit").addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      const msg=$("e_msg"); msg.textContent="";
+      const uid=$("e_uid").value;
+      const payload={
+        role:$("e_role").value,
+        nameAr:$("e_nameAr").value||"",
+        nameEn:$("e_nameEn").value||"",
+        email:$("e_email").value||null,
+        siteScope:strToArr($("e_site").value),
+        deptScope:strToArr($("e_dept").value),
+        updatedAt:serverTimestamp()
+      };
+      try{
+        await updateDoc(doc(db,"users",uid), payload);
+        msg.textContent="تم الحفظ ✅";
+        hide("modalEdit"); await loadPage(true);
+      }catch(err){ console.error(err); msg.textContent="تعذّر الحفظ: "+(err?.message||err); }
+    });
+
+    // تفعيل/تعطيل
+    async function toggleUser(uid, currentData){
+      const active = (displayStatus(currentData)==="active");
+      const newStatus = active ? "disabled" : "active";
+      try{
+        await updateDoc(doc(db,"users",uid), {
+          isActive: !active,
+          "account.status": newStatus,
+          updatedAt: serverTimestamp()
+        });
+        await loadPage(false);
+      }catch(err){ console.error(err); alert("تعذّر التحديث: "+(err?.message||err)); }
+    }
+
+    // Reset Password (عميل فقط – لا يغيّر كلمة المرور في Auth)
+    function generateTempPwd(len=10){
+      const chars="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@$%*";
+      let out=""; for(let i=0;i<len;i++) out+=chars[Math.floor(Math.random()*chars.length)];
+      return out;
+    }
+    async function resetPassword(uid){
+      const temp = generateTempPwd();
+      // نفعّل إجبار تغيير كلمة المرور ونحفظ الباسورد المؤقت كملاحظة (اختياري)
+      try{
+        await updateDoc(doc(db,"users",uid), {
+          "account.forcePwdChange": true,
+          notes: `TempPwd(${new Date().toISOString()}): ${temp}`,
+          updatedAt: serverTimestamp()
+        });
+        alert("Temporary password (سلمها للمستخدم يدويًا):\n\n"+temp+"\n\n*لتطبيق تغيير كلمة المرور تلقائيًا لازم Cloud Function/Admin SDK*");
+      }catch(err){ console.error(err); alert("تعذّر التحديث: "+(err?.message||err)); }
+    }
+
+    // التقاط الأكشنات بالـ delegation
+    tbody.addEventListener("click", async (e)=>{
+      const btn = e.target.closest("button[data-act]");
+      if(!btn) return;
+      const id = btn.dataset.id;
+      const act= btn.dataset.act;
+
+      // نحتاج بيانات الصف المختصرة من الـDOM؟ الأفضل نجيب Snapshot حديث
+      const d = await getDoc(doc(db,"users",id));
+      if(!d.exists()){ alert("المستخدم غير موجود"); return; }
+      const data = d.data();
+
+      if(act==="edit"){ openEditModal({id, ...data}); }
+      if(act==="toggle"){ await toggleUser(id, data); }
+      if(act==="reset"){ await resetPassword(id); }
+    });
+  </script>
+</body>
+</html>
+
