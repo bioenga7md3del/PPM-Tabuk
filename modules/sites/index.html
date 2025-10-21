@@ -1,67 +1,474 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>PPM TABUK • المواقع والأقسام</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>PPM Tabuk • Sites</title>
+
+  <!-- Tailwind & Project Theme -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="../css/theme-light.css">
+  <link rel="stylesheet" href="../../css/theme-light.css">
+  <script src="../../js/theme.js" defer></script>
+  <!-- Global header/nav injection -->
+  <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
+
+  <!-- Print tweaks -->
+  <style>
+    .read-only .for-edit { display: none !important; }
+    @media print {
+      header, .no-print { display:none !important; }
+      table { width:100%; }
+    }
+  </style>
 </head>
-<body>
-  <header class="max-w-7xl mx-auto px-3 md:px-6 mt-3">
-  <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <button class="icon-btn" title="القائمة">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M4 6h16M4 12h16M4 18h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
-    </div>
-    <nav class="flex items-center gap-3 text-white/90">
-      <a href="../dashboard/index.html">Dashboard</a>
-      <a href="../assets/index.html">الأجهزة</a>
-      <a href="../preventive/index.html">الصيانة الوقائية</a>
-      <a href="../corrective/index.html">الصيانة التصحيحية</a>
-      <a href="../sites/index.html">المواقع</a>
-      <a href="../users/index.html" id="navAdmin">المستخدمون</a>
-    </nav>
-    <div class="avatar">👤</div>
-  </div>
-</header>
-  <main class="max-w-7xl mx-auto p-3 md:p-6 space-y-6">
+<body class="bg-slate-50 text-slate-800">
+  <!-- Global Header / Nav -->
+  <div id="mainNav" data-active="sites"></div>
+  <header class="notice n-ok hidden"></header>
 
-<section class="grid grid-cols-1 md:grid-cols-2 gap-4">
-  <div class="card p-4">
-    <div class="font-bold mb-3">إضافة موقع</div>
-    <div class="flex gap-2">
-      <input id="siteName" class="field flex-1" placeholder="اسم الموقع"/>
-      <button id="addSite" class="btn btn-brand">حفظ</button>
+  <main class="max-w-7xl mx-auto px-4 py-6">
+    <!-- Actions -->
+    <div class="flex items-center gap-2 mb-4 no-print">
+      <button id="btnPrint" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm">Print</button>
+      <button id="btnExport" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm">Export Excel</button>
+      <button id="btnAdd" class="for-edit px-3 py-1.5 rounded-xl bg-blue-600 text-white text-sm">Add Site</button>
     </div>
-    <ul id="sitesList" class="mt-3 space-y-1 text-slate-600 text-sm"></ul>
-  </div>
-  <div class="card p-4">
-    <div class="font-bold mb-3">إضافة قسم</div>
-    <div class="flex gap-2">
-      <input id="deptName" class="field flex-1" placeholder="اسم القسم"/>
-      <button id="addDept" class="btn btn-brand">حفظ</button>
-    </div>
-    <ul id="deptsList" class="mt-3 space-y-1 text-slate-600 text-sm"></ul>
-  </div>
-</section>
 
-<script type="module">
-  import { db } from '../../js/firebase.js';
-  import { collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-  async function loadList(col, ulId){
-    const ul = document.getElementById(ulId); ul.innerHTML='';
-    const qs = await getDocs(query(collection(db,col), orderBy('name')));
-    qs.forEach(d=>{ const li=document.createElement('li'); li.textContent = d.data().name; ul.appendChild(li); });
-  }
-  document.getElementById('addSite').onclick = async ()=>{ const v=document.getElementById('siteName').value.trim(); if(!v) return; await addDoc(collection(db,'sites'), { name:v }); document.getElementById('siteName').value=''; loadList('sites','sitesList'); };
-  document.getElementById('addDept').onclick = async ()=>{ const v=document.getElementById('deptName').value.trim(); if(!v) return; await addDoc(collection(db,'departments'), { name:v }); document.getElementById('deptName').value=''; loadList('departments','deptsList'); };
-  loadList('sites','sitesList'); loadList('departments','deptsList');
-</script>
+    <!-- Filters -->
+    <section class="grid md:grid-cols-3 gap-3 mb-4 no-print">
+      <input id="fName" type="text" placeholder="Search by name or code" class="px-4 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <select id="fContractor" class="px-3 py-2.5 rounded-2xl border border-slate-300">
+        <option value="">All contractors</option>
+      </select>
+      <select id="fType" class="px-3 py-2.5 rounded-2xl border border-slate-300">
+        <option value="">All types</option>
+        <option value="hospital">hospital</option>
+        <option value="medical_center">medical_center</option>
+      </select>
+    </section>
 
+    <!-- Table -->
+    <section class="rounded-2xl border border-slate-200 overflow-hidden bg-white">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+            <tr>
+              <th class="text-left px-4 py-3">Site</th>
+              <th class="text-left px-4 py-3">Location</th>
+              <th class="text-left px-4 py-3">Type</th>
+              <th class="text-left px-4 py-3">Contractor</th>
+              <th class="text-left px-4 py-3">Primary</th>
+              <th class="text-left px-4 py-3">Backup</th>
+              <th class="text-left px-4 py-3">Status</th>
+              <th class="text-left px-4 py-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="sitesBody" class="divide-y divide-slate-200"></tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between px-4 py-3">
+        <div class="text-xs text-slate-500" id="pageInfo">Page 1</div>
+        <div class="flex gap-2">
+          <button id="prevPage" class="px-3 py-1.5 rounded-xl border border-slate-300 disabled:opacity-50">Prev</button>
+          <button id="nextPage" class="px-3 py-1.5 rounded-xl border border-slate-300 disabled:opacity-50">Next</button>
+        </div>
+      </div>
+    </section>
   </main>
+
+  <!-- Drawer (Add/Edit) -->
+  <div id="drawer" class="fixed inset-0 hidden">
+    <div class="absolute inset-0 bg-black/30" data-close></div>
+    <div class="absolute right-0 top-0 h-full w-full sm:w-[560px] bg-white shadow-xl p-6 overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h2 id="drawerTitle" class="text-xl font-bold">New Site</h2>
+        <button class="px-3 py-1.5 rounded-xl border" data-close>Close</button>
+      </div>
+
+      <form id="siteForm" class="grid grid-cols-2 gap-3">
+        <label class="text-sm">Site Code
+          <input name="code" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="TBC-001" required>
+        </label>
+        <label class="text-sm">Site Name
+          <input name="name" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="Al-Wurud PHC" required>
+        </label>
+        <label class="text-sm">Latitude
+          <input name="lat" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="28.383" type="number" step="any">
+        </label>
+        <label class="text-sm">Longitude
+          <input name="lng" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="36.566" type="number" step="any">
+        </label>
+        <label class="text-sm">Type
+          <select name="type" class="mt-1 w-full px-3 py-2 rounded-xl border">
+            <option value="hospital">hospital</option>
+            <option value="medical_center">medical_center</option>
+          </select>
+        </label>
+        <label class="text-sm">Contractor
+          <input name="contractor" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="First Gulf">
+        </label>
+
+        <label class="text-sm col-span-2">Primary Engineer (Supervisor)
+          <select id="primaryEngineer" name="primaryEngineer" class="mt-1 w-full px-3 py-2 rounded-xl border"></select>
+        </label>
+        <label class="text-sm col-span-2">Backup Engineer (Supervisor)
+          <select id="backupEngineer" name="backupEngineer" class="mt-1 w-full px-3 py-2 rounded-xl border"></select>
+        </label>
+
+        <label class="text-sm flex items-center gap-2 col-span-2">
+          <input type="checkbox" name="primaryActive" class="rounded"> Primary Active
+        </label>
+
+        <div class="col-span-2 grid grid-cols-[72px,1fr] gap-3 items-center">
+          <img id="logoPreview" class="w-16 h-16 rounded border object-cover" alt="logo preview"/>
+          <label class="text-sm">Site Logo (Storage)
+            <input id="logoInput" type="file" accept="image/*" class="mt-1 w-full px-3 py-2 rounded-xl border for-edit">
+          </label>
+        </div>
+
+        <div class="col-span-2 flex gap-2 mt-2">
+          <button type="submit" class="for-edit px-4 py-2 rounded-xl bg-blue-600 text-white">Save</button>
+          <button type="button" data-close class="px-4 py-2 rounded-xl border">Cancel</button>
+        </div>
+        <p class="text-xs text-slate-500 col-span-2">Doc ID will be the <strong>Site Code</strong>.</p>
+      </form>
+    </div>
+  </div>
+
+  <!-- SheetJS (ESM) + Firebase (ESM) + App Logic -->
+  <script type="module">
+    // ===== SheetJS ESM for Excel export =====
+    import * as XLSX from 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm';
+
+    // ===== Firebase SDKs (CDN ESM) =====
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      getFirestore, collection, doc, getDoc, getDocs,
+      setDoc, deleteDoc, query, where, orderBy, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import {
+      getStorage, ref as sref, uploadBytes, getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+
+    // ===== Firebase Config (from your js/firebase.js) =====
+    const firebaseConfig = {
+      apiKey: "AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
+      authDomain: "pmqrtabuk.firebaseapp.com",
+      projectId: "pmqrtabuk",
+      storageBucket: "pmqrtabuk.firebasestorage.app",
+      messagingSenderId: "305570616285",
+      appId: "1:305570616285:web:4f6839fd08b8b5aa131c34"
+    };
+
+    // Init
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+    const storage = getStorage(app);
+
+    // ===== Helpers & State =====
+    const el = (id)=>document.getElementById(id);
+    const PAGE_SIZE = 10;
+
+    let STATE = {
+      list: [],
+      filtered: [],
+      page: 1,
+      profile: null,
+      engineers: [] // {id, name}
+    };
+
+    // UI refs
+    const fName = el('fName');
+    const fContractor = el('fContractor');
+    const fType = el('fType');
+    const tbody = el('sitesBody');
+    const pageInfo = el('pageInfo');
+    const prevBtn = el('prevPage');
+    const nextBtn = el('nextPage');
+    const btnAdd = el('btnAdd');
+    const btnExport = el('btnExport');
+    const btnPrint = el('btnPrint');
+    const drawer = el('drawer');
+    const drawerTitle = el('drawerTitle');
+    const siteForm = el('siteForm');
+    const logoInput = el('logoInput');
+    const primSel = el('primaryEngineer');
+    const backSel = el('backupEngineer');
+
+    let editCode = null;
+
+    // ===== Roles
+    async function getCurrentUserProfile() {
+      const u = auth.currentUser;
+      if (!u) return null;
+      const snap = await getDoc(doc(db, 'users', u.uid));
+      return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+    }
+    function canEdit(profile){
+      if(!profile) return false;
+      const r = (profile.role || '').toLowerCase();
+      return r === 'admin' || r === 'system owner' || r === 'system_owner' || r === 'owner';
+    }
+
+    // ===== Auth Gate
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){
+        document.body.classList.add('read-only');
+        // ممكن تعرض رسالة أو redirect للوجين حسب نظامك
+        return;
+      }
+      STATE.profile = await getCurrentUserProfile();
+      if(!canEdit(STATE.profile)) document.body.classList.add('read-only');
+      else document.body.classList.remove('read-only');
+
+      await loadEngineers();
+      await loadSites();
+    });
+
+    // ===== Load Engineers (role == Supervisor)
+    async function loadEngineers(){
+      const qy = query(collection(db,'users'), where('role','==','Supervisor'));
+      const snaps = await getDocs(qy);
+      STATE.engineers = snaps.docs.map(d=>({ id:d.id, name:(d.data().nameEn || d.data().displayName || d.id) }));
+      const opts = '<option value="">— None —</option>' + STATE.engineers.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+      primSel.innerHTML = opts;
+      backSel.innerHTML = opts;
+    }
+
+    // ===== Load Sites
+    async function loadSites(){
+      const snaps = await getDocs(query(collection(db,'sites'), orderBy('name')));
+      STATE.list = snaps.docs.map(d=> ({ code:d.id, ...d.data() }));
+      applyFilters();
+      fillContractorFilter();
+    }
+
+    // ===== Filters
+    function fillContractorFilter(){
+      const set = new Set(STATE.list.map(x=>x.contractor).filter(Boolean));
+      fContractor.innerHTML = '<option value="">All contractors</option>' + Array.from(set).sort().map(c=>`<option>${c}</option>`).join('');
+    }
+
+    function applyFilters(){
+      const nameQ = (fName.value||'').toLowerCase().trim();
+      const contractor = fContractor.value||'';
+      const type = fType.value||'';
+      STATE.filtered = STATE.list.filter(x=>{
+        const okName = !nameQ || (x.name||'').toLowerCase().includes(nameQ) || (x.code||'').toLowerCase().includes(nameQ);
+        const okCon = !contractor || (x.contractor||'') === contractor;
+        const okType = !type || (x.type||'') === type;
+        return okName && okCon && okType;
+      });
+      STATE.page = 1;
+      renderTable();
+    }
+
+    fName.addEventListener('input', applyFilters);
+    fContractor.addEventListener('change', applyFilters);
+    fType.addEventListener('change', applyFilters);
+
+    // ===== Render
+    function paged(){
+      const start = (STATE.page-1)*PAGE_SIZE;
+      return STATE.filtered.slice(start, start+PAGE_SIZE);
+    }
+
+    function displayUserName(uid){
+      const m = STATE.engineers.find(u=>u.id===uid);
+      return m? m.name : uid || '-';
+    }
+
+    function renderTable(){
+      const rows = paged().map(x=>{
+        const statusBadge = x.primaryActive===false
+          ? '<span class="px-2 py-0.5 text-xs rounded-full border border-red-300 text-red-700">Primary Inactive</span>' : '';
+        const logo = x.logoUrl
+          ? `<img src="${x.logoUrl}" class="w-8 h-8 rounded object-cover border"/>`
+          : '<div class="w-8 h-8 rounded border bg-slate-100"></div>';
+
+        const loc = x.location && typeof x.location.lat==='number' && typeof x.location.lng==='number'
+          ? `${x.location.lat.toFixed(4)}, ${x.location.lng.toFixed(4)}`
+          : '-';
+        const mapsUrl = x.location ? `https://www.google.com/maps?q=${x.location.lat},${x.location.lng}` : null;
+
+        const prim = x.primaryEngineerId ? displayUserName(x.primaryEngineerId) : '-';
+        const back = x.backupEngineerId ? displayUserName(x.backupEngineerId) : '-';
+
+        const editBtns = canEdit(STATE.profile)
+          ? `<button data-act="edit" data-code="${x.code}" class="text-blue-600 hover:underline">Edit</button>
+             <span class="text-slate-300">•</span>
+             <button data-act="del" data-code="${x.code}" class="text-red-600 hover:underline">Delete</button>`
+          : '<span class="text-slate-400">View</span>';
+
+        return `
+          <tr class="border-b">
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-3">
+                ${logo}
+                <div>
+                  <div class="font-semibold">${x.name||'-'}</div>
+                  <div class="text-xs text-slate-500">${x.code||''}</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3">${loc} ${mapsUrl?`<a href="${mapsUrl}" target="_blank" class="ml-2 text-xs text-blue-600 underline">Open in Maps</a>`:''}</td>
+            <td class="px-4 py-3">${x.type||'-'}</td>
+            <td class="px-4 py-3">${x.contractor||'-'}</td>
+            <td class="px-4 py-3">${prim}</td>
+            <td class="px-4 py-3">${back}</td>
+            <td class="px-4 py-3">${statusBadge}</td>
+            <td class="px-4 py-3">
+              <a class="text-indigo-600 hover:underline" href="modules/assets/index.html?site=${encodeURIComponent(x.code)}">Open Devices</a>
+              <span class="text-slate-300">•</span>
+              ${editBtns}
+            </td>
+          </tr>`;
+      }).join('');
+
+      tbody.innerHTML = rows || `<tr><td class="px-4 py-6 text-center text-slate-500" colspan="8">No sites found.</td></tr>`;
+
+      const totalPages = Math.max(1, Math.ceil(STATE.filtered.length / PAGE_SIZE));
+      pageInfo.textContent = `Page ${STATE.page} / ${totalPages} — ${STATE.filtered.length} total`;
+      prevBtn.disabled = STATE.page<=1;
+      nextBtn.disabled = STATE.page>=totalPages;
+
+      tbody.querySelectorAll('button[data-act]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const act = btn.dataset.act;
+          const code = btn.dataset.code;
+          if(act==='edit') openEdit(code);
+          if(act==='del') confirmDelete(code);
+        });
+      });
+    }
+
+    prevBtn.addEventListener('click', ()=>{ STATE.page=Math.max(1,STATE.page-1); renderTable(); });
+    nextBtn.addEventListener('click', ()=>{ const tp=Math.ceil(STATE.filtered.length/PAGE_SIZE); STATE.page=Math.min(tp,STATE.page+1); renderTable(); });
+
+    // ===== Drawer controls
+    function openDrawer(){
+      drawer.classList.remove('hidden');
+      drawerTitle.textContent = editCode ? `Edit Site (${editCode})` : 'New Site';
+      if(!editCode){ siteForm.reset(); document.getElementById('logoPreview').src=''; siteForm.code.disabled = false; }
+    }
+    function closeDrawer(){ editCode=null; drawer.classList.add('hidden'); }
+
+    document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', closeDrawer));
+    btnAdd.addEventListener('click', ()=>{ if(!canEdit(STATE.profile)) return; openDrawer(); });
+
+    async function openEdit(code){
+      const snap = await getDoc(doc(db,'sites',code));
+      if(!snap.exists()) return alert('Site not found');
+      const d = snap.data();
+      editCode = code;
+
+      siteForm.code.value = code; siteForm.code.disabled = true;
+      siteForm.name.value = d.name||'';
+      siteForm.lat.value = d.location?.lat ?? '';
+      siteForm.lng.value = d.location?.lng ?? '';
+      siteForm.type.value = d.type||'';
+      siteForm.contractor.value = d.contractor||'';
+      siteForm.primaryEngineer.value = d.primaryEngineerId||'';
+      siteForm.backupEngineer.value = d.backupEngineerId||'';
+      siteForm.primaryActive.checked = !!d.primaryActive;
+      document.getElementById('logoPreview').src = d.logoUrl||'';
+
+      openDrawer();
+    }
+
+    async function confirmDelete(code){
+      if(!canEdit(STATE.profile)) return;
+      if(!confirm(`Delete site ${code}?`)) return;
+      await deleteDoc(doc(db,'sites',code));
+      await loadSites();
+    }
+
+    // ===== Upload logo
+    logoInput.addEventListener('change', async ()=>{
+      const file = logoInput.files?.[0];
+      if(!file) return;
+      if(!canEdit(STATE.profile)) return alert('You do not have permission to upload.');
+
+      const code = siteForm.code.value.trim();
+      if(!code) { alert('Enter Site Code first'); logoInput.value=''; return; }
+
+      const r = sref(storage, `sites/${code}/logo_${Date.now()}`);
+      await uploadBytes(r, file);
+      const url = await getDownloadURL(r);
+      document.getElementById('logoPreview').src = url;
+      logoInput.dataset.url = url; // temporary until save
+    });
+
+    // ===== Save (Create/Update)
+    siteForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(!canEdit(STATE.profile)) return;
+
+      const payload = collectForm();
+      await setDoc(doc(db,'sites', payload.code), {
+        name: payload.name,
+        contractor: payload.contractor,
+        type: payload.type,
+        location: payload.location,
+        primaryEngineerId: payload.primaryEngineerId || null,
+        backupEngineerId: payload.backupEngineerId || null,
+        primaryActive: payload.primaryActive,
+        logoUrl: payload.logoUrl || null,
+        updatedAt: serverTimestamp(),
+        createdAt: payload._isNew ? serverTimestamp() : undefined
+      }, { merge:true });
+
+      closeDrawer();
+      siteForm.code.disabled = false;
+      await loadSites();
+    });
+
+    function collectForm(){
+      const code = siteForm.code.value.trim();
+      const name = siteForm.name.value.trim();
+      const lat = parseFloat(siteForm.lat.value);
+      const lng = parseFloat(siteForm.lng.value);
+      const type = siteForm.type.value;
+      const contractor = siteForm.contractor.value.trim();
+      const primaryEngineerId = siteForm.primaryEngineer.value || '';
+      const backupEngineerId = siteForm.backupEngineer.value || '';
+      const primaryActive = siteForm.primaryActive.checked;
+      const logoUrl = logoInput.dataset.url || document.getElementById('logoPreview').src || '';
+
+      if(!code) throw alert('Site Code is required');
+      if(!name) throw alert('Site Name is required');
+
+      return {
+        _isNew: !editCode,
+        code, name, contractor, type,
+        location: (Number.isFinite(lat) && Number.isFinite(lng)) ? {lat,lng} : null,
+        primaryEngineerId, backupEngineerId, primaryActive, logoUrl
+      };
+    }
+
+    // ===== Export & Print
+    btnExport.addEventListener('click', ()=>{
+      const data = STATE.filtered.map(x=>({
+        Name:x.name||'', Code:x.code||'',
+        Latitude: x.location?.lat ?? '', Longitude: x.location?.lng ?? '',
+        Type:x.type||'', Contractor:x.contractor||'',
+        PrimaryEngineer: displayUserName(x.primaryEngineerId||''),
+        BackupEngineer: displayUserName(x.backupEngineerId||''),
+        PrimaryActive: x.primaryActive===false? 'No':'Yes',
+        LogoUrl:x.logoUrl||''
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Sites');
+      XLSX.writeFile(wb, `sites_${new Date().toISOString().slice(0,10)}.xlsx`);
+    });
+
+    btnPrint.addEventListener('click', ()=> window.print() );
+
+  </script>
 </body>
 </html>
