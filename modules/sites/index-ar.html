@@ -1,1 +1,608 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>PPM TABUK • Sites</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- الثيم الموحد -->
+  <link rel="stylesheet" href="../../css/theme-light.css">
+  <!-- (اختياري) مبدّل الثيم -->
+  <script src="../../js/theme.js" defer></script>
+
+  <!-- Loader للـ partials -->
+  <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
+
+  <!-- Leaflet (خريطة لالتقاط الإحداثيات بسهولة) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- تنسيق اللينك النشط + إصلاح القوائم الفرعية -->
+  <style>
+    /* فعّل الستايل على روابط المستوى الأول فقط */
+    #mainNav > a.active,
+    #mainNav .dd > a.active {
+      position: relative;
+      color: #93c5fd !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.3px;
+      transition: color .25s;
+    }
+    #mainNav > a.active::after,
+    #mainNav .dd > a.active::after {
+      content:""; position:absolute; left:0; right:0; bottom:-4px; height:2px;
+      background:#60a5fa; border-radius:2px; transform:scaleX(0); transition:transform .25s;
+    }
+    #mainNav > a.active:hover::after,
+    #mainNav .dd > a.active:hover::after { transform:scaleX(1); }
+
+    /* روابط القوائم الفرعية ترجع طبيعي */
+    #mainNav .dd .dd-panel .dd-item { color:inherit !important; font-weight:600 !important; }
+    #mainNav .dd .dd-panel .dd-item:hover { color:#2563eb !important; }
+
+    /* صلاحيات العرض */
+    .read-only .for-edit{ display:none!important; }
+
+    /* الطباعة */
+    @media print{ header,.no-print{display:none!important} table{width:100%} }
+
+    /* خريطة الملتقط */
+    #mapPicker { height: 260px; border-radius: 12px; overflow: hidden; }
+  </style>
+
+  <!-- سكربت الصفحة: Firebase + منطق Sites -->
+  <script type="module">
+    /* ===== Firebase ===== */
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      getFirestore, collection, doc, getDoc, getDocs,
+      setDoc, deleteDoc, query, where, orderBy, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import {
+      getStorage, ref as sref, uploadBytes, getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+    import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
+
+    // إعداد Firebase (نفس مشروعك)
+    const cfg = {
+      apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
+      authDomain:"pmqrtabuk.firebaseapp.com",
+      projectId:"pmqrtabuk",
+      storageBucket:"pmqrtabuk.firebasestorage.app",  // لو لقيت مشاكل رفع، جرّب pmqrtabuk.appspot.com
+      messagingSenderId:"305570616285",
+      appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
+    };
+    const app = getApps().length ? getApps()[0] : initializeApp(cfg);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+    const storage = getStorage(app);
+
+    /* ===== بعد تحميل الهيدر: تفعيل اللينك النشط ===== */
+    document.addEventListener("partials:loaded", () => {
+      // زر الخروج
+      const btnLogout = document.getElementById("btnLogout");
+      if (btnLogout) btnLogout.addEventListener("click", async () => {
+        try { await signOut(auth); } finally { location.replace("../../login.html"); }
+      });
+
+      // Sites: فعّل اللينك العلوي فقط
+      const path = location.pathname.toLowerCase();
+      if (path.endsWith("sites/index.html")) {
+        const topSites = document.querySelector('#mainNav .dd[data-dd="sites"] > a[data-to="sites"]');
+        if (topSites) topSites.classList.add('active');
+      }
+    });
+
+    /* ===== عناصر الصفحة ===== */
+    const $ = (id)=>document.getElementById(id);
+    const PAGE_SIZE = 10;
+
+    const fName = $('fName');
+    const fContractor = $('fContractor');
+    const fType = $('fType');
+    const tbody = $('sitesBody');
+    const pageInfo = $('pageInfo');
+    const prevBtn = $('prevPage');
+    const nextBtn = $('nextPage');
+    const btnAdd = $('btnAdd');
+    const btnExport = $('btnExport');
+    const btnPrint = $('btnPrint');
+
+    const drawer = $('drawer');
+    const drawerTitle = $('drawerTitle');
+    const siteForm = $('siteForm');
+    const logoInput = $('logoInput');
+    const primSel = $('primaryEngineer');
+    const backSel = $('backupEngineer');
+
+    // خريطة
+    let map, marker;
+
+    let editCode = null;
+    let STATE = { list:[], filtered:[], page:1, engineers:[], profile:null };
+
+    /* ===== صلاحيـات ===== */
+    function roleKey(v){ return (v||'').toString().toLowerCase().replace(/[\s_]/g,''); }
+    function canEdit(p){
+      if(!p) return false;
+      const r = roleKey(p.role); // يدعم: SystemOwner / System Owner / system_owner
+      return r==='admin' || r==='systemowner' || r==='owner';
+    }
+    function toggleEditByRole(){
+      if(!canEdit(STATE.profile)) document.body.classList.add('read-only');
+      else document.body.classList.remove('read-only');
+    }
+
+    /* ===== حالة الدخول ===== */
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ location.replace("../../login.html"); return; }
+      try{
+        const snap=await getDoc(doc(db,'users',user.uid));
+        STATE.profile = snap.exists()? snap.data() : null;
+        const el=document.getElementById('userName');
+        if(el){
+          const name=(snap.exists() && (snap.data().name || snap.data().nameEn)) ? (snap.data().name || snap.data().nameEn) : (user.displayName||user.email);
+          el.textContent=name||'';
+        }
+      }catch{ STATE.profile=null; }
+      toggleEditByRole();
+      await loadEngineers();
+      await loadSites();
+    });
+
+    /* ===== تحميل المهندسين (role = Supervisor) ===== */
+    async function loadEngineers(){
+      const qy = query(collection(db,'users'), where('role','==','Supervisor'));
+      const snaps = await getDocs(qy);
+      STATE.engineers = snaps.docs.map(d=>({ id:d.id, name:(d.data().nameEn || d.data().displayName || d.id) }));
+      const opts = '<option value="">— لا يوجد —</option>' + STATE.engineers.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+      primSel.innerHTML = opts; backSel.innerHTML = opts;
+    }
+
+    /* ===== تحميل المواقع ===== */
+    async function loadSites(){
+      const snaps = await getDocs(query(collection(db,'sites'), orderBy('name')));
+      STATE.list = snaps.docs.map(d=> ({ code:d.id, ...d.data() }));
+      applyFilters();
+      fillContractorFilter();
+    }
+
+    /* ===== فلاتر ===== */
+    function fillContractorFilter(){
+      const set = new Set(STATE.list.map(x=>x.contractor).filter(Boolean));
+      fContractor.innerHTML = '<option value="">كل المقاولين</option>' + Array.from(set).sort().map(c=>`<option>${c}</option>`).join('');
+    }
+    function applyFilters(){
+      const q = (fName.value||'').toLowerCase().trim();
+      const contractor = fContractor.value||'';
+      const type = fType.value||'';
+      STATE.filtered = STATE.list.filter(x=>{
+        const okQ = !q || (x.name||'').toLowerCase().includes(q) || (x.code||'').toLowerCase().includes(q);
+        const okC = !contractor || (x.contractor||'') === contractor;
+        const okT = !type || (x.type||'') === type;
+        return okQ && okC && okT;
+      });
+      STATE.page = 1;
+      renderTable();
+    }
+    fName.addEventListener('input', applyFilters);
+    fContractor.addEventListener('change', applyFilters);
+    fType.addEventListener('change', applyFilters);
+
+    /* ===== جدول + صفحات ===== */
+    function pageSlice(){ const s=(STATE.page-1)*PAGE_SIZE; return STATE.filtered.slice(s, s+PAGE_SIZE); }
+    function userName(uid){ const m=STATE.engineers.find(u=>u.id===uid); return m? m.name : (uid||'-'); }
+
+    function renderTable(){
+      const rows = pageSlice().map(x=>{
+        const inactive = x.primaryActive===false
+          ? '<span class="px-2 py-0.5 text-xs rounded-full border border-red-300 text-red-700">غير فعّال</span>' : '';
+        const logo = x.logoUrl
+          ? `<img src="${x.logoUrl}" class="w-8 h-8 rounded object-cover border"/>`
+          : '<div class="w-8 h-8 rounded border bg-slate-100"></div>';
+        const hasLoc = x.location && typeof x.location.lat==='number' && typeof x.location.lng==='number';
+        const locTxt = hasLoc ? `${x.location.lat.toFixed(4)}, ${x.location.lng.toFixed(4)}` : '-';
+        const mapsUrl = hasLoc ? `https://www.google.com/maps?q=${x.location.lat},${x.location.lng}` : null;
+
+        const editBtns = canEdit(STATE.profile)
+          ? `<button data-act="edit" data-code="${x.code}" class="text-blue-600 hover:underline">تعديل</button>
+             <span class="text-slate-300">•</span>
+             <button data-act="del" data-code="${x.code}" class="text-red-600 hover:underline">حذف</button>`
+          : '<span class="text-slate-400">عرض</span>';
+
+        return `
+          <tr class="border-b">
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-3">
+                ${logo}
+                <div>
+                  <div class="font-semibold">${x.name||'-'}</div>
+                  <div class="text-xs text-slate-500">${x.code||''}</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3">${locTxt} ${mapsUrl?`<a href="${mapsUrl}" target="_blank" class="mr-2 text-xs text-blue-600 underline">فتح بالخريطة</a>`:''}</td>
+            <td class="px-4 py-3">${x.type||'-'}</td>
+            <td class="px-4 py-3">${x.contractor||'-'}</td>
+            <td class="px-4 py-3">${x.primaryEngineerId ? userName(x.primaryEngineerId) : '-'}</td>
+            <td class="px-4 py-3">${x.backupEngineerId ? userName(x.backupEngineerId) : '-'}</td>
+            <td class="px-4 py-3">${inactive}</td>
+            <td class="px-4 py-3">
+              <a class="text-indigo-600 hover:underline"
+                 href="/PPM-Tabuk/modules/assets/index.html?site=${encodeURIComponent(x.name || x.code)}">أجهزة الموقع</a>
+              <span class="text-slate-300">•</span>
+              ${editBtns}
+            </td>
+          </tr>`;
+      }).join('');
+      tbody.innerHTML = rows || `<tr><td class="px-4 py-6 text-center text-slate-500" colspan="8">لا توجد مواقع.</td></tr>`;
+
+      const totalPages = Math.max(1, Math.ceil(STATE.filtered.length / PAGE_SIZE));
+      pageInfo.textContent = `صفحة ${STATE.page} / ${totalPages} — ${STATE.filtered.length} إجمالي`;
+      prevBtn.disabled = STATE.page<=1;
+      nextBtn.disabled = STATE.page>=totalPages;
+
+      tbody.querySelectorAll('button[data-act]').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          const act=b.dataset.act, code=b.dataset.code;
+          if(act==='edit') openEdit(code);
+          if(act==='del') confirmDelete(code);
+        });
+      });
+    }
+    prevBtn.addEventListener('click', ()=>{ STATE.page=Math.max(1,STATE.page-1); renderTable(); });
+    nextBtn.addEventListener('click', ()=>{ const tp=Math.ceil(STATE.filtered.length/PAGE_SIZE); STATE.page=Math.min(tp,STATE.page+1); renderTable(); });
+
+    /* ===== فتح الدرج ===== */
+    function openDrawer(){
+      drawer.classList.remove('hidden');
+      drawerTitle.textContent = editCode ? `تعديل موقع (${editCode})` : 'موقع جديد';
+      if(!editCode){
+        siteForm.reset();
+        const p = document.getElementById('logoPreview');
+        p && p.removeAttribute('src');
+        logoInput.value = '';
+        delete logoInput.dataset.url;          // مهم: امسح أي URL قديم
+        setTimeout(initOrResetMap, 50);
+      } else {
+        setTimeout(initOrResetMap, 50);
+      }
+    }
+    function closeDrawer(){ editCode=null; drawer.classList.add('hidden'); }
+
+    document.addEventListener('click', e=>{
+      if(e.target?.dataset?.close !== undefined || e.target.closest('[data-close]')) closeDrawer();
+    });
+    btnAdd.addEventListener('click', ()=>{ if(!canEdit(STATE.profile)) return; openDrawer(); });
+
+    /* ===== خريطة الملتقط ===== */
+    function initOrResetMap(){
+      const latInput = siteForm.lat;
+      const lngInput = siteForm.lng;
+      const def = [28.383, 36.566]; // تقريبياً تبوك
+      const has = Number.isFinite(parseFloat(latInput.value)) && Number.isFinite(parseFloat(lngInput.value));
+      const center = has ? [parseFloat(latInput.value), parseFloat(lngInput.value)] : def;
+
+      if(!map){
+        map = L.map('mapPicker', { zoomControl:true }).setView(center, has? 13 : 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19, attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+        map.on('click', (e)=>{
+          setMarker(e.latlng.lat, e.latlng.lng, true);
+        });
+      } else {
+        map.setView(center, has? 13 : 8);
+      }
+      if(has) setMarker(center[0], center[1], false);
+    }
+
+    function setMarker(lat, lng, fromMap){
+      if(!marker) marker = L.marker([lat,lng]).addTo(map);
+      else marker.setLatLng([lat,lng]);
+      if(fromMap){
+        siteForm.lat.value = Number(lat.toFixed(6));
+        siteForm.lng.value = Number(lng.toFixed(6));
+      }
+    }
+
+    // زر "موقعي الآن"
+    window.pickMyLocation = ()=>{
+      if(!navigator.geolocation){ alert('المتصفح لا يدعم تحديد الموقع'); return; }
+      navigator.geolocation.getCurrentPosition(pos=>{
+        const { latitude, longitude } = pos.coords;
+        initOrResetMap();
+        setMarker(latitude, longitude, true);
+        map.setView([latitude, longitude], 15);
+      }, ()=>alert('تعذّر الحصول على الموقع'));
+    };
+
+    // مزامنة الماركر لو المستخدم دخل قيم أو لصق لينك Google Maps
+    function tryParseLatLng(txt){
+      if(!txt) return null;
+      // صيغة "lat,lng"
+      const m1 = txt.trim().match(/(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/);
+      if(m1) return {lat:parseFloat(m1[1]), lng:parseFloat(m1[2])};
+      // لينك مابس فيه @lat,lng
+      const m2 = txt.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+      if(m2) return {lat:parseFloat(m2[1]), lng:parseFloat(m2[2])};
+      return null;
+    }
+    ['lat','lng','locPaste'].forEach(k=>{
+      const input = k==='locPaste' ? $('locPaste') : siteForm[k];
+      if(input){
+        input.addEventListener('change', ()=>{
+          const lat = parseFloat(siteForm.lat.value);
+          const lng = parseFloat(siteForm.lng.value);
+          const parsed = k==='locPaste' ? tryParseLatLng(input.value) : (Number.isFinite(lat)&&Number.isFinite(lng) ? {lat,lng}: null);
+          if(parsed){
+            initOrResetMap();
+            setMarker(parsed.lat, parsed.lng, true);
+            map.setView([parsed.lat, parsed.lng], 15);
+          }
+        });
+      }
+    });
+
+    /* ===== فتح/تعديل/حذف ===== */
+    async function openEdit(code){
+      const snap = await getDoc(doc(db,'sites',code));
+      if(!snap.exists()) return alert('Site not found');
+      const d = snap.data();
+      editCode = code;
+
+      siteForm.code.value = code; siteForm.code.disabled = true;
+      siteForm.name.value = d.name||'';
+      siteForm.lat.value = d.location?.lat ?? '';
+      siteForm.lng.value = d.location?.lng ?? '';
+      siteForm.type.value = d.type||'';
+      siteForm.contractor.value = d.contractor||'';
+      siteForm.primaryEngineer.value = d.primaryEngineerId||'';
+      siteForm.backupEngineer.value = d.backupEngineerId||'';
+      siteForm.primaryActive.checked = !!d.primaryActive;
+
+      const pv = document.getElementById('logoPreview');
+      pv.src = d.logoUrl || '';
+      logoInput.dataset.url = d.logoUrl || '';
+
+      openDrawer();
+    }
+
+    async function confirmDelete(code){
+      if(!canEdit(STATE.profile)) return;
+      if(!confirm(`حذف الموقع ${code}؟`)) return;
+      await deleteDoc(doc(db,'sites',code));
+      await loadSites();
+    }
+
+    // رفع اللوجو
+    logoInput.addEventListener('change', async ()=>{
+      const file = logoInput.files?.[0];
+      if(!file) return;
+      if(!canEdit(STATE.profile)) return alert('ليس لديك صلاحية الرفع.');
+      const code = siteForm.code.value.trim();
+      if(!code){ alert('أدخل كود الموقع أولاً'); logoInput.value=''; return; }
+
+      const r = sref(storage, `sites/${code}/logo_${Date.now()}`);
+      await uploadBytes(r, file);
+      const url = await getDownloadURL(r);
+      document.getElementById('logoPreview').src = url;
+      logoInput.dataset.url = url;           // نستخدمه فقط في الحفظ
+    });
+
+    // حفظ
+    siteForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(!canEdit(STATE.profile)) return;
+
+      const payload = collectForm();
+      await setDoc(doc(db,'sites', payload.code), {
+        name: payload.name,
+        contractor: payload.contractor,
+        type: payload.type,
+        location: payload.location,
+        primaryEngineerId: payload.primaryEngineerId || null,
+        backupEngineerId: payload.backupEngineerId || null,
+        primaryActive: payload.primaryActive,
+        logoUrl: payload.logoUrl || null,
+        updatedAt: serverTimestamp(),
+        createdAt: payload._isNew ? serverTimestamp() : undefined
+      }, { merge:true });
+
+      closeDrawer();
+      siteForm.code.disabled = false;
+      await loadSites();
+    });
+
+    // نجمع البيانات (نستخدم رابط الرفع فقط)
+    function collectForm(){
+      const code = siteForm.code.value.trim();
+      const name = siteForm.name.value.trim();
+      const lat = parseFloat(siteForm.lat.value);
+      const lng = parseFloat(siteForm.lng.value);
+      const type = siteForm.type.value;
+      const contractor = siteForm.contractor.value.trim();
+      const primaryEngineerId = siteForm.primaryEngineer.value || '';
+      const backupEngineerId = siteForm.backupEngineer.value || '';
+      const primaryActive = siteForm.primaryActive.checked;
+
+      const uploadedUrl = logoInput.dataset.url || '';
+      const logoUrl = (/^https?:/i.test(uploadedUrl)) ? uploadedUrl : '';
+
+      if(!code) throw alert('Site Code مطلوب');
+      if(!name) throw alert('Site Name مطلوب');
+
+      return {
+        _isNew: !editCode,
+        code, name, contractor, type,
+        location: (Number.isFinite(lat) && Number.isFinite(lng)) ? {lat,lng} : null,
+        primaryEngineerId, backupEngineerId, primaryActive, logoUrl
+      };
+    }
+
+    /* ===== Export & Print ===== */
+    btnExport.addEventListener('click', ()=>{
+      const data = STATE.filtered.map(x=>({
+        Name:x.name||'', Code:x.code||'',
+        Latitude: x.location?.lat ?? '', Longitude: x.location?.lng ?? '',
+        Type:x.type||'', Contractor:x.contractor||'',
+        PrimaryEngineer: userName(x.primaryEngineerId||''),
+        BackupEngineer: userName(x.backupEngineerId||''),
+        PrimaryActive: x.primaryActive===false? 'No':'Yes',
+        LogoUrl:x.logoUrl||''
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Sites');
+      XLSX.writeFile(wb, `sites_${new Date().toISOString().slice(0,10)}.xlsx`);
+    });
+    btnPrint.addEventListener('click', ()=> window.print() );
+  </script>
+</head>
+
+<body>
+  <!-- ✅ الهيدر الموحد من الـ partial -->
+  <header data-include="/PPM-Tabuk/partials/header.html?v=2" class="w-full max-w-none"></header>
+
+  <main class="w-full max-w-none mx-auto p-3 md:p-6 space-y-6">
+    <!-- شريط الأزرار -->
+    <div class="flex items-center gap-2 no-print">
+      <button id="btnPrint" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm inline-flex items-center gap-2">
+        <!-- print icon -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 3 18 3 18 9"/><path d="M6 14H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="2"/></svg>
+        طباعة
+      </button>
+      <button id="btnExport" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm inline-flex items-center gap-2">
+        <!-- export icon -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        تصدير Excel
+      </button>
+      <button id="btnAdd" class="for-edit px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm inline-flex items-center gap-2">
+        <!-- add icon -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        إضافة موقع
+      </button>
+    </div>
+
+    <!-- الفلاتر -->
+    <section class="grid md:grid-cols-3 gap-3 no-print">
+      <input id="fName" type="text" placeholder="بحث بالاسم أو الكود" class="px-4 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <select id="fContractor" class="px-3 py-2.5 rounded-2xl border border-slate-300">
+        <option value="">كل المقاولين</option>
+      </select>
+      <select id="fType" class="px-3 py-2.5 rounded-2xl border border-slate-300">
+        <option value="">كل الأنواع</option>
+        <option value="hospital">hospital</option>
+        <option value="medical_center">medical_center</option>
+      </select>
+    </section>
+
+    <!-- الجدول -->
+    <section class="rounded-2xl border border-slate-200 overflow-hidden bg-white">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+            <tr>
+              <th class="text-right px-4 py-3">الموقع</th>
+              <th class="text-right px-4 py-3">الإحداثيات</th>
+              <th class="text-right px-4 py-3">النوع</th>
+              <th class="text-right px-4 py-3">المقاول</th>
+              <th class="text-right px-4 py-3">المسؤول</th>
+              <th class="text-right px-4 py-3">البديل</th>
+              <th class="text-right px-4 py-3">الحالة</th>
+              <th class="text-right px-4 py-3">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="sitesBody" class="divide-y divide-slate-200"></tbody>
+        </table>
+      </div>
+
+      <!-- الصفحات -->
+      <div class="flex items-center justify-between px-4 py-3">
+        <div id="pageInfo" class="text-xs text-slate-500">صفحة 1</div>
+        <div class="flex gap-2">
+          <button id="prevPage" class="px-3 py-1.5 rounded-xl border border-slate-300 disabled:opacity-50">السابق</button>
+          <button id="nextPage" class="px-3 py-1.5 rounded-xl border border-slate-300 disabled:opacity-50">التالي</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- درج الإضافة/التعديل -->
+  <div id="drawer" class="fixed inset-0 hidden">
+    <div class="absolute inset-0 bg-black/30" data-close></div>
+    <div class="absolute left-0 top-0 h-full w-full sm:w-[620px] bg-white shadow-xl p-6 overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h2 id="drawerTitle" class="text-xl font-bold">موقع جديد</h2>
+        <button class="px-3 py-1.5 rounded-xl border" data-close>إغلاق</button>
+      </div>
+
+      <form id="siteForm" class="grid grid-cols-2 gap-3">
+        <label class="text-sm">كود الموقع
+          <input name="code" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="TBC-001" required>
+        </label>
+        <label class="text-sm">اسم الموقع
+          <input name="name" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="مركز صحي ..." required>
+        </label>
+
+        <div class="col-span-2 grid grid-cols-2 gap-3">
+          <label class="text-sm">Latitude
+            <input name="lat" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="28.383" type="number" step="any">
+          </label>
+          <label class="text-sm">Longitude
+            <input name="lng" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="36.566" type="number" step="any">
+          </label>
+          <label class="text-sm col-span-2">ألصق لينك Google Maps أو lat,lng (اختياري)
+            <input id="locPaste" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="https://maps.google.com/... أو 28.383,36.566">
+          </label>
+          <div class="col-span-2">
+            <div id="mapPicker" class="w-full"></div>
+            <div class="flex gap-2 mt-2">
+              <button type="button" onclick="pickMyLocation()" class="px-3 py-1.5 rounded-xl border">موقعي الآن</button>
+            </div>
+          </div>
+        </div>
+
+        <label class="text-sm">النوع
+          <select name="type" class="mt-1 w-full px-3 py-2 rounded-xl border">
+            <option value="hospital">hospital</option>
+            <option value="medical_center">medical_center</option>
+          </select>
+        </label>
+        <label class="text-sm">المقاول
+          <input name="contractor" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="First Gulf">
+        </label>
+
+        <label class="text-sm col-span-2">المهندس المسؤول (Supervisor)
+          <select id="primaryEngineer" name="primaryEngineer" class="mt-1 w-full px-3 py-2 rounded-xl border"></select>
+        </label>
+        <label class="text-sm col-span-2">المهندس البديل (Supervisor)
+          <select id="backupEngineer" name="backupEngineer" class="mt-1 w-full px-3 py-2 rounded-xl border"></select>
+        </label>
+
+        <label class="text-sm flex items-center gap-2 col-span-2">
+          <input type="checkbox" name="primaryActive" class="rounded"> المسؤول فعّال
+        </label>
+
+        <div class="col-span-2 grid grid-cols-[72px,1fr] gap-3 items-center">
+          <img id="logoPreview" class="w-16 h-16 rounded border object-cover" alt="logo preview"/>
+          <label class="text-sm">لوجو الموقع (Storage)
+            <input id="logoInput" type="file" accept="image/*" class="mt-1 w-full px-3 py-2 rounded-xl border for-edit">
+          </label>
+        </div>
+
+        <div class="col-span-2 flex gap-2 mt-2">
+          <button type="submit" class="for-edit px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white">حفظ</button>
+          <button type="button" data-close class="px-4 py-2 rounded-xl border">إلغاء</button>
+        </div>
+        <p class="text-xs text-slate-500 col-span-2">سيكون رقم الوثيقة هو <strong>كود الموقع</strong>.</p>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
 
