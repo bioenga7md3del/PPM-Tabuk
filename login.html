@@ -43,7 +43,27 @@
       -webkit-mask-image: radial-gradient(closest-side, #000 70%, transparent 100%);
       mask-image: radial-gradient(closest-side, #000 70%, transparent 100%);
     }
-
+ /* كارت نظيف احترافي */
+    .card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:20px;
+      box-shadow:0 24px 60px rgba(15,23,42,.10);
+    }
+    .inp{
+      width:100%; padding:14px 16px; border-radius:14px;
+      background:#fff; border:1px solid var(--line); color:var(--ink-2);
+      transition:border-color .15s, box-shadow .15s;
+    }
+    .inp::placeholder{color:#94a3b8}
+    .inp:focus{outline:none;border-color:#bfdbfe;box-shadow:0 0 0 4px rgba(59,130,246,.16)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.6rem;border-radius:14px;
+         padding:14px 18px;font-weight:800}
+    .btn-primary{background:linear-gradient(90deg, var(--accA), var(--accB));color:#001018}
+    .btn-primary:hover{filter:brightness(.98)}
+    .badge{display:inline-flex;align-items:center;gap:.45rem;padding:.35rem .7rem;border-radius:999px;font-size:.78rem}
+    .ok{background:rgba(16,185,129,.12); color:#047857; border:1px solid #bbf7d0}
+    .warn{background:rgba(234,179,8,.12); color:#92400e; border:1px solid #fde68a}
    
   </style>
 </head>
@@ -53,14 +73,7 @@
   <div class="wm" aria-hidden="true"></div>
 
   <main class="min-h-screen grid grid-cols-1 xl:grid-cols-12">
-    <!-- يسار: هيرو نصّي فقط (بدون لوجو) -->
-    <section class="xl:col-span-6 order-2 xl:order-1 px-8 xl:ps-16 py-14 flex items-center">
-      <div class="max-w-2xl">
-        <h1 class="text-5xl xl:text-6xl font-black leading-[1.15] text-slate-800">
-          Securely manage your assets<br>
-          with <span class="underline decoration-slate-300">PPM TABUK</span>
-        </h1>
-
+   
         <div class="mt-8 card p-5">
           <p class="text-lg font-extrabold text-slate-800">Biomedical Department</p>
           <p class="text-lg font-extrabold -mt-1 text-slate-800">Tabuk Cluster</p>
