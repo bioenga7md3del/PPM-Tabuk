@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -10,8 +10,8 @@
   <script src="../../js/theme.js" defer></script>
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
 
-  <!-- تمييز اللينك النشط (المستوى الأول فقط) -->
   <style>
+    /* Active link (level 1 only) */
     #mainNav > a.active,
     #mainNav .dd > a.active{
       position:relative;font-weight:900;letter-spacing:.3px;
@@ -42,13 +42,12 @@
 </head>
 <body>
 
-  <!-- ✅ الهيدر الموحد (عرض كامل) -->
+  <!-- Header include -->
   <header data-include="/PPM-Tabuk/partials/header.html?v=2" class="w-full max-w-none"></header>
 
-  <!-- ✅ صفحة فل ويدث -->
   <main class="w-full max-w-none mx-auto p-3 md:p-6 space-y-6">
 
-    <!-- العنوان + الأزرار -->
+    <!-- Title + actions -->
     <section class="flex flex-wrap justify-between items-center gap-2">
       <h1 class="text-xl font-bold text-slate-800">Assets Management</h1>
       <div class="flex gap-2">
@@ -57,19 +56,19 @@
       </div>
     </section>
 
-    <!-- الفلاتر -->
+    <!-- Filters -->
     <section class="card p-4">
       <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        <input id="f_control" class="field" placeholder="Control Number">
-        <input id="f_name" class="field" placeholder="Device Name">
+        <input id="f_control" class="field" placeholder="Control number">
+        <input id="f_name" class="field" placeholder="Device name">
         <select id="f_site" class="field"></select>
         <select id="f_department" class="field"></select>
       </div>
     </section>
 
-    <!-- الجدول (LTR زي صفحة الصيانة الوقائية) -->
+    <!-- Table -->
     <section class="card p-3">
-      <div class="overflow-auto" dir="ltr">
+      <div class="overflow-auto">
         <table class="min-w-full text-sm">
           <thead class="bg-slate-800 text-white">
             <tr>
@@ -107,17 +106,17 @@
     const auth = getAuth(app);
     const db   = getFirestore(app);
 
-    // عناصر
-    const tbody = document.getElementById("tbody");
+    // Elements
+    const tbody   = document.getElementById("tbody");
     const fControl = document.getElementById('f_control');
     const fName    = document.getElementById('f_name');
     const fSite    = document.getElementById('f_site');
     const fDept    = document.getElementById('f_department');
 
-    let ALL = [];     // جميع الأجهزة
-    let FILTERED = []; // بعد الفلاتر
+    let ALL = [];
+    let FILTERED = [];
 
-    // بعد تحميل الهيدر
+    // After header is loaded
     document.addEventListener("partials:loaded", () => {
       const btnLogout = document.getElementById("btnLogout");
       if (btnLogout) {
@@ -125,7 +124,7 @@
           try { await signOut(auth); } finally { location.replace("../../login.html"); }
         });
       }
-      // تمييز اللينك الحالي (المستوى الأول فقط)
+      // Highlight current top-level link
       const path = location.pathname.toLowerCase();
       if (path.endsWith("assets/index.html")) {
         const top = document.querySelector('#mainNav a[href*="assets/index.html"]');
@@ -133,49 +132,40 @@
       }
     });
 
-    // تحميل المستخدم و الأجهزة
+    // Auth + load
     onAuthStateChanged(auth, async (user) => {
       if (!user) { location.replace("../../login.html"); return; }
       const snap = await getDoc(doc(db, "users", user.uid));
       const name = snap.exists() ? (snap.data().name || snap.data().nameEn || user.email) : user.email;
       const el = document.getElementById("userName"); if (el) el.textContent = name;
 
-      await loadAssets();     // يملأ ALL
-      await fillFilters();    // يملأ قوائم الموقع والقسم
+      await loadAssets();
+      await fillFilters();
 
-      // لو جاي من صفحة Sites مع باراميتر ?site=... طبّقه
+      // Optional: filter by ?site= from URL
       const siteParam = new URLSearchParams(location.search).get('site');
       if (siteParam) {
-        // لو القيمة موجودة ضمن القائمة هنختارها مباشرة، وإلا هنسيبها فارغة ونستخدم بحث بالاسم
         const opt = [...fSite.options].find(o => (o.value||'').toLowerCase() === siteParam.toLowerCase());
         if (opt) fSite.value = opt.value;
-        else {
-          // حطها في اسم الجهاز كمفلتر شامل على الحقول النصية
-          fName.value = '';   // اسم الجهاز فقط، هنفلتر بالموقع نصيًا
-        }
       }
-
       applyFilters(siteParam);
     });
 
-    // تحميل كل الأجهزة
     async function loadAssets(){
       const qs = await getDocs(query(collection(db,'assets'), orderBy('control')));
       ALL = qs.docs.map((d, i) => ({ id:d.id, idx:i+1, ...d.data() }));
     }
 
-    // ملء القوائم
     async function fillFilters(){
       const sites = new Set(), depts = new Set();
       ALL.forEach(a => {
         if(a.site) sites.add(a.site);
         if(a.department) depts.add(a.department);
       });
-      fSite.innerHTML = '<option value="">All Sites</option>' + [...sites].sort().map(s=>`<option value="${s}">${s}</option>`).join('');
-      fDept.innerHTML = '<option value="">All Departments</option>' + [...depts].sort().map(d=>`<option value="${d}">${d}</option>`).join('');
+      fSite.innerHTML = '<option value="">All sites</option>' + [...sites].sort().map(s=>`<option value="${s}">${s}</option>`).join('');
+      fDept.innerHTML = '<option value="">All departments</option>' + [...depts].sort().map(d=>`<option value="${d}">${d}</option>`).join('');
     }
 
-    // تطبيق الفلاتر (يدعم siteParam كنص بحث بالموقع)
     function applyFilters(siteParamFromURL=null){
       const qControl = (fControl.value||'').trim().toLowerCase();
       const qName    = (fName.value||'').trim().toLowerCase();
@@ -191,8 +181,8 @@
 
         const okC  = !qControl || control.includes(qControl);
         const okN  = !qName    || name.includes(qName);
-        const okS1 = !qSiteSel || site === qSiteSel;            // اختيار من القائمة
-        const okS2 = !qSiteURL || site.includes(qSiteURL);      // قادم من ?site=
+        const okS1 = !qSiteSel || site === qSiteSel;     // dropdown
+        const okS2 = !qSiteURL || site.includes(qSiteURL); // from ?site=
         const okD  = !qDeptSel || dept === qDeptSel;
 
         return okC && okN && okS1 && okS2 && okD;
@@ -201,11 +191,10 @@
       renderTable();
     }
 
-    // ريندر
     function renderTable(){
       tbody.innerHTML = '';
       if (FILTERED.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">لا توجد أجهزة مطابقة.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">No matching devices.</td></tr>`;
         return;
       }
       FILTERED.forEach((a, i) => {
@@ -229,13 +218,8 @@
       });
     }
 
-    // أحداث الفلاتر
-    [fControl, fName].forEach(inp => {
-      inp.addEventListener('input', ()=>applyFilters());
-    });
-    [fSite, fDept].forEach(sel => {
-      sel.addEventListener('change', ()=>applyFilters());
-    });
+    [fControl, fName].forEach(inp => inp.addEventListener('input', ()=>applyFilters()));
+    [fSite, fDept].forEach(sel => sel.addEventListener('change', ()=>applyFilters()));
   </script>
 </body>
 </html>
