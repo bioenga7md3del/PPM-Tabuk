@@ -1,147 +1,49 @@
 <!doctype html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>PPM Tabuk • Sites</title>
+  <title>PPM TABUK • Sites</title>
 
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- استخدم مسارات جذرية على GitHub Pages -->
-  <link rel="stylesheet" href="/PPM-Tabuk/css/theme-light.css">
-  <script src="/PPM-Tabuk/js/theme.js" defer></script>
+  <!-- الثيم الموحد -->
+  <link rel="stylesheet" href="../../css/theme-light.css">
+
+  <!-- (اختياري) مبدّل الثيم -->
+  <script src="../../js/theme.js" defer></script>
+
+  <!-- Loader للـ partials -->
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
 
+  <!-- تنسيق اللينك النشط -->
   <style>
+    #mainNav a.active {
+      position: relative;
+      color: #93c5fd !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.3px;
+      transition: color 0.25s ease-in-out;
+    }
+    #mainNav a.active::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; bottom: -4px;
+      height: 2px; background-color: #60a5fa; border-radius: 2px;
+      transform: scaleX(0); transition: transform 0.25s ease-in-out;
+    }
+    #mainNav a.active:hover::after { transform: scaleX(1); }
+
     .read-only .for-edit{ display:none!important; }
     @media print{ header,.no-print{display:none!important} table{width:100%} }
   </style>
-</head>
 
-<body class="bg-slate-50 text-slate-800">
-  <!-- Global Header / Nav -->
-  <div id="mainNav" data-active="sites"></div>
-  <header class="notice n-ok hidden"></header>
-
-  <main class="max-w-7xl mx-auto px-4 py-6">
-    <!-- Actions -->
-    <div class="flex items-center gap-2 mb-4 no-print">
-      <button id="btnPrint" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm">Print</button>
-      <button id="btnExport" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm">Export Excel</button>
-      <button id="btnAdd" class="for-edit px-3 py-1.5 rounded-xl bg-blue-600 text-white text-sm">Add Site</button>
-    </div>
-
-    <!-- Filters -->
-    <section class="grid md:grid-cols-3 gap-3 mb-4 no-print">
-      <input id="fName" type="text" placeholder="Search by name or code" class="px-4 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <select id="fContractor" class="px-3 py-2.5 rounded-2xl border border-slate-300">
-        <option value="">All contractors</option>
-      </select>
-      <select id="fType" class="px-3 py-2.5 rounded-2xl border border-slate-300">
-        <option value="">All types</option>
-        <option value="hospital">hospital</option>
-        <option value="medical_center">medical_center</option>
-      </select>
-    </section>
-
-    <!-- Table -->
-    <section class="rounded-2xl border border-slate-200 overflow-hidden bg-white">
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
-          <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
-            <tr>
-              <th class="text-left px-4 py-3">Site</th>
-              <th class="text-left px-4 py-3">Location</th>
-              <th class="text-left px-4 py-3">Type</th>
-              <th class="text-left px-4 py-3">Contractor</th>
-              <th class="text-left px-4 py-3">Primary</th>
-              <th class="text-left px-4 py-3">Backup</th>
-              <th class="text-left px-4 py-3">Status</th>
-              <th class="text-left px-4 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="sitesBody" class="divide-y divide-slate-200"></tbody>
-        </table>
-      </div>
-
-      <!-- Pagination -->
-      <div class="flex items-center justify-between px-4 py-3">
-        <div class="text-xs text-slate-500" id="pageInfo">Page 1</div>
-        <div class="flex gap-2">
-          <button id="prevPage" class="px-3 py-1.5 rounded-xl border border-slate-300 disabled:opacity-50">Prev</button>
-          <button id="nextPage" class="px-3 py-1.5 rounded-xl border border-slate-300 disabled:opacity-50">Next</button>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <!-- Drawer (Add/Edit) -->
-  <div id="drawer" class="fixed inset-0 hidden">
-    <div class="absolute inset-0 bg-black/30" data-close></div>
-    <div class="absolute right-0 top-0 h-full w-full sm:w-[560px] bg-white shadow-xl p-6 overflow-y-auto">
-      <div class="flex items-center justify-between mb-4">
-        <h2 id="drawerTitle" class="text-xl font-bold">New Site</h2>
-        <button class="px-3 py-1.5 rounded-xl border" data-close>Close</button>
-      </div>
-
-      <form id="siteForm" class="grid grid-cols-2 gap-3">
-        <label class="text-sm">Site Code
-          <input name="code" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="TBC-001" required>
-        </label>
-        <label class="text-sm">Site Name
-          <input name="name" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="Al-Wurud PHC" required>
-        </label>
-        <label class="text-sm">Latitude
-          <input name="lat" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="28.383" type="number" step="any">
-        </label>
-        <label class="text-sm">Longitude
-          <input name="lng" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="36.566" type="number" step="any">
-        </label>
-        <label class="text-sm">Type
-          <select name="type" class="mt-1 w-full px-3 py-2 rounded-xl border">
-            <option value="hospital">hospital</option>
-            <option value="medical_center">medical_center</option>
-          </select>
-        </label>
-        <label class="text-sm">Contractor
-          <input name="contractor" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="First Gulf">
-        </label>
-
-        <label class="text-sm col-span-2">Primary Engineer (Supervisor)
-          <select id="primaryEngineer" name="primaryEngineer" class="mt-1 w-full px-3 py-2 rounded-xl border"></select>
-        </label>
-        <label class="text-sm col-span-2">Backup Engineer (Supervisor)
-          <select id="backupEngineer" name="backupEngineer" class="mt-1 w-full px-3 py-2 rounded-xl border"></select>
-        </label>
-
-        <label class="text-sm flex items-center gap-2 col-span-2">
-          <input type="checkbox" name="primaryActive" class="rounded"> Primary Active
-        </label>
-
-        <div class="col-span-2 grid grid-cols-[72px,1fr] gap-3 items-center">
-          <img id="logoPreview" class="w-16 h-16 rounded border object-cover" alt="logo preview"/>
-          <label class="text-sm">Site Logo (Storage)
-            <input id="logoInput" type="file" accept="image/*" class="mt-1 w-full px-3 py-2 rounded-xl border for-edit">
-          </label>
-        </div>
-
-        <div class="col-span-2 flex gap-2 mt-2">
-          <button type="submit" class="for-edit px-4 py-2 rounded-xl bg-blue-600 text-white">Save</button>
-          <button type="button" data-close class="px-4 py-2 rounded-xl border">Cancel</button>
-        </div>
-        <p class="text-xs text-slate-500 col-span-2">Doc ID will be the <strong>Site Code</strong>.</p>
-      </form>
-    </div>
-  </div>
-
-  <!-- App (single-file): SheetJS + Firebase + Logic -->
+  <!-- سكربت الصفحة: Firebase + Sites logic + تمييز اللينك -->
   <script type="module">
-    /* ===== SheetJS for Excel export ===== */
-    import * as XLSX from 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm';
-
-    /* ===== Firebase SDKs (CDN ESM) ===== */
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    /* ===== Firebase ===== */
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import {
       getFirestore, collection, doc, getDoc, getDocs,
       setDoc, deleteDoc, query, where, orderBy, serverTimestamp
@@ -149,93 +51,111 @@
     import {
       getStorage, ref as sref, uploadBytes, getDownloadURL
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+    import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
 
-    /* ===== Firebase Config (YOURS) ===== */
-    const firebaseConfig = {
-      apiKey: "AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
-      authDomain: "pmqrtabuk.firebaseapp.com",
-      projectId: "pmqrtabuk",
-      storageBucket: "pmqrtabuk.firebasestorage.app",
-      messagingSenderId: "305570616285",
-      appId: "1:305570616285:web:4f6839fd08b8b5aa131c34"
+    // إعداد Firebase (نفس ملفك)
+    const cfg = {
+      apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
+      authDomain:"pmqrtabuk.firebaseapp.com",
+      projectId:"pmqrtabuk",
+      storageBucket:"pmqrtabuk.firebasestorage.app",
+      messagingSenderId:"305570616285",
+      appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
     };
-
-    // Init
-    const app = initializeApp(firebaseConfig);
+    const app = getApps().length ? getApps()[0] : initializeApp(cfg);
     const auth = getAuth(app);
     const db   = getFirestore(app);
     const storage = getStorage(app);
 
-    /* ===== Helpers & State ===== */
-    const el = (id)=>document.getElementById(id);
+    /* ===== تفعيل اللينك النشط بعد تحميل الهيدر ===== */
+    document.addEventListener("partials:loaded", () => {
+      // زر الخروج
+      const btnLogout = document.getElementById("btnLogout");
+      if (btnLogout) btnLogout.addEventListener("click", async () => {
+        try { await signOut(auth); } finally { location.replace("../../login.html"); }
+      });
+
+      // تحديد التبويب الحالي
+      const path = location.pathname.toLowerCase();
+      document.querySelectorAll("#mainNav a").forEach(a => {
+        const href = a.getAttribute("href")?.toLowerCase() || "";
+        if (path.endsWith("dashboard/index.html") && href.includes("dashboard")) a.classList.add("active");
+        else if (path.endsWith("assets/index.html") && href.includes("assets")) a.classList.add("active");
+        else if (path.endsWith("preventive/index.html") && href.includes("preventive")) a.classList.add("active");
+        else if (path.endsWith("corrective/index.html") && href.includes("corrective")) a.classList.add("active");
+        else if (path.endsWith("sites/index.html") && href.includes("sites")) a.classList.add("active");
+        else if (path.endsWith("users/index.html") && href.includes("users")) a.classList.add("active");
+      });
+    });
+
+    /* ===== حالة الدخول + عرض الاسم في الهيدر ===== */
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ location.replace("../../login.html"); return; }
+
+      try{
+        const snap=await getDoc(doc(db,'users',user.uid));
+        const name=(snap.exists() && (snap.data().name || snap.data().nameEn)) ? (snap.data().name || snap.data().nameEn) : (user.displayName||user.email);
+        const el=document.getElementById('userName');
+        if(el) el.textContent=name||'';
+      }catch{}
+
+      // بعد التأكد من الدخول: حمّل الصفحة
+      await loadEngineers();
+      await loadSites();
+    });
+
+    /* ===== عناصر الصفحة ===== */
+    const $ = (id)=>document.getElementById(id);
     const PAGE_SIZE = 10;
 
-    let STATE = {
-      list: [],
-      filtered: [],
-      page: 1,
-      profile: null,
-      engineers: [] // {id, name}
-    };
+    const fName = $('fName');
+    const fContractor = $('fContractor');
+    const fType = $('fType');
+    const tbody = $('sitesBody');
+    const pageInfo = $('pageInfo');
+    const prevBtn = $('prevPage');
+    const nextBtn = $('nextPage');
+    const btnAdd = $('btnAdd');
+    const btnExport = $('btnExport');
+    const btnPrint = $('btnPrint');
 
-    // UI refs
-    const fName = el('fName');
-    const fContractor = el('fContractor');
-    const fType = el('fType');
-    const tbody = el('sitesBody');
-    const pageInfo = el('pageInfo');
-    const prevBtn = el('prevPage');
-    const nextBtn = el('nextPage');
-    const btnAdd = el('btnAdd');
-    const btnExport = el('btnExport');
-    const btnPrint = el('btnPrint');
-    const drawer = el('drawer');
-    const drawerTitle = el('drawerTitle');
-    const siteForm = el('siteForm');
-    const logoInput = el('logoInput');
-    const primSel = el('primaryEngineer');
-    const backSel = el('backupEngineer');
+    const drawer = $('drawer');
+    const drawerTitle = $('drawerTitle');
+    const siteForm = $('siteForm');
+    const logoInput = $('logoInput');
+    const primSel = $('primaryEngineer');
+    const backSel = $('backupEngineer');
 
     let editCode = null;
+    let STATE = { list:[], filtered:[], page:1, engineers:[], profile:null };
 
-    /* ===== Roles ===== */
+    /* ===== صلاحيـات ===== */
     async function getCurrentUserProfile() {
       const u = auth.currentUser;
       if (!u) return null;
       const snap = await getDoc(doc(db, 'users', u.uid));
       return snap.exists() ? { id: snap.id, ...snap.data() } : null;
     }
-    function canEdit(profile){
-      if(!profile) return false;
-      const r = (profile.role || '').toLowerCase();
-      return r === 'admin' || r === 'system owner' || r === 'system_owner' || r === 'owner';
+    function canEdit(p){
+      if(!p) return false;
+      const r = (p.role||'').toLowerCase();
+      return r==='admin' || r==='system owner' || r==='system_owner' || r==='owner';
     }
 
-    /* ===== Auth Gate ===== */
-    onAuthStateChanged(auth, async (user)=>{
-      if(!user){
-        document.body.classList.add('read-only');
-        return;
-      }
+    /* ===== تحميل المهندسين (role = Supervisor) ===== */
+    async function loadEngineers(){
       STATE.profile = await getCurrentUserProfile();
       if(!canEdit(STATE.profile)) document.body.classList.add('read-only');
       else document.body.classList.remove('read-only');
 
-      await loadEngineers();
-      await loadSites();
-    });
-
-    /* ===== Load Engineers (role == Supervisor) ===== */
-    async function loadEngineers(){
       const qy = query(collection(db,'users'), where('role','==','Supervisor'));
       const snaps = await getDocs(qy);
       STATE.engineers = snaps.docs.map(d=>({ id:d.id, name:(d.data().nameEn || d.data().displayName || d.id) }));
-      const opts = '<option value="">— None —</option>' + STATE.engineers.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
-      primSel.innerHTML = opts;
-      backSel.innerHTML = opts;
+      const opts = '<option value="">— لا يوجد —</option>' + STATE.engineers.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+      primSel.innerHTML = opts; backSel.innerHTML = opts;
     }
 
-    /* ===== Load Sites ===== */
+    /* ===== تحميل المواقع ===== */
     async function loadSites(){
       const snaps = await getDocs(query(collection(db,'sites'), orderBy('name')));
       STATE.list = snaps.docs.map(d=> ({ code:d.id, ...d.data() }));
@@ -243,62 +163,48 @@
       fillContractorFilter();
     }
 
-    /* ===== Filters ===== */
+    /* ===== فلاتر ===== */
     function fillContractorFilter(){
       const set = new Set(STATE.list.map(x=>x.contractor).filter(Boolean));
-      fContractor.innerHTML = '<option value="">All contractors</option>' + Array.from(set).sort().map(c=>`<option>${c}</option>`).join('');
+      fContractor.innerHTML = '<option value="">كل المقاولين</option>' + Array.from(set).sort().map(c=>`<option>${c}</option>`).join('');
     }
-
     function applyFilters(){
-      const nameQ = (fName.value||'').toLowerCase().trim();
+      const q = (fName.value||'').toLowerCase().trim();
       const contractor = fContractor.value||'';
       const type = fType.value||'';
       STATE.filtered = STATE.list.filter(x=>{
-        const okName = !nameQ || (x.name||'').toLowerCase().includes(nameQ) || (x.code||'').toLowerCase().includes(nameQ);
-        const okCon = !contractor || (x.contractor||'') === contractor;
-        const okType = !type || (x.type||'') === type;
-        return okName && okCon && okType;
+        const okQ = !q || (x.name||'').toLowerCase().includes(q) || (x.code||'').toLowerCase().includes(q);
+        const okC = !contractor || (x.contractor||'') === contractor;
+        const okT = !type || (x.type||'') === type;
+        return okQ && okC && okT;
       });
       STATE.page = 1;
       renderTable();
     }
-
     fName.addEventListener('input', applyFilters);
     fContractor.addEventListener('change', applyFilters);
     fType.addEventListener('change', applyFilters);
 
-    /* ===== Render ===== */
-    function paged(){
-      const start = (STATE.page-1)*PAGE_SIZE;
-      return STATE.filtered.slice(start, start+PAGE_SIZE);
-    }
-
-    function displayUserName(uid){
-      const m = STATE.engineers.find(u=>u.id===uid);
-      return m? m.name : uid || '-';
-    }
+    /* ===== جدول + صفحات ===== */
+    function pageSlice(){ const s=(STATE.page-1)*PAGE_SIZE; return STATE.filtered.slice(s, s+PAGE_SIZE); }
+    function userName(uid){ const m=STATE.engineers.find(u=>u.id===uid); return m? m.name : (uid||'-'); }
 
     function renderTable(){
-      const rows = paged().map(x=>{
-        const statusBadge = x.primaryActive===false
-          ? '<span class="px-2 py-0.5 text-xs rounded-full border border-red-300 text-red-700">Primary Inactive</span>' : '';
+      const rows = pageSlice().map(x=>{
+        const inactive = x.primaryActive===false
+          ? '<span class="px-2 py-0.5 text-xs rounded-full border border-red-300 text-red-700">غير فعّال</span>' : '';
         const logo = x.logoUrl
           ? `<img src="${x.logoUrl}" class="w-8 h-8 rounded object-cover border"/>`
           : '<div class="w-8 h-8 rounded border bg-slate-100"></div>';
-
-        const loc = x.location && typeof x.location.lat==='number' && typeof x.location.lng==='number'
-          ? `${x.location.lat.toFixed(4)}, ${x.location.lng.toFixed(4)}`
-          : '-';
-        const mapsUrl = x.location ? `https://www.google.com/maps?q=${x.location.lat},${x.location.lng}` : null;
-
-        const prim = x.primaryEngineerId ? displayUserName(x.primaryEngineerId) : '-';
-        const back = x.backupEngineerId ? displayUserName(x.backupEngineerId) : '-';
+        const hasLoc = x.location && typeof x.location.lat==='number' && typeof x.location.lng==='number';
+        const locTxt = hasLoc ? `${x.location.lat.toFixed(4)}, ${x.location.lng.toFixed(4)}` : '-';
+        const mapsUrl = hasLoc ? `https://www.google.com/maps?q=${x.location.lat},${x.location.lng}` : null;
 
         const editBtns = canEdit(STATE.profile)
-          ? `<button data-act="edit" data-code="${x.code}" class="text-blue-600 hover:underline">Edit</button>
+          ? `<button data-act="edit" data-code="${x.code}" class="text-blue-600 hover:underline">تعديل</button>
              <span class="text-slate-300">•</span>
-             <button data-act="del" data-code="${x.code}" class="text-red-600 hover:underline">Delete</button>`
-          : '<span class="text-slate-400">View</span>';
+             <button data-act="del" data-code="${x.code}" class="text-red-600 hover:underline">حذف</button>`
+          : '<span class="text-slate-400">عرض</span>';
 
         return `
           <tr class="border-b">
@@ -311,50 +217,46 @@
                 </div>
               </div>
             </td>
-            <td class="px-4 py-3">${loc} ${mapsUrl?`<a href="${mapsUrl}" target="_blank" class="ml-2 text-xs text-blue-600 underline">Open in Maps</a>`:''}</td>
+            <td class="px-4 py-3">${locTxt} ${mapsUrl?`<a href="${mapsUrl}" target="_blank" class="mr-2 text-xs text-blue-600 underline">فتح بالخريطة</a>`:''}</td>
             <td class="px-4 py-3">${x.type||'-'}</td>
             <td class="px-4 py-3">${x.contractor||'-'}</td>
-            <td class="px-4 py-3">${prim}</td>
-            <td class="px-4 py-3">${back}</td>
-            <td class="px-4 py-3">${statusBadge}</td>
+            <td class="px-4 py-3">${x.primaryEngineerId ? userName(x.primaryEngineerId) : '-'}</td>
+            <td class="px-4 py-3">${x.backupEngineerId ? userName(x.backupEngineerId) : '-'}</td>
+            <td class="px-4 py-3">${inactive}</td>
             <td class="px-4 py-3">
-              <a class="text-indigo-600 hover:underline" href="modules/assets/index.html?site=${encodeURIComponent(x.code)}">Open Devices</a>
+              <a class="text-indigo-600 hover:underline" href="modules/assets/index.html?site=${encodeURIComponent(x.code)}">أجهزة الموقع</a>
               <span class="text-slate-300">•</span>
               ${editBtns}
             </td>
           </tr>`;
       }).join('');
-
-      tbody.innerHTML = rows || `<tr><td class="px-4 py-6 text-center text-slate-500" colspan="8">No sites found.</td></tr>`;
+      tbody.innerHTML = rows || `<tr><td class="px-4 py-6 text-center text-slate-500" colspan="8">لا توجد مواقع.</td></tr>`;
 
       const totalPages = Math.max(1, Math.ceil(STATE.filtered.length / PAGE_SIZE));
-      pageInfo.textContent = `Page ${STATE.page} / ${totalPages} — ${STATE.filtered.length} total`;
+      pageInfo.textContent = `صفحة ${STATE.page} / ${totalPages} — ${STATE.filtered.length} إجمالي`;
       prevBtn.disabled = STATE.page<=1;
       nextBtn.disabled = STATE.page>=totalPages;
 
-      tbody.querySelectorAll('button[data-act]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const act = btn.dataset.act;
-          const code = btn.dataset.code;
+      tbody.querySelectorAll('button[data-act]').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          const act=b.dataset.act, code=b.dataset.code;
           if(act==='edit') openEdit(code);
           if(act==='del') confirmDelete(code);
         });
       });
     }
-
     prevBtn.addEventListener('click', ()=>{ STATE.page=Math.max(1,STATE.page-1); renderTable(); });
     nextBtn.addEventListener('click', ()=>{ const tp=Math.ceil(STATE.filtered.length/PAGE_SIZE); STATE.page=Math.min(tp,STATE.page+1); renderTable(); });
 
-    /* ===== Drawer controls ===== */
+    /* ===== إضافة/تعديل/حذف ===== */
     function openDrawer(){
       drawer.classList.remove('hidden');
-      drawerTitle.textContent = editCode ? `Edit Site (${editCode})` : 'New Site';
-      if(!editCode){ siteForm.reset(); document.getElementById('logoPreview').src=''; siteForm.code.disabled = false; }
+      drawerTitle.textContent = editCode ? `تعديل موقع (${editCode})` : 'موقع جديد';
+      if(!editCode){ siteForm.reset(); document.getElementById('logoPreview').src=''; siteForm.code.disabled=false; logoInput.dataset.url=''; }
     }
     function closeDrawer(){ editCode=null; drawer.classList.add('hidden'); }
-
-    document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', closeDrawer));
-    btnAdd.addEventListener('click', ()=>{ if(!canEdit(STATE.profile)) return; openDrawer(); });
+    document.addEventListener('click', e=>{ if(e.target?.dataset?.close !== undefined || e.target.closest('[data-close]')) closeDrawer(); });
+    $('btnAdd').addEventListener('click', ()=>{ if(!canEdit(STATE.profile)) return; openDrawer(); });
 
     async function openEdit(code){
       const snap = await getDoc(doc(db,'sites',code));
@@ -372,34 +274,34 @@
       siteForm.backupEngineer.value = d.backupEngineerId||'';
       siteForm.primaryActive.checked = !!d.primaryActive;
       document.getElementById('logoPreview').src = d.logoUrl||'';
+      logoInput.dataset.url = d.logoUrl||'';
 
       openDrawer();
     }
 
     async function confirmDelete(code){
       if(!canEdit(STATE.profile)) return;
-      if(!confirm(`Delete site ${code}?`)) return;
+      if(!confirm(`حذف الموقع ${code}؟`)) return;
       await deleteDoc(doc(db,'sites',code));
       await loadSites();
     }
 
-    /* ===== Upload logo ===== */
+    // رفع اللوجو
     logoInput.addEventListener('change', async ()=>{
       const file = logoInput.files?.[0];
       if(!file) return;
-      if(!canEdit(STATE.profile)) return alert('You do not have permission to upload.');
-
+      if(!canEdit(STATE.profile)) return alert('ليس لديك صلاحية الرفع.');
       const code = siteForm.code.value.trim();
-      if(!code) { alert('Enter Site Code first'); logoInput.value=''; return; }
+      if(!code){ alert('أدخل كود الموقع أولاً'); logoInput.value=''; return; }
 
       const r = sref(storage, `sites/${code}/logo_${Date.now()}`);
       await uploadBytes(r, file);
       const url = await getDownloadURL(r);
       document.getElementById('logoPreview').src = url;
-      logoInput.dataset.url = url; // temporary until save
+      logoInput.dataset.url = url;
     });
 
-    /* ===== Save (Create/Update) ===== */
+    // حفظ
     siteForm.addEventListener('submit', async (e)=>{
       e.preventDefault();
       if(!canEdit(STATE.profile)) return;
@@ -434,9 +336,8 @@
       const backupEngineerId = siteForm.backupEngineer.value || '';
       const primaryActive = siteForm.primaryActive.checked;
       const logoUrl = logoInput.dataset.url || document.getElementById('logoPreview').src || '';
-
-      if(!code) throw alert('Site Code is required');
-      if(!name) throw alert('Site Name is required');
+      if(!code) throw alert('Site Code مطلوب');
+      if(!name) throw alert('Site Name مطلوب');
 
       return {
         _isNew: !editCode,
@@ -452,8 +353,8 @@
         Name:x.name||'', Code:x.code||'',
         Latitude: x.location?.lat ?? '', Longitude: x.location?.lng ?? '',
         Type:x.type||'', Contractor:x.contractor||'',
-        PrimaryEngineer: displayUserName(x.primaryEngineerId||''),
-        BackupEngineer: displayUserName(x.backupEngineerId||''),
+        PrimaryEngineer: userName(x.primaryEngineerId||''),
+        BackupEngineer: userName(x.backupEngineerId||''),
         PrimaryActive: x.primaryActive===false? 'No':'Yes',
         LogoUrl:x.logoUrl||''
       }));
@@ -462,9 +363,123 @@
       XLSX.utils.book_append_sheet(wb, ws, 'Sites');
       XLSX.writeFile(wb, `sites_${new Date().toISOString().slice(0,10)}.xlsx`);
     });
-
     btnPrint.addEventListener('click', ()=> window.print() );
-
   </script>
+</head>
+
+<body>
+  <!-- ✅ الهيدر الموحد من الـ partial -->
+  <header data-include="/PPM-Tabuk/partials/header.html?v=2" class="w-full max-w-none"></header>
+
+  <main class="w-full max-w-none mx-auto p-3 md:p-6 space-y-6">
+    <!-- شريط الأزرار -->
+    <div class="flex items-center gap-2 no-print">
+      <button id="btnPrint" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm">طباعة</button>
+      <button id="btnExport" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm">تصدير Excel</button>
+      <button id="btnAdd" class="for-edit px-3 py-1.5 rounded-xl bg-blue-600 text-white text-sm">إضافة موقع</button>
+    </div>
+
+    <!-- الفلاتر -->
+    <section class="grid md:grid-cols-3 gap-3 no-print">
+      <input id="fName" type="text" placeholder="بحث بالاسم أو الكود" class="px-4 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <select id="fContractor" class="px-3 py-2.5 rounded-2xl border border-slate-300">
+        <option value="">كل المقاولين</option>
+      </select>
+      <select id="fType" class="px-3 py-2.5 rounded-2xl border border-slate-300">
+        <option value="">كل الأنواع</option>
+        <option value="hospital">hospital</option>
+        <option value="medical_center">medical_center</option>
+      </select>
+    </section>
+
+    <!-- الجدول -->
+    <section class="rounded-2xl border border-slate-200 overflow-hidden bg-white">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+            <tr>
+              <th class="text-right px-4 py-3">الموقع</th>
+              <th class="text-right px-4 py-3">الإحداثيات</th>
+              <th class="text-right px-4 py-3">النوع</th>
+              <th class="text-right px-4 py-3">المقاول</th>
+              <th class="text-right px-4 py-3">المسؤول</th>
+              <th class="text-right px-4 py-3">البديل</th>
+              <th class="text-right px-4 py-3">الحالة</th>
+              <th class="text-right px-4 py-3">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="sitesBody" class="divide-y divide-slate-200"></tbody>
+        </table>
+      </div>
+
+      <!-- الصفحات -->
+      <div class="flex items-center justify-between px-4 py-3">
+        <div id="pageInfo" class="text-xs text-slate-500">صفحة 1</div>
+        <div class="flex gap-2">
+          <button id="prevPage" class="px-3 py-1.5 rounded-xl border border-slate-300 disabled:opacity-50">السابق</button>
+          <button id="nextPage" class="px-3 py-1.5 rounded-xl border border-slate-300 disabled:opacity-50">التالي</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- درج الإضافة/التعديل -->
+  <div id="drawer" class="fixed inset-0 hidden">
+    <div class="absolute inset-0 bg-black/30" data-close></div>
+    <div class="absolute left-0 top-0 h-full w-full sm:w-[560px] bg-white shadow-xl p-6 overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h2 id="drawerTitle" class="text-xl font-bold">موقع جديد</h2>
+        <button class="px-3 py-1.5 rounded-xl border" data-close>إغلاق</button>
+      </div>
+
+      <form id="siteForm" class="grid grid-cols-2 gap-3">
+        <label class="text-sm">كود الموقع
+          <input name="code" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="TBC-001" required>
+        </label>
+        <label class="text-sm">اسم الموقع
+          <input name="name" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="مركز صحي الورود" required>
+        </label>
+        <label class="text-sm">Latitude
+          <input name="lat" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="28.383" type="number" step="any">
+        </label>
+        <label class="text-sm">Longitude
+          <input name="lng" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="36.566" type="number" step="any">
+        </label>
+        <label class="text-sm">النوع
+          <select name="type" class="mt-1 w-full px-3 py-2 rounded-xl border">
+            <option value="hospital">hospital</option>
+            <option value="medical_center">medical_center</option>
+          </select>
+        </label>
+        <label class="text-sm">المقاول
+          <input name="contractor" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="First Gulf">
+        </label>
+
+        <label class="text-sm col-span-2">المهندس المسؤول (Supervisor)
+          <select id="primaryEngineer" name="primaryEngineer" class="mt-1 w-full px-3 py-2 rounded-xl border"></select>
+        </label>
+        <label class="text-sm col-span-2">المهندس البديل (Supervisor)
+          <select id="backupEngineer" name="backupEngineer" class="mt-1 w-full px-3 py-2 rounded-xl border"></select>
+        </label>
+
+        <label class="text-sm flex items-center gap-2 col-span-2">
+          <input type="checkbox" name="primaryActive" class="rounded"> المسؤول فعّال
+        </label>
+
+        <div class="col-span-2 grid grid-cols-[72px,1fr] gap-3 items-center">
+          <img id="logoPreview" class="w-16 h-16 rounded border object-cover" alt="logo preview"/>
+          <label class="text-sm">لوجو الموقع (Storage)
+            <input id="logoInput" type="file" accept="image/*" class="mt-1 w-full px-3 py-2 rounded-xl border for-edit">
+          </label>
+        </div>
+
+        <div class="col-span-2 flex gap-2 mt-2">
+          <button type="submit" class="for-edit px-4 py-2 rounded-xl bg-blue-600 text-white">حفظ</button>
+          <button type="button" data-close class="px-4 py-2 rounded-xl border">إلغاء</button>
+        </div>
+        <p class="text-xs text-slate-500 col-span-2">سيكون رقم الوثيقة هو <strong>كود الموقع</strong>.</p>
+      </form>
+    </div>
+  </div>
 </body>
 </html>
