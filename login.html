@@ -11,77 +11,109 @@
   <!-- خط عربي واضح -->
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 
+  <!-- فافيكون (اختياري) -->
   <link rel="icon" href="/PPM-Tabuk/assets/favicon.ico"/>
 
   <style>
     :root{
-      --tabuk-blue:#3384ff;
-      --tabuk-dblue:#1d4ed8;
-      --glass-bg:rgba(255,255,255,.86);
-      --glass-brd:rgba(255,255,255,.6);
+      --tabuk-blue:#38bdf8;
+      --tabuk-dblue:#0ea5e9;
+      --glass-bg:rgba(15, 23, 42, .76);
+      --glass-brd:rgba(148,163,184,.28);
     }
     html,body{height:100%}
-    body{font-family:"Tajawal",ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial; color:#0f172a; background:#f6f8fc}
-    .hero{
-      background: radial-gradient(1100px 700px at 120% -10%, rgba(255,255,255,.25), rgba(255,255,255,0) 60%),
-                  radial-gradient(900px 600px at -10% 120%, rgba(255,255,255,.18), rgba(255,255,255,0) 55%),
-                  linear-gradient(180deg, #4ca0ff 0%, #5ea2ff 40%, #5ea2ff 100%);
+    body{
+      font-family:"Tajawal",ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      color:#e5e7eb; background:#0b1220; overflow-x:hidden;
     }
+
+    /* 🎯 ووترمارك شعار التجمّع */
+    .wm-logo{
+      position:fixed; inset:0; z-index:-1; pointer-events:none;
+      background:
+        radial-gradient(900px 600px at 120% -10%, rgba(56,189,248,.10), transparent 60%),
+        radial-gradient(700px 480px at -10% 120%, rgba(14,165,233,.08), transparent 55%),
+        linear-gradient(180deg, #0b1220 0%, #0e1626 65%, #0b1220 100%);
+    }
+    .wm-logo::after{
+      content:"";
+      position:absolute; inset:auto 2vw 2vw auto; /* أسفل يمين */
+      width:min(80vmin, 820px); height:min(80vmin, 820px);
+      background:url("/PPM-Tabuk/assets/TabukCluster.jpeg") center/contain no-repeat;
+      opacity:.06; filter:grayscale(100%) contrast(110%);
+    }
+
+    /* بطل الصفحة يمين */
+    .hero{
+      background:linear-gradient(180deg, rgba(30,58,138,.22), rgba(2,6,23,0) 40%);
+    }
+
+    /* زجاجي أنيق للفورم */
     .glass{
       background:var(--glass-bg);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
       border:1px solid var(--glass-brd);
       border-radius:22px;
-      box-shadow:0 18px 48px rgba(2,6,23,.12);
+      box-shadow:0 18px 48px rgba(2,6,23,.35);
     }
     .inp{
-      border:1px solid #e6e9f0; background:#fff;
+      border:1px solid #1f2937; background:#0b1220;
       border-radius:14px; padding:1rem 1rem; width:100%;
-      font-size:16px;
+      font-size:16px; color:#e5e7eb;
     }
-    .inp:focus{outline:none; border-color:#c6d3ff; box-shadow:0 0 0 4px rgba(37,99,235,.12)}
+    .inp::placeholder{color:#94a3b8}
+    .inp:focus{outline:none; border-color:#38bdf8; box-shadow:0 0 0 4px rgba(56,189,248,.15)}
     .btn{display:inline-flex; align-items:center; justify-content:center; gap:.6rem; border-radius:14px;
          padding:1rem 1.2rem; font-weight:800}
-    .btn-primary{background:var(--tabuk-dblue); color:#fff}
-    .btn-primary:hover{filter:brightness(.97)}
-    .muted{color:#6b7280}
+    .btn-primary{background:linear-gradient(90deg, var(--tabuk-dblue), var(--tabuk-blue)); color:#001018}
+    .btn-primary:hover{filter:brightness(.98)}
+    .muted{color:#94a3b8}
     .badge{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .7rem;border-radius:999px;font-size:.78rem}
-    .badge-ok{background:rgba(16,185,129,.14);color:#047857}
-    .badge-warn{background:rgba(250,204,21,.18);color:#a16207}
-    .logo-ring{box-shadow:0 12px 28px rgba(2,6,23,.25); border:4px solid rgba(255,255,255,.92)}
+    .badge-ok{background:rgba(16,185,129,.18);color:#22c55e}
+    .badge-warn{background:rgba(250,204,21,.18);color:#facc15}
+    .logo-ring{box-shadow:0 12px 28px rgba(2,6,23,.55); border:4px solid rgba(255,255,255,.06)}
+    .card{
+      border-radius: 22px;
+      box-shadow: 0 22px 60px rgba(0,0,0,.45);
+      border:1px solid rgba(148,163,184,.18);
+      background: linear-gradient(180deg, rgba(15,23,42,.85), rgba(15,23,42,.92));
+    }
   </style>
 </head>
 <body>
 
+  <!-- خلفية الشعار -->
+  <div class="wm-logo" aria-hidden="true"></div>
+
   <main class="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-    <!-- يمين: هوية وبانر قوي -->
+    <!-- يمين: هوية وبانر -->
     <section class="hero relative overflow-hidden order-2 lg:order-2 px-8 lg:px-14 py-10 flex items-center">
-      <div class="max-w-2xl ms-auto text-white">
+      <div class="max-w-2xl ms-auto">
         <div class="flex items-center gap-5">
-         <img
-  src="/PPM-Tabuk/assets/TabukCluster.jpeg"
-  alt="Tabuk Cluster"
-  class="bg-white rounded-[28px] logo-ring object-contain
-         w-28 h-28 md:w-32 md:h-32 lg:w-40 lg:h-40 xl:w-44 xl:h-44
-         p-2 md:p-3 lg:p-4"
-/>
+          <img
+            src="/PPM-Tabuk/assets/TabukCluster.jpeg"
+            alt="Tabuk Cluster"
+            class="bg-white/5 rounded-[28px] logo-ring object-contain
+                   w-28 h-28 md:w-32 md:h-32 lg:w-40 lg:h-40 xl:w-44 xl:h-44
+                   p-2 md:p-3 lg:p-4"
+          />
           <div>
-            <h1 class="text-3xl font-black leading-tight"> M M P TABUK Cluster</h1>
-            <p class="text-sm text-white/90 -mt-1">Medical Maintenance Platform</p>
+            <h1 class="text-3xl font-black leading-tight">PPM TABUK Cluster</h1>
+            <p class="text-sm text-white/80 -mt-1">Medical Maintenance Platform</p>
           </div>
         </div>
 
         <h2 class="mt-10 text-4xl xl:text-5xl font-black leading-[1.15]">
           Securely manage your assets<br>
-          with <span class="underline decoration-white/40">MMP TABUK Cluster</span>
+          with <span class="underline decoration-white/30">PPM TABUK</span>
         </h2>
 
-        <div class="mt-8 glass p-5 max-w-xl text-slate-800">
+        <div class="mt-8 glass p-5 max-w-xl text-slate-200">
           <p class="text-lg font-extrabold">Biomedical Department</p>
           <p class="text-lg font-extrabold -mt-1">Tabuk Cluster</p>
-          <p class="mt-2 text-sm text-slate-500">Use your <b>Username + Password</b> to sign in. Email is for notifications only.</p>
-          <div class="mt-3 flex items-center gap-2 text-sm text-slate-600">
+          <p class="mt-2 text-sm text-slate-300">Use your <b>Username + Password</b> to sign in. Email is for notifications only.</p>
+          <div class="mt-3 flex items-center gap-2 text-sm text-slate-300/90">
             <span>• Fast</span><span>• Secure</span><span>• Role-based access</span>
           </div>
         </div>
@@ -93,7 +125,7 @@
       </div>
     </section>
 
-    <!-- يسار: فورم واضح ومركّز -->
+    <!-- يسار: الفورم -->
     <section class="order-1 lg:order-1 flex items-center justify-center px-6 lg:px-10 py-10">
       <div class="w-full max-w-md">
         <div class="mb-6 text-center lg:text-right">
@@ -101,33 +133,33 @@
           <p class="text-sm muted mt-1">سجّل الدخول باستخدام <b>اسم المستخدم + كلمة المرور</b>.</p>
         </div>
 
-        <div class="glass p-6">
+        <div class="card p-6">
           <form id="loginForm" class="space-y-5">
             <div>
-              <label class="block text-sm mb-1">اسم المستخدم</label>
+              <label class="block text-sm mb-1 text-slate-300">اسم المستخدم</label>
               <input id="username" class="inp" placeholder="مثال: owner" autocomplete="username" required>
             </div>
             <div>
-              <label class="block text-sm mb-1">كلمة المرور</label>
+              <label class="block text-sm mb-1 text-slate-300">كلمة المرور</label>
               <div class="relative">
                 <input id="password" type="password" class="inp pe-28" placeholder="••••••••" autocomplete="current-password" required>
                 <button type="button" id="togglePwd"
-                        class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">إظهار</button>
+                        class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 hover:text-slate-200">إظهار</button>
               </div>
             </div>
             <div class="flex items-center justify-between">
-              <label class="inline-flex items-center gap-2 text-sm text-slate-600">
+              <label class="inline-flex items-center gap-2 text-sm text-slate-300">
                 <input id="remember" type="checkbox" class="rounded"> تذكّرني
               </label>
-              <a href="#" id="forgot" class="text-sm text-slate-500 hover:underline">نسيت كلمة المرور؟</a>
+              <a href="#" id="forgot" class="text-sm text-slate-400 hover:underline">نسيت كلمة المرور؟</a>
             </div>
 
             <button id="submitBtn" class="btn btn-primary w-full" type="submit">تسجيل الدخول</button>
-            <div id="msg" class="text-sm"></div>
+            <div id="msg" class="text-sm mt-1"></div>
           </form>
 
           <div id="ownerAlert" class="hidden mt-4">
-            <a href="/PPM-Tabuk/modules/users/bootstrap.html" class="btn w-full" style="background:#eef2f7">👑 إنشاء مالك النظام</a>
+            <a href="/PPM-Tabuk/modules/users/bootstrap.html" class="btn w-full" style="background:#111827; color:#e5e7eb">👑 إنشاء مالك النظام</a>
           </div>
         </div>
 
@@ -136,7 +168,7 @@
     </section>
   </main>
 
-  <!-- منطق الصفحة (نفسه مع تحسين التوجيه) -->
+  <!-- منطق الصفحة (كما هو مع تحسينات بسيطة) -->
   <script type="module">
     import { auth, db } from "/PPM-Tabuk/js/firebase.js";
     import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -202,8 +234,8 @@
       const password=$("password").value;
       const remember=$("remember").checked;
 
-      if(!rxUser.test(username)){ msg.innerHTML='<span class="text-red-600">اسم المستخدم غير صالح.</span>'; return; }
-      if(!password){ msg.innerHTML='<span class="text-red-600">أدخل كلمة المرور.</span>'; return; }
+      if(!rxUser.test(username)){ msg.innerHTML='<span class="text-red-400">اسم المستخدم غير صالح.</span>'; return; }
+      if(!password){ msg.innerHTML='<span class="text-red-400">أدخل كلمة المرور.</span>'; return; }
       if(remember) localStorage.setItem("ppm:lastUsername", username); else localStorage.removeItem("ppm:lastUsername");
 
       setSubmitting(true);
@@ -214,20 +246,20 @@
         const sref=doc(db,"users",uid);
         const snap=await getDoc(sref);
         if(!snap.exists()){
-          msg.innerHTML='<span class="text-red-600">لا توجد وثيقة مستخدم لهذا الحساب.</span>';
+          msg.innerHTML='<span class="text-red-400">لا توجد وثيقة مستخدم لهذا الحساب.</span>';
           await signOut(auth); setSubmitting(false); return;
         }
         const user=snap.data();
 
         const status=(user.account&&user.account.status)||(user.isActive?"active":"disabled");
         if(status==="disabled" || user.isActive===false){
-          msg.innerHTML='<span class="text-red-600">الحساب معطّل. تواصل مع المسؤول.</span>';
+          msg.innerHTML='<span class="text-red-400">الحساب معطّل. تواصل مع المسؤول.</span>';
           await signOut(auth); setSubmitting(false); return;
         }
 
         if(user.account?.forcePwdChange===true){
           sessionStorage.setItem("ppm:pendingUid", uid);
-          location.href="/PPM-Tabuk/modules/dashboard/index.html"; return;
+          location.href=DEFAULT_REDIRECT; return;
         }
 
         try{
@@ -244,12 +276,12 @@
         if(code.includes("auth/invalid-credential")||code.includes("auth/wrong-password")) text="اسم المستخدم أو كلمة المرور غير صحيحة.";
         if(code.includes("auth/user-not-found")) text="لا يوجد مستخدم بهذا الاسم.";
         if(code.includes("auth/too-many-requests")) text="محاولات كثيرة. حاول لاحقًا.";
-        msg.innerHTML='<span class="text-red-600">'+text+'</span>';
+        document.getElementById('msg').innerHTML='<span class="text-red-400">'+text+'</span>';
         setSubmitting(false);
       }
     });
 
-    $("forgot").addEventListener("click",(e)=>{
+    document.getElementById("forgot").addEventListener("click",(e)=>{
       e.preventDefault();
       alert("لإعادة تعيين كلمة المرور: تواصل مع المسؤول ليولّد كلمة مرور مؤقتة ويجبر تغييرها عند أول دخول.");
     });
