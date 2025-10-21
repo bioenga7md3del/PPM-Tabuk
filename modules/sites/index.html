@@ -5,22 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PPM Tabuk • Sites</title>
 
-  <!-- Tailwind & Project Theme -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="../../css/theme-light.css">
-  <script src="../../js/theme.js" defer></script>
-  <!-- Global header/nav injection -->
+
+  <!-- استخدم مسارات جذرية على GitHub Pages -->
+  <link rel="stylesheet" href="/PPM-Tabuk/css/theme-light.css">
+  <script src="/PPM-Tabuk/js/theme.js" defer></script>
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
 
-  <!-- Print tweaks -->
   <style>
-    .read-only .for-edit { display: none !important; }
-    @media print {
-      header, .no-print { display:none !important; }
-      table { width:100%; }
-    }
+    .read-only .for-edit{ display:none!important; }
+    @media print{ header,.no-print{display:none!important} table{width:100%} }
   </style>
 </head>
+
 <body class="bg-slate-50 text-slate-800">
   <!-- Global Header / Nav -->
   <div id="mainNav" data-active="sites"></div>
