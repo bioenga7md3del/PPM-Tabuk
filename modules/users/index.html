@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>PPM TABUK • Users </title>
+  <title>PPM TABUK • Users</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../../css/theme-light.css">
@@ -42,26 +42,24 @@
   <div data-include="../../partials/header.html"></div>
 
   <section class="mx-auto max-w-7xl px-4 pt-6 pb-2">
-    <div class="flex items-center justify-between">
-     
-    </div>
+    <div class="flex items-center justify-between"></div>
 
     <div class="mt-4 flex flex-wrap gap-3">
-      <button id="btnOpenAddUser" class="btn btn-primary">➕ إضافة مستخدم</button>
-      <button id="btnOpenAddOwner" class="btn btn-danger" title="مرة واحدة عند التهيئة">👑 إضافة مالك النظام</button>
+      <button id="btnOpenAddUser" class="btn btn-primary">➕ Add User</button>
+      <button id="btnOpenAddOwner" class="btn btn-danger" title="One-time bootstrap">👑 Add System Owner</button>
     </div>
 
     <div id="pageMsg" class="mt-3 text-sm"></div>
   </section>
 
   <main class="mx-auto max-w-7xl px-4 py-4 space-y-4">
-    <!-- فلاتر -->
+    <!-- Filters -->
     <div class="card p-4">
       <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
         <div>
-          <label class="block text-sm mb-1">الدور</label>
+          <label class="block text-sm mb-1">Role</label>
           <select id="f_role" class="inp">
-            <option value="">الكل</option>
+            <option value="">All</option>
             <option>Admin</option><option>Supervisor</option><option>Staff</option>
             <option>Technician</option><option>DepartmentHead</option>
             <option>MaintenanceDeptSupervisor</option><option>WarehouseGuard</option>
@@ -69,32 +67,32 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm mb-1">الحالة</label>
+          <label class="block text-sm mb-1">Status</label>
           <select id="f_status" class="inp">
-            <option value="">الكل</option>
+            <option value="">All</option>
             <option value="active">Active</option>
             <option value="disabled">Disabled</option>
           </select>
         </div>
         <div>
           <label class="block text-sm mb-1">SiteScope</label>
-          <input id="f_site" class="inp" placeholder="مثال: hospital-a">
+          <input id="f_site" class="inp" placeholder="e.g., hospital-a">
         </div>
         <div>
           <label class="block text-sm mb-1">DeptScope</label>
-          <input id="f_dept" class="inp" placeholder="مثال: radiology">
+          <input id="f_dept" class="inp" placeholder="e.g., radiology">
         </div>
         <div class="md:col-span-2">
-          <label class="block text-sm mb-1">بحث (اسم/يوزرنيم/إيميل)</label>
-          <input id="f_search" class="inp" placeholder="اكتب للبحث...">
+          <label class="block text-sm mb-1">Search (name/username/email)</label>
+          <input id="f_search" class="inp" placeholder="Type to search...">
         </div>
       </div>
       <div class="flex justify-end mt-3">
-        <button id="btnRefresh" class="btn btn-soft">تحديث</button>
+        <button id="btnRefresh" class="btn btn-soft">Refresh</button>
       </div>
     </div>
 
-    <!-- الجدول -->
+    <!-- Table -->
     <div class="card p-0 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="min-w-full text-sm">
@@ -113,33 +111,33 @@
         </table>
       </div>
       <div class="flex items-center justify-between px-4 py-3 border-t">
-        <div class="text-xs text-slate-500">يعرض 20 في الصفحة</div>
+        <div class="text-xs text-slate-500">Showing 20 per page</div>
         <div class="flex items-center gap-2">
-          <button id="prevPage" class="btn btn-soft">⟵ السابق</button>
+          <button id="prevPage" class="btn btn-soft">⟵ Prev</button>
           <span id="pageInfo" class="text-sm"></span>
-          <button id="nextPage" class="btn btn-soft">التالي ⟶</button>
+          <button id="nextPage" class="btn btn-soft">Next ⟶</button>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- مودال: إضافة مستخدم -->
+  <!-- Modal: Add User -->
   <div id="modalUser" class="modal">
     <div class="panel card p-5">
       <div class="flex items-center justify-between">
-        <h3 class="text-lg font-bold">إضافة مستخدم</h3>
+        <h3 class="text-lg font-bold">Add User</h3>
         <button class="x text-slate-500" data-close="modalUser">✕</button>
       </div>
       <form id="formUser" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
         <div>
-          <label class="block text-sm mb-1">اسم المستخدم <span class="text-red-600">*</span></label>
-          <input id="u_username" class="inp" placeholder="مثال: m.ali" required>
-          <p class="text-xs muted mt-1">٤–٢٤ حرف/رقم/شرطة/شرطة سفلية (EN).</p>
+          <label class="block text-sm mb-1">Username <span class="text-red-600">*</span></label>
+          <input id="u_username" class="inp" placeholder="e.g., m.ali" required>
+          <p class="text-xs muted mt-1">4–24 letters/digits/hyphen/underscore (EN).</p>
         </div>
         <div>
-          <label class="block text-sm mb-1">الدور <span class="text-red-600">*</span></label>
+          <label class="block text-sm mb-1">Role <span class="text-red-600">*</span></label>
           <select id="u_role" class="inp" required>
-            <option value="" disabled selected>اختر الدور</option>
+            <option value="" disabled selected>Select a role</option>
             <option>Admin</option><option>Supervisor</option><option>Staff</option>
             <option>Technician</option><option>DepartmentHead</option>
             <option>MaintenanceDeptSupervisor</option><option>WarehouseGuard</option>
@@ -147,47 +145,47 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm mb-1">كلمة المرور <span class="text-red-600">*</span></label>
+          <label class="block text-sm mb-1">Password <span class="text-red-600">*</span></label>
           <input id="u_password" type="password" class="inp" placeholder="••••••••" required>
         </div>
         <div>
-          <label class="block text-sm mb-1">تأكيد كلمة المرور <span class="text-red-600">*</span></label>
+          <label class="block text-sm mb-1">Confirm Password <span class="text-red-600">*</span></label>
           <input id="u_password2" type="password" class="inp" placeholder="••••••••" required>
         </div>
         <div>
-          <label class="block text-sm mb-1">الاسم (عربي)</label>
-          <input id="u_nameAr" class="inp" placeholder="الاسم بالعربية">
+          <label class="block text-sm mb-1">Name (Arabic)</label>
+          <input id="u_nameAr" class="inp" placeholder="Arabic full name">
         </div>
         <div>
           <label class="block text-sm mb-1">Name (English)</label>
-          <input id="u_nameEn" class="inp" placeholder="Full Name (EN)">
+          <input id="u_nameEn" class="inp" placeholder="Full name (EN)">
         </div>
         <div class="md:col-span-2">
-          <label class="block text-sm mb-1">البريد (اختياري)</label>
+          <label class="block text-sm mb-1">Email (optional)</label>
           <input id="u_email" type="email" class="inp" placeholder="example@domain.com">
         </div>
         <div class="md:col-span-2">
-          <label class="block text-sm mb-1">SiteScope (قائمة مفصولة بفواصل)</label>
+          <label class="block text-sm mb-1">SiteScope (comma-separated)</label>
           <input id="u_site" class="inp" placeholder="site-a, site-b">
         </div>
         <div class="md:col-span-2">
-          <label class="block text-sm mb-1">DeptScope (قائمة مفصولة بفواصل)</label>
+          <label class="block text-sm mb-1">DeptScope (comma-separated)</label>
           <input id="u_dept" class="inp" placeholder="radiology, lab">
         </div>
         <div class="md:col-span-2 mt-2 flex gap-3">
-          <button class="btn btn-primary" type="submit">حفظ المستخدم</button>
-          <button class="btn btn-soft" type="button" data-close="modalUser">إلغاء</button>
+          <button class="btn btn-primary" type="submit">Save User</button>
+          <button class="btn btn-soft" type="button" data-close="modalUser">Cancel</button>
         </div>
         <div class="md:col-span-2"><div id="u_msg" class="text-sm"></div></div>
       </form>
     </div>
   </div>
 
-  <!-- مودال: تعديل بيانات -->
+  <!-- Modal: Edit User -->
   <div id="modalEdit" class="modal">
     <div class="panel card p-5">
       <div class="flex items-center justify-between">
-        <h3 class="text-lg font-bold">تعديل بيانات المستخدم</h3>
+        <h3 class="text-lg font-bold">Edit User</h3>
         <button class="x text-slate-500" data-close="modalEdit">✕</button>
       </div>
       <form id="formEdit" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
@@ -197,7 +195,7 @@
           <input id="e_username" class="inp" disabled>
         </div>
         <div>
-          <label class="block text-sm mb-1">الدور</label>
+          <label class="block text-sm mb-1">Role</label>
           <select id="e_role" class="inp">
             <option>Admin</option><option>Supervisor</option><option>Staff</option>
             <option>Technician</option><option>DepartmentHead</option>
@@ -206,7 +204,7 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm mb-1">الاسم (عربي)</label>
+          <label class="block text-sm mb-1">Name (Arabic)</label>
           <input id="e_nameAr" class="inp">
         </div>
         <div>
@@ -214,27 +212,27 @@
           <input id="e_nameEn" class="inp">
         </div>
         <div class="md:col-span-2">
-          <label class="block text-sm mb-1">البريد (اختياري)</label>
+          <label class="block text-sm mb-1">Email (optional)</label>
           <input id="e_email" type="email" class="inp">
         </div>
         <div class="md:col-span-2">
-          <label class="block text-sm mb-1">SiteScope (قائمة بفواصل)</label>
+          <label class="block text-sm mb-1">SiteScope (comma-separated)</label>
           <input id="e_site" class="inp">
         </div>
         <div class="md:col-span-2">
-          <label class="block text-sm mb-1">DeptScope (قائمة بفواصل)</label>
+          <label class="block text-sm mb-1">DeptScope (comma-separated)</label>
           <input id="e_dept" class="inp">
         </div>
         <div class="md:col-span-2 mt-2 flex gap-3">
-          <button class="btn btn-primary" type="submit">حفظ التعديلات</button>
-          <button class="btn btn-soft" type="button" data-close="modalEdit">إلغاء</button>
+          <button class="btn btn-primary" type="submit">Save Changes</button>
+          <button class="btn btn-soft" type="button" data-close="modalEdit">Cancel</button>
         </div>
         <div class="md:col-span-2"><div id="e_msg" class="text-sm"></div></div>
       </form>
     </div>
   </div>
 
-  <!-- منطق الصفحة -->
+  <!-- Logic -->
   <script type="module">
     import { auth, db } from "../../js/firebase.js";
     import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -250,19 +248,20 @@
     const show=id=>$(id).classList.add("show");
     const hide=id=>$(id).classList.remove("show");
 
-    // فتح/إغلاق مودالات
+    // open/close modals
     document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click", ()=>hide(b.dataset.close)));
     $("btnOpenAddUser").addEventListener("click", ()=>show("modalUser"));
-    $("btnOpenAddOwner").addEventListener("click", ()=>show("modalOwner")); // لو لسه محتفظ بيه من نسخة سابقة
+    // System Owner bootstrap page
+    $("btnOpenAddOwner").addEventListener("click", ()=>{ location.href = "/PPM-Tabuk/modules/users/bootstrap.html"; });
 
     const pageMsg = $("pageMsg");
 
-    // اختفاء زر المالك لو موجود
+    // hide Owner button if already exists
     (async()=>{
       try{
         const snap = await getDocs(query(collection(db,"users"), where("role","==","SystemOwner"), limit(1)));
         if (snap.size>0) $("btnOpenAddOwner").style.display="none";
-      }catch(e){ pageMsg.innerHTML='<span class="text-red-600">تعذر فحص وجود المالك.</span>'; }
+      }catch(e){ pageMsg.innerHTML='<span class="text-red-600">Failed to check if System Owner exists.</span>'; }
     })();
 
     // utils
@@ -273,7 +272,7 @@
     }
     function strToArr(s){ return (s||"").split(",").map(x=>x.trim()).filter(Boolean); }
 
-    // إنشاء مستخدم
+    // create user
     $("formUser").addEventListener("submit", async (e)=>{
       e.preventDefault();
       const msg=$("u_msg"); msg.textContent="";
@@ -287,10 +286,10 @@
       const siteScope=strToArr($("u_site").value);
       const deptScope=strToArr($("u_dept").value);
 
-      if(!rxUser.test(username)){ msg.textContent="اسم المستخدم غير صالح."; return; }
-      if(!role){ msg.textContent="اختر الدور."; return; }
-      if(pwd!==pwd2){ msg.textContent="كلمتا المرور غير متطابقتين."; return; }
-      if(!(await isUsernameFree(username))){ msg.textContent="اسم المستخدم محجوز."; return; }
+      if(!rxUser.test(username)){ msg.textContent="Invalid username."; return; }
+      if(!role){ msg.textContent="Please select a role."; return; }
+      if(pwd!==pwd2){ msg.textContent="Passwords do not match."; return; }
+      if(!(await isUsernameFree(username))){ msg.textContent="Username is already taken."; return; }
 
       try{
         const cred=await createUserWithEmailAndPassword(auth, synthEmail(username), pwd);
@@ -301,22 +300,22 @@
           role, siteScope, deptScope, isActive:true,
           account:{ linked:true, status:"active", provider:"firebase", uid,
             lastLoginAt:null, forcePwdChange:true, lastPwdChangeAt:serverTimestamp(), passwordSetByAdmin:true },
-          nameAr, nameEn, avatarUrl:null, locale:"ar", theme:"light",
+          nameAr, nameEn, avatarUrl:null, locale:"en", theme:"light",
           createdAt:serverTimestamp(), updatedAt:serverTimestamp(), notes:""
         });
-        msg.textContent="تم حفظ المستخدم ✅";
+        msg.textContent="User saved ✅";
         hide("modalUser"); await loadPage(true);
-      }catch(err){ console.error(err); msg.textContent="تعذّر الإنشاء: "+(err?.message||err); }
+      }catch(err){ console.error(err); msg.textContent="Failed to create: "+(err?.message||err); }
     });
 
-    // ===== جدول + فلاتر + Pagination =====
+    // ===== Table + Filters + Pagination =====
     const tbody=$("usersTbody");
     const fRole=$("f_role"), fStatus=$("f_status"), fSite=$("f_site"), fDept=$("f_dept"), fSearch=$("f_search");
     const btnRef=$("btnRefresh"), btnPrev=$("prevPage"), btnNext=$("nextPage"), pageInfo=$("pageInfo");
     const PAGE_SIZE=20; let cursors=[], page=0;
 
     const safe=(v,d="")=> (v===undefined||v===null)?d:v;
-    const displayName=d=> safe(d.nameAr)||safe(d.nameEn)||safe(d.name)||"—";
+    const displayName=d=> safe(d.nameEn)||safe(d.nameAr)||safe(d.name)||"—";
     const displayUsername=d=> safe(d.username) || (safe(d.email).split("@")[0]||"—");
     const displayRole=d=> safe(d.role,"—");
     const displayEmail=d=> safe(d.email,"—");
@@ -336,9 +335,9 @@
       const active = (displayStatus(data)==="active");
       return `
         <div class="flex gap-2">
-          <button class="btn btn-soft" data-act="edit" data-id="${id}">تعديل</button>
+          <button class="btn btn-soft" data-act="edit" data-id="${id}">Edit</button>
           <button class="btn ${active?'btn-danger':'btn-primary'}" data-act="toggle" data-id="${id}">
-            ${active?'تعطيل':'تفعيل'}
+            ${active?'Disable':'Enable'}
           </button>
           <button class="btn btn-soft" data-act="reset" data-id="${id}">Reset Password</button>
         </div>`;
@@ -362,7 +361,7 @@
 
       let rows=snap.docs.map(d=>({ id:d.id, ...d.data() }));
 
-      // فلترة بعد الجلب (بدون الحاجة لفهارس مركبة الآن)
+      // client-side filters
       if(r) rows=rows.filter(x=> safe(x.role,"").toLowerCase()===r);
       if(s) rows=rows.filter(x=> displayStatus(x).toLowerCase()===s);
       if(site) rows=rows.filter(x=> (Array.isArray(x.siteScope)?x.siteScope:[]).some(v=> String(v).toLowerCase().includes(site)));
@@ -386,7 +385,7 @@
         </tr>
       `).join("");
 
-      pageInfo.textContent=`صفحة ${page+1}`;
+      pageInfo.textContent=`Page ${page+1}`;
       btnPrev.disabled=(page===0);
       btnNext.disabled=(rows.length<PAGE_SIZE || !last);
     }
@@ -396,10 +395,9 @@
     btnRef.addEventListener("click", ()=> loadPage(true));
     let tt; fSearch.addEventListener("input", ()=>{ clearTimeout(tt); tt=setTimeout(()=>loadPage(true),300); });
     [fRole,fStatus,fSite,fDept].forEach(el=> el.addEventListener("change", ()=>loadPage(true)));
-    loadPage(true).catch(e=>{ console.error(e); pageMsg.innerHTML='<span class="text-red-600">تعذّر تحميل المستخدمين.</span>'; });
+    loadPage(true).catch(e=>{ console.error(e); pageMsg.innerHTML='<span class="text-red-600">Failed to load users.</span>'; });
 
-    // ===== أكشنات الصف =====
-    // فتح تعديل
+    // ===== Row actions =====
     function openEditModal(row){
       $("e_uid").value=row.id;
       $("e_username").value=row.username||"";
@@ -412,7 +410,6 @@
       show("modalEdit");
     }
 
-    // حفظ تعديل
     $("formEdit").addEventListener("submit", async (e)=>{
       e.preventDefault();
       const msg=$("e_msg"); msg.textContent="";
@@ -428,12 +425,11 @@
       };
       try{
         await updateDoc(doc(db,"users",uid), payload);
-        msg.textContent="تم الحفظ ✅";
+        msg.textContent="Saved ✅";
         hide("modalEdit"); await loadPage(true);
-      }catch(err){ console.error(err); msg.textContent="تعذّر الحفظ: "+(err?.message||err); }
+      }catch(err){ console.error(err); msg.textContent="Failed to save: "+(err?.message||err); }
     });
 
-    // تفعيل/تعطيل
     async function toggleUser(uid, currentData){
       const active = (displayStatus(currentData)==="active");
       const newStatus = active ? "disabled" : "active";
@@ -444,10 +440,9 @@
           updatedAt: serverTimestamp()
         });
         await loadPage(false);
-      }catch(err){ console.error(err); alert("تعذّر التحديث: "+(err?.message||err)); }
+      }catch(err){ console.error(err); alert("Failed to update: "+(err?.message||err)); }
     }
 
-    // Reset Password (عميل فقط – لا يغيّر كلمة المرور في Auth)
     function generateTempPwd(len=10){
       const chars="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@$%*";
       let out=""; for(let i=0;i<len;i++) out+=chars[Math.floor(Math.random()*chars.length)];
@@ -455,27 +450,24 @@
     }
     async function resetPassword(uid){
       const temp = generateTempPwd();
-      // نفعّل إجبار تغيير كلمة المرور ونحفظ الباسورد المؤقت كملاحظة (اختياري)
       try{
         await updateDoc(doc(db,"users",uid), {
           "account.forcePwdChange": true,
           notes: `TempPwd(${new Date().toISOString()}): ${temp}`,
           updatedAt: serverTimestamp()
         });
-        alert("Temporary password (سلمها للمستخدم يدويًا):\n\n"+temp+"\n\n*لتطبيق تغيير كلمة المرور تلقائيًا لازم Cloud Function/Admin SDK*");
-      }catch(err){ console.error(err); alert("تعذّر التحديث: "+(err?.message||err)); }
+        alert("Temporary password (share manually):\n\n"+temp+"\n\n*Changing Firebase Auth password requires Admin SDK/Cloud Function*");
+      }catch(err){ console.error(err); alert("Failed to update: "+(err?.message||err)); }
     }
 
-    // التقاط الأكشنات بالـ delegation
     tbody.addEventListener("click", async (e)=>{
       const btn = e.target.closest("button[data-act]");
       if(!btn) return;
       const id = btn.dataset.id;
       const act= btn.dataset.act;
 
-      // نحتاج بيانات الصف المختصرة من الـDOM؟ الأفضل نجيب Snapshot حديث
       const d = await getDoc(doc(db,"users",id));
-      if(!d.exists()){ alert("المستخدم غير موجود"); return; }
+      if(!d.exists()){ alert("User not found."); return; }
       const data = d.data();
 
       if(act==="edit"){ openEditModal({id, ...data}); }
