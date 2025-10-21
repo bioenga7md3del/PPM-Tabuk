@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>PPM TABUK • Assets</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../../css/theme-light.css">
+  <script src="../../js/theme.js" defer></script>
+  <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
+
+  <!-- تمييز اللينك النشط (المستوى الأول فقط) -->
+  <style>
+    #mainNav > a.active,
+    #mainNav .dd > a.active{
+      position:relative;font-weight:900;letter-spacing:.3px;
+      background:linear-gradient(90deg,#60a5fa,#3b82f6,#60a5fa);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      animation:shimmer 3s linear infinite;
+    }
+    @keyframes shimmer{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+    #mainNav > a.active::after,
+    #mainNav .dd > a.active::after{
+      content:"";position:absolute;left:0;right:0;bottom:-4px;height:2px;
+      background:linear-gradient(90deg,#3b82f6,#60a5fa,#3b82f6);border-radius:2px;
+      transform:scaleX(0);transition:transform .25s ease-in-out
+    }
+    #mainNav > a.active:hover::after,
+    #mainNav .dd > a.active:hover::after{transform:scaleX(1)}
+    #mainNav .dd .dd-panel .dd-item{color:inherit!important;font-weight:600!important}
+    #mainNav .dd .dd-panel .dd-item:hover{color:#2563eb!important}
+
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+    .btn{padding:.4rem .75rem;border-radius:.75rem;border:1px solid #cbd5e1;font-size:.875rem}
+    .btn-ghost{background:transparent}
+    .btn-brand{background:#2563eb;color:#fff;border-color:#2563eb}
+    .btn-brand:hover{background:#1d4ed8}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem}
+    .field{padding:.6rem .8rem;border:1px solid #cbd5e1;border-radius:1rem}
+  </style>
+</head>
+<body>
+
+  <!-- ✅ الهيدر الموحد (عرض كامل) -->
+  <header data-include="/PPM-Tabuk/partials/header.html?v=2" class="w-full max-w-none"></header>
+
+  <!-- ✅ صفحة فل ويدث -->
+  <main class="w-full max-w-none mx-auto p-3 md:p-6 space-y-6">
+
+    <!-- العنوان + الأزرار -->
+    <section class="flex flex-wrap justify-between items-center gap-2">
+      <h1 class="text-xl font-bold text-slate-800">Assets Management</h1>
+      <div class="flex gap-2">
+        <a href="import.html" class="btn btn-ghost">⬆️ Import Devices</a>
+        <a href="add.html" class="btn btn-brand">➕ Add New Device</a>
+      </div>
+    </section>
+
+    <!-- الفلاتر -->
+    <section class="card p-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <input id="f_control" class="field" placeholder="Control Number">
+        <input id="f_name" class="field" placeholder="Device Name">
+        <select id="f_site" class="field"></select>
+        <select id="f_department" class="field"></select>
+      </div>
+    </section>
+
+    <!-- الجدول (LTR زي صفحة الصيانة الوقائية) -->
+    <section class="card p-3">
+      <div class="overflow-auto" dir="ltr">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-800 text-white">
+            <tr>
+              <th class="p-2">#</th>
+              <th class="p-2">Control</th>
+              <th class="p-2">Name</th>
+              <th class="p-2">Site</th>
+              <th class="p-2">Department</th>
+              <th class="p-2">Brand</th>
+              <th class="p-2">Model</th>
+              <th class="p-2">Serial</th>
+              <th class="p-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    const cfg = {
+      apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
+      authDomain:"pmqrtabuk.firebaseapp.com",
+      projectId:"pmqrtabuk",
+      storageBucket:"pmqrtabuk.firebasestorage.app",
+      messagingSenderId:"305570616285",
+      appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
+    };
+    const app = initializeApp(cfg);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+
+    // عناصر
+    const tbody = document.getElementById("tbody");
+    const fControl = document.getElementById('f_control');
+    const fName    = document.getElementById('f_name');
+    const fSite    = document.getElementById('f_site');
+    const fDept    = document.getElementById('f_department');
+
+    let ALL = [];     // جميع الأجهزة
+    let FILTERED = []; // بعد الفلاتر
+
+    // بعد تحميل الهيدر
+    document.addEventListener("partials:loaded", () => {
+      const btnLogout = document.getElementById("btnLogout");
+      if (btnLogout) {
+        btnLogout.addEventListener("click", async () => {
+          try { await signOut(auth); } finally { location.replace("../../login.html"); }
+        });
+      }
+      // تمييز اللينك الحالي (المستوى الأول فقط)
+      const path = location.pathname.toLowerCase();
+      if (path.endsWith("assets/index.html")) {
+        const top = document.querySelector('#mainNav a[href*="assets/index.html"]');
+        if (top) top.classList.add('active');
+      }
+    });
+
+    // تحميل المستخدم و الأجهزة
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { location.replace("../../login.html"); return; }
+      const snap = await getDoc(doc(db, "users", user.uid));
+      const name = snap.exists() ? (snap.data().name || snap.data().nameEn || user.email) : user.email;
+      const el = document.getElementById("userName"); if (el) el.textContent = name;
+
+      await loadAssets();     // يملأ ALL
+      await fillFilters();    // يملأ قوائم الموقع والقسم
+
+      // لو جاي من صفحة Sites مع باراميتر ?site=... طبّقه
+      const siteParam = new URLSearchParams(location.search).get('site');
+      if (siteParam) {
+        // لو القيمة موجودة ضمن القائمة هنختارها مباشرة، وإلا هنسيبها فارغة ونستخدم بحث بالاسم
+        const opt = [...fSite.options].find(o => (o.value||'').toLowerCase() === siteParam.toLowerCase());
+        if (opt) fSite.value = opt.value;
+        else {
+          // حطها في اسم الجهاز كمفلتر شامل على الحقول النصية
+          fName.value = '';   // اسم الجهاز فقط، هنفلتر بالموقع نصيًا
+        }
+      }
+
+      applyFilters(siteParam);
+    });
+
+    // تحميل كل الأجهزة
+    async function loadAssets(){
+      const qs = await getDocs(query(collection(db,'assets'), orderBy('control')));
+      ALL = qs.docs.map((d, i) => ({ id:d.id, idx:i+1, ...d.data() }));
+    }
+
+    // ملء القوائم
+    async function fillFilters(){
+      const sites = new Set(), depts = new Set();
+      ALL.forEach(a => {
+        if(a.site) sites.add(a.site);
+        if(a.department) depts.add(a.department);
+      });
+      fSite.innerHTML = '<option value="">All Sites</option>' + [...sites].sort().map(s=>`<option value="${s}">${s}</option>`).join('');
+      fDept.innerHTML = '<option value="">All Departments</option>' + [...depts].sort().map(d=>`<option value="${d}">${d}</option>`).join('');
+    }
+
+    // تطبيق الفلاتر (يدعم siteParam كنص بحث بالموقع)
+    function applyFilters(siteParamFromURL=null){
+      const qControl = (fControl.value||'').trim().toLowerCase();
+      const qName    = (fName.value||'').trim().toLowerCase();
+      const qSiteSel = (fSite.value||'').trim().toLowerCase();
+      const qDeptSel = (fDept.value||'').trim().toLowerCase();
+      const qSiteURL = (siteParamFromURL||'').trim().toLowerCase();
+
+      FILTERED = ALL.filter(a=>{
+        const control = (a.control||'').toString().toLowerCase();
+        const name    = (a.name||'').toString().toLowerCase();
+        const site    = (a.site||'').toString().toLowerCase();
+        const dept    = (a.department||'').toString().toLowerCase();
+
+        const okC  = !qControl || control.includes(qControl);
+        const okN  = !qName    || name.includes(qName);
+        const okS1 = !qSiteSel || site === qSiteSel;            // اختيار من القائمة
+        const okS2 = !qSiteURL || site.includes(qSiteURL);      // قادم من ?site=
+        const okD  = !qDeptSel || dept === qDeptSel;
+
+        return okC && okN && okS1 && okS2 && okD;
+      });
+
+      renderTable();
+    }
+
+    // ريندر
+    function renderTable(){
+      tbody.innerHTML = '';
+      if (FILTERED.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">لا توجد أجهزة مطابقة.</td></tr>`;
+        return;
+      }
+      FILTERED.forEach((a, i) => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-200';
+        tr.innerHTML = `
+          <td class="p-2 text-center">${i+1}</td>
+          <td class="p-2 whitespace-nowrap mono">${a.control||'—'}</td>
+          <td class="p-2">${a.name||'—'}</td>
+          <td class="p-2">${a.site||'—'}</td>
+          <td class="p-2">${a.department||'—'}</td>
+          <td class="p-2">${a.brand||'—'}</td>
+          <td class="p-2">${a.model||'—'}</td>
+          <td class="p-2">${a.serial||'—'}</td>
+          <td class="p-2 flex gap-2">
+            <a href="edit.html?id=${encodeURIComponent(a.id)}" class="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded">Edit</a>
+            <a href="../preventive/sticker.html#view/${encodeURIComponent(a.control||'')}" target="_blank" class="px-2 py-1 bg-sky-600 hover:bg-sky-700 text-white text-xs rounded">Sticker</a>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // أحداث الفلاتر
+    [fControl, fName].forEach(inp => {
+      inp.addEventListener('input', ()=>applyFilters());
+    });
+    [fSite, fDept].forEach(sel => {
+      sel.addEventListener('change', ()=>applyFilters());
+    });
+  </script>
+</body>
+</html>
