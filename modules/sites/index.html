@@ -137,12 +137,12 @@
     </div>
   </div>
 
-  <!-- SheetJS (ESM) + Firebase (ESM) + App Logic -->
+  <!-- App (single-file): SheetJS + Firebase + Logic -->
   <script type="module">
-    // ===== SheetJS ESM for Excel export =====
+    /* ===== SheetJS for Excel export ===== */
     import * as XLSX from 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm';
 
-    // ===== Firebase SDKs (CDN ESM) =====
+    /* ===== Firebase SDKs (CDN ESM) ===== */
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import {
@@ -153,7 +153,7 @@
       getStorage, ref as sref, uploadBytes, getDownloadURL
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
 
-    // ===== Firebase Config (from your js/firebase.js) =====
+    /* ===== Firebase Config (YOURS) ===== */
     const firebaseConfig = {
       apiKey: "AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
       authDomain: "pmqrtabuk.firebaseapp.com",
@@ -169,7 +169,7 @@
     const db   = getFirestore(app);
     const storage = getStorage(app);
 
-    // ===== Helpers & State =====
+    /* ===== Helpers & State ===== */
     const el = (id)=>document.getElementById(id);
     const PAGE_SIZE = 10;
 
@@ -201,7 +201,7 @@
 
     let editCode = null;
 
-    // ===== Roles
+    /* ===== Roles ===== */
     async function getCurrentUserProfile() {
       const u = auth.currentUser;
       if (!u) return null;
@@ -214,11 +214,10 @@
       return r === 'admin' || r === 'system owner' || r === 'system_owner' || r === 'owner';
     }
 
-    // ===== Auth Gate
+    /* ===== Auth Gate ===== */
     onAuthStateChanged(auth, async (user)=>{
       if(!user){
         document.body.classList.add('read-only');
-        // ممكن تعرض رسالة أو redirect للوجين حسب نظامك
         return;
       }
       STATE.profile = await getCurrentUserProfile();
@@ -229,7 +228,7 @@
       await loadSites();
     });
 
-    // ===== Load Engineers (role == Supervisor)
+    /* ===== Load Engineers (role == Supervisor) ===== */
     async function loadEngineers(){
       const qy = query(collection(db,'users'), where('role','==','Supervisor'));
       const snaps = await getDocs(qy);
@@ -239,7 +238,7 @@
       backSel.innerHTML = opts;
     }
 
-    // ===== Load Sites
+    /* ===== Load Sites ===== */
     async function loadSites(){
       const snaps = await getDocs(query(collection(db,'sites'), orderBy('name')));
       STATE.list = snaps.docs.map(d=> ({ code:d.id, ...d.data() }));
@@ -247,7 +246,7 @@
       fillContractorFilter();
     }
 
-    // ===== Filters
+    /* ===== Filters ===== */
     function fillContractorFilter(){
       const set = new Set(STATE.list.map(x=>x.contractor).filter(Boolean));
       fContractor.innerHTML = '<option value="">All contractors</option>' + Array.from(set).sort().map(c=>`<option>${c}</option>`).join('');
@@ -271,7 +270,7 @@
     fContractor.addEventListener('change', applyFilters);
     fType.addEventListener('change', applyFilters);
 
-    // ===== Render
+    /* ===== Render ===== */
     function paged(){
       const start = (STATE.page-1)*PAGE_SIZE;
       return STATE.filtered.slice(start, start+PAGE_SIZE);
@@ -349,7 +348,7 @@
     prevBtn.addEventListener('click', ()=>{ STATE.page=Math.max(1,STATE.page-1); renderTable(); });
     nextBtn.addEventListener('click', ()=>{ const tp=Math.ceil(STATE.filtered.length/PAGE_SIZE); STATE.page=Math.min(tp,STATE.page+1); renderTable(); });
 
-    // ===== Drawer controls
+    /* ===== Drawer controls ===== */
     function openDrawer(){
       drawer.classList.remove('hidden');
       drawerTitle.textContent = editCode ? `Edit Site (${editCode})` : 'New Site';
@@ -387,7 +386,7 @@
       await loadSites();
     }
 
-    // ===== Upload logo
+    /* ===== Upload logo ===== */
     logoInput.addEventListener('change', async ()=>{
       const file = logoInput.files?.[0];
       if(!file) return;
@@ -403,7 +402,7 @@
       logoInput.dataset.url = url; // temporary until save
     });
 
-    // ===== Save (Create/Update)
+    /* ===== Save (Create/Update) ===== */
     siteForm.addEventListener('submit', async (e)=>{
       e.preventDefault();
       if(!canEdit(STATE.profile)) return;
@@ -450,7 +449,7 @@
       };
     }
 
-    // ===== Export & Print
+    /* ===== Export & Print ===== */
     btnExport.addEventListener('click', ()=>{
       const data = STATE.filtered.map(x=>({
         Name:x.name||'', Code:x.code||'',
