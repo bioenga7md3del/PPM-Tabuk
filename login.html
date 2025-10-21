@@ -1,258 +1,176 @@
-<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>PPM TABUK • تسجيل الدخول</title>
+// 📁 File: src/views/home.js
+import React, { useState } from 'react'
+import { Helmet } from 'react-helmet'
+import './home.css'
 
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
+export default function Home() {
+  const [user, setUser] = useState('')
+  const [pass, setPass] = useState('')
+  const [show, setShow] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
 
-  <!-- خط عربي واضح -->
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    setErr('')
 
-  <link rel="icon" href="/PPM-Tabuk/assets/favicon.ico"/>
-
-  <style>
-    :root{
-      --tabuk-blue:#3384ff;
-      --tabuk-dblue:#1d4ed8;
-      --glass-bg:rgba(255,255,255,.86);
-      --glass-brd:rgba(255,255,255,.6);
+    // ✅ (اختياري) تحقق بسيط
+    if (!user || !pass) {
+      setErr('من فضلك أدخل اسم المستخدم وكلمة المرور')
+      return
     }
-    html,body{height:100%}
-    body{font-family:"Tajawal",ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial; color:#0f172a; background:#f6f8fc}
-    .hero{
-      background: radial-gradient(1100px 700px at 120% -10%, rgba(255,255,255,.25), rgba(255,255,255,0) 60%),
-                  radial-gradient(900px 600px at -10% 120%, rgba(255,255,255,.18), rgba(255,255,255,0) 55%),
-                  linear-gradient(180deg, #4ca0ff 0%, #5ea2ff 40%, #5ea2ff 100%);
-    }
-    .glass{
-      background:var(--glass-bg);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      border:1px solid var(--glass-brd);
-      border-radius:22px;
-      box-shadow:0 18px 48px rgba(2,6,23,.12);
-    }
-    .inp{
-      border:1px solid #e6e9f0; background:#fff;
-      border-radius:14px; padding:1rem 1rem; width:100%;
-      font-size:16px;
-    }
-    .inp:focus{outline:none; border-color:#c6d3ff; box-shadow:0 0 0 4px rgba(37,99,235,.12)}
-    .btn{display:inline-flex; align-items:center; justify-content:center; gap:.6rem; border-radius:14px;
-         padding:1rem 1.2rem; font-weight:800}
-    .btn-primary{background:var(--tabuk-dblue); color:#fff}
-    .btn-primary:hover{filter:brightness(.97)}
-    .muted{color:#6b7280}
-    .badge{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .7rem;border-radius:999px;font-size:.78rem}
-    .badge-ok{background:rgba(16,185,129,.14);color:#047857}
-    .badge-warn{background:rgba(250,204,21,.18);color:#a16207}
-    .logo-ring{box-shadow:0 12px 28px rgba(2,6,23,.25); border:4px solid rgba(255,255,255,.92)}
-  </style>
-</head>
-<body>
 
-  <main class="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-    <!-- يمين: هوية وبانر قوي -->
-    <section class="hero relative overflow-hidden order-2 lg:order-2 px-8 lg:px-14 py-10 flex items-center">
-      <div class="max-w-2xl ms-auto text-white">
-        <div class="flex items-center gap-5">
-         <img
-  src="/PPM-Tabuk/assets/TabukCluster.jpeg"
-  alt="Tabuk Cluster"
-  class="bg-white rounded-[28px] logo-ring object-contain
-         w-28 h-28 md:w-32 md:h-32 lg:w-40 lg:h-40 xl:w-44 xl:h-44
-         p-2 md:p-3 lg:p-4"
-/>
-          <div>
-            <h1 class="text-3xl font-black leading-tight"> M M P TABUK Cluster</h1>
-            <p class="text-sm text-white/90 -mt-1">Medical Maintenance Platform</p>
+    setLoading(true)
+
+    // ✅ إعادة توجيه مباشرة بعد "تسجيل الدخول"
+    // لو مشروعك مرفوع على GitHub Pages داخل /PPM-Tabuk/ خليه بالمسار الكامل
+    const target = '/PPM-Tabuk/modules/dashboard/index.html'
+    window.location.href = target
+  }
+
+  return (
+    <main className="login-page" dir="rtl" lang="ar">
+      <Helmet>
+        <title>PPM TABUK • تسجيل الدخول</title>
+        <meta name="description" content="Biomedical Department Tabuk Cluster – تسجيل الدخول" />
+      </Helmet>
+
+      {/* خلفية شعار شفافة */}
+      <div className="bg-logo" aria-hidden="true" />
+
+      <section className="card">
+        <header className="brand">
+          <img src="/assets/TabukCluster.jpeg" className="brand-logo" alt="Tabuk Cluster Logo" />
+          <div className="brand-text">
+            <h1>PPM TABUK</h1>
+            <p>Biomedical Department – Tabuk Cluster</p>
           </div>
-        </div>
+        </header>
 
-        <h2 class="mt-10 text-4xl xl:text-5xl font-black leading-[1.15]">
-          Securely manage your assets<br>
-          with <span class="underline decoration-white/40">MMP TABUK Cluster</span>
-        </h2>
+        <form className="form" onSubmit={handleSubmit} noValidate>
+          <label className="label" htmlFor="user">اسم المستخدم أو البريد</label>
+          <input
+            id="user"
+            className="input"
+            type="text"
+            placeholder="example@tabuk.sa"
+            value={user}
+            onChange={(e) => setUser(e.target.value)}
+            autoComplete="username"
+          />
 
-        <div class="mt-8 glass p-5 max-w-xl text-slate-800">
-          <p class="text-lg font-extrabold">Biomedical Department</p>
-          <p class="text-lg font-extrabold -mt-1">Tabuk Cluster</p>
-          <p class="mt-2 text-sm text-slate-500">Use your <b>Username + Password</b> to sign in. Email is for notifications only.</p>
-          <div class="mt-3 flex items-center gap-2 text-sm text-slate-600">
-            <span>• Fast</span><span>• Secure</span><span>• Role-based access</span>
+          <label className="label" htmlFor="pass">كلمة المرور</label>
+          <div className="input-group">
+            <input
+              id="pass"
+              className="input"
+              type={show ? 'text' : 'password'}
+              placeholder="••••••••"
+              value={pass}
+              onChange={(e) => setPass(e.target.value)}
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              className="toggle"
+              onClick={() => setShow((s) => !s)}
+              aria-label={show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+            >{show ? 'إخفاء' : 'إظهار'}</button>
           </div>
-        </div>
 
-        <div class="absolute bottom-6 left-8 right-8 flex items-center gap-3 text-xs">
-          <span id="connBadge" class="badge badge-warn">⏳ فحص الاتصال...</span>
-          <span id="connInfo" class="text-white/90"></span>
-        </div>
-      </div>
-    </section>
+          {err && <p className="error" role="alert">{err}</p>}
 
-    <!-- يسار: فورم واضح ومركّز -->
-    <section class="order-1 lg:order-1 flex items-center justify-center px-6 lg:px-10 py-10">
-      <div class="w-full max-w-md">
-        <div class="mb-6 text-center lg:text-right">
-          <h3 class="text-2xl font-black tracking-tight">Welcome to PPM TABUK</h3>
-          <p class="text-sm muted mt-1">سجّل الدخول باستخدام <b>اسم المستخدم + كلمة المرور</b>.</p>
-        </div>
+          <button className="btn" type="submit" disabled={loading}>
+            {loading ? 'جارٍ التحميل…' : 'تسجيل الدخول'}
+          </button>
 
-        <div class="glass p-6">
-          <form id="loginForm" class="space-y-5">
-            <div>
-              <label class="block text-sm mb-1">اسم المستخدم</label>
-              <input id="username" class="inp" placeholder="مثال: owner" autocomplete="username" required>
-            </div>
-            <div>
-              <label class="block text-sm mb-1">كلمة المرور</label>
-              <div class="relative">
-                <input id="password" type="password" class="inp pe-28" placeholder="••••••••" autocomplete="current-password" required>
-                <button type="button" id="togglePwd"
-                        class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">إظهار</button>
-              </div>
-            </div>
-            <div class="flex items-center justify-between">
-              <label class="inline-flex items-center gap-2 text-sm text-slate-600">
-                <input id="remember" type="checkbox" class="rounded"> تذكّرني
-              </label>
-              <a href="#" id="forgot" class="text-sm text-slate-500 hover:underline">نسيت كلمة المرور؟</a>
-            </div>
+          <p className="hint">بالدخول، تقرّ بسياسات الاستخدام والخصوصية الخاصة بإدارة الصيانة الطبية.</p>
+        </form>
+      </section>
 
-            <button id="submitBtn" class="btn btn-primary w-full" type="submit">تسجيل الدخول</button>
-            <div id="msg" class="text-sm"></div>
-          </form>
+      <footer className="footer">
+        <small>© {new Date().getFullYear()} Biomedical Department – Tabuk Cluster</small>
+      </footer>
+    </main>
+  )
+}
 
-          <div id="ownerAlert" class="hidden mt-4">
-            <a href="/PPM-Tabuk/modules/users/bootstrap.html" class="btn w-full" style="background:#eef2f7">👑 إنشاء مالك النظام</a>
-          </div>
-        </div>
 
-        <p class="mt-6 text-center text-xs text-slate-400">© <span id="year"></span> PPM TABUK</p>
-      </div>
-    </section>
-  </main>
+// 📁 File: src/views/home.css
+:root{
+  --bg:#0b1220;           /* خلفية داكنة راقية */
+  --card:#0f172a;         /* أزرق داكن */
+  --ink:#e5e7eb;          /* نص فاتح */
+  --muted:#9ca3af;        /* نص ثانوي */
+  --acc:#22d3ee;          /* سماوي */
+  --line:#1f2937;         /* حدود ناعمة */
+  --radius:18px;
+}
 
-  <!-- منطق الصفحة (نفسه مع تحسين التوجيه) -->
-  <script type="module">
-    import { auth, db } from "/PPM-Tabuk/js/firebase.js";
-    import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import { doc, getDoc, collection, getDocs, query, where, limit, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+*{box-sizing:border-box}
+html,body,#root{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"}
 
-    const $ = (id)=>document.getElementById(id);
-    const rxUser=/^[a-z0-9_-]{4,24}$/;
-    const normalize = u=>(u||"").trim().toLowerCase();
-    const synthEmail = u=> `${normalize(u)}@ppm.local`;
-    $("year").textContent = new Date().getFullYear();
+.login-page{min-height:100%;display:grid;place-items:center;padding:24px;position:relative;overflow:hidden}
 
-    const DEFAULT_REDIRECT = "/PPM-Tabuk/modules/dashboard/index.html";
-    const ROLE_REDIRECTS = {
-      "SystemOwner": DEFAULT_REDIRECT, "Admin": DEFAULT_REDIRECT, "Supervisor": DEFAULT_REDIRECT,
-      "DepartmentHead": DEFAULT_REDIRECT, "Technician": DEFAULT_REDIRECT, "Staff": DEFAULT_REDIRECT,
-      "MaintenanceDeptSupervisor": DEFAULT_REDIRECT, "WarehouseGuard": DEFAULT_REDIRECT, "SystemMonitor": DEFAULT_REDIRECT
-    };
+/* ✅ خلفية اللوجو الكبيرة (ووترمارك) */
+.bg-logo{
+  position:absolute;inset:-10% -10% auto -10%;
+  height:120vh;
+  background:url('/assets/TabukCluster.jpeg') center/contain no-repeat;
+  opacity:.06;           /* شفافية منخفضة */
+  filter:grayscale(100%) contrast(110%);
+  pointer-events:none;
+}
 
-    function withTimeout(p, ms=4000){
-      return new Promise((res, rej)=>{
-        const t=setTimeout(()=>rej(new Error("timeout")), ms);
-        p.then(v=>{clearTimeout(t);res(v)}).catch(e=>{clearTimeout(t);rej(e)});
-      });
-    }
+.card{
+  width:min(100%, 880px);
+  background:linear-gradient(180deg, rgba(15,23,42,.85), rgba(15,23,42,.92));
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:0 20px 60px rgba(0,0,0,.45);
+  backdrop-filter:saturate(120%) blur(6px);
+  padding:28px;
+}
 
-    async function checkConnection(){
-      const badge=$("connBadge"), info=$("connInfo");
-      info.textContent = `projectId: ${auth?.app?.options?.projectId || "?"}`;
-      try{
-        await withTimeout(getDocs(query(collection(db,"users"), limit(1))), 4000);
-        badge.textContent="✅ متصل بـ Firebase";
-        badge.classList.remove("badge-warn"); badge.classList.add("badge-ok");
-      }catch(e){
-        const reason = String(e?.message||"").includes("timeout") ? "انتهت المهلة" : "ممنوع حسب القواعد";
-        badge.textContent=`⚠️ SDK متصل، لكن فشل فحص Firestore (${reason})`;
-        badge.classList.remove("badge-ok"); badge.classList.add("badge-warn");
-      }
-    }
-    checkConnection();
+.brand{display:flex;gap:18px;align-items:center;margin-bottom:16px}
+.brand-logo{width:84px;height:84px;object-fit:cover;border-radius:20px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.brand-text h1{margin:0;font-size:28px;letter-spacing:.8px}
+.brand-text p{margin:4px 0 0;color:var(--muted)}
 
-    async function ensureOwnerExists(){
-      try{
-        const snap=await withTimeout(getDocs(query(collection(db,"users"), where("role","==","SystemOwner"), limit(1))), 4000);
-        if(snap.size===0) $("ownerAlert").classList.remove("hidden");
-      }catch(e){}
-    }
-    ensureOwnerExists();
+.form{display:grid;gap:10px;margin-top:10px}
+.label{font-weight:600;color:var(--muted)}
+.input{width:100%;padding:14px 16px;border-radius:14px;background:#0b1220;border:1px solid var(--line);color:var(--ink);outline:none}
+.input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(34,211,238,.15)}
 
-    // UI
-    $("togglePwd").addEventListener("click", ()=>{
-      const inp=$("password"); const isPwd=inp.type==="password";
-      inp.type=isPwd?"text":"password"; $("togglePwd").textContent=isPwd?"إخفاء":"إظهار";
-    });
-    const lastU=localStorage.getItem("ppm:lastUsername");
-    if(lastU){ $("username").value=lastU; $("remember").checked=true; }
-    const setSubmitting=v=>{ const b=$("submitBtn"); b.disabled=v; b.textContent=v?"جاري الدخول...":"تسجيل الدخول"; }
+.input-group{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px}
+.toggle{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#0b1220;color:var(--muted);cursor:pointer}
+.toggle:hover{border-color:#334155;color:#cbd5e1}
 
-    // دخول
-    $("loginForm").addEventListener("submit", async (e)=>{
-      e.preventDefault();
-      const msg=$("msg"); msg.textContent="";
-      const username=normalize($("username").value);
-      const password=$("password").value;
-      const remember=$("remember").checked;
+.error{margin:6px 2px 0;color:#fecaca}
 
-      if(!rxUser.test(username)){ msg.innerHTML='<span class="text-red-600">اسم المستخدم غير صالح.</span>'; return; }
-      if(!password){ msg.innerHTML='<span class="text-red-600">أدخل كلمة المرور.</span>'; return; }
-      if(remember) localStorage.setItem("ppm:lastUsername", username); else localStorage.removeItem("ppm:lastUsername");
+.btn{margin-top:6px;padding:14px 18px;border-radius:14px;border:1px solid #155e75;background:linear-gradient(90deg,#0ea5e9,#22d3ee);color:#001018;font-weight:800;cursor:pointer}
+.btn:disabled{opacity:.7;cursor:not-allowed}
 
-      setSubmitting(true);
-      try{
-        const cred=await signInWithEmailAndPassword(auth, synthEmail(username), password);
-        const uid=cred.user.uid;
+.hint{margin:10px 2px 0;color:var(--muted);font-size:.92rem}
 
-        const sref=doc(db,"users",uid);
-        const snap=await getDoc(sref);
-        if(!snap.exists()){
-          msg.innerHTML='<span class="text-red-600">لا توجد وثيقة مستخدم لهذا الحساب.</span>';
-          await signOut(auth); setSubmitting(false); return;
-        }
-        const user=snap.data();
+.footer{margin-top:16px;text-align:center;color:#94a3b8}
 
-        const status=(user.account&&user.account.status)||(user.isActive?"active":"disabled");
-        if(status==="disabled" || user.isActive===false){
-          msg.innerHTML='<span class="text-red-600">الحساب معطّل. تواصل مع المسؤول.</span>';
-          await signOut(auth); setSubmitting(false); return;
-        }
+/* احترام تقليل الحركة */
+@media (prefers-reduced-motion:reduce){
+  .btn, .brand-logo{animation:none}
+}
 
-        if(user.account?.forcePwdChange===true){
-          sessionStorage.setItem("ppm:pendingUid", uid);
-          location.href="/PPM-Tabuk/modules/dashboard/index.html"; return;
-        }
+/* استجابة الهواتف */
+@media (max-width:640px){
+  .brand{flex-direction:column;text-align:center}
+  .brand-logo{width:72px;height:72px}
+}
 
-        try{
-          await updateDoc(sref,{ "account.lastLoginAt": serverTimestamp(), updatedAt: serverTimestamp() });
-        }catch(_){}
 
-        const role=String(user.role||"").trim();
-        const next=new URLSearchParams(location.search).get("next");
-        const dest= next || ROLE_REDIRECTS[role] || DEFAULT_REDIRECT;
-        location.href=dest;
-      }catch(err){
-        const code=String(err?.code||"");
-        let text="تعذّر تسجيل الدخول.";
-        if(code.includes("auth/invalid-credential")||code.includes("auth/wrong-password")) text="اسم المستخدم أو كلمة المرور غير صحيحة.";
-        if(code.includes("auth/user-not-found")) text="لا يوجد مستخدم بهذا الاسم.";
-        if(code.includes("auth/too-many-requests")) text="محاولات كثيرة. حاول لاحقًا.";
-        msg.innerHTML='<span class="text-red-600">'+text+'</span>';
-        setSubmitting(false);
-      }
-    });
+// ✅ تذكير بوضع الشعار في المسار التالي:
+// 📁 File: public/assets/TabukCluster.jpeg
+// ضع ملف الشعار الذي أعطيتني إياه داخل مجلد public/assets بنفس الاسم بالضبط.
 
-    $("forgot").addEventListener("click",(e)=>{
-      e.preventDefault();
-      alert("لإعادة تعيين كلمة المرور: تواصل مع المسؤول ليولّد كلمة مرور مؤقتة ويجبر تغييرها عند أول دخول.");
-    });
-  </script>
-</body>
-</html>
+
+// (اختياري) لو أردت نسخ احتياطي لصفحة 404 كما هي في المشروع الأصلي اتركها دون تعديل.
