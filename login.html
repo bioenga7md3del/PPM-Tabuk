@@ -5,78 +5,73 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PPM TABUK • تسجيل الدخول</title>
 
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- خط -->
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="icon" href="assets/favicon.ico"/>
 
   <style>
     :root{
-      --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --panel:#ffffff;
+      --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --panel:#fff;
       --grad1:#f7fbff; --grad2:#f0f7ff; --accA:#3b82f6; --accB:#22d3ee;
     }
     html,body{height:100%}
-    body{
-      font-family:"Tajawal",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial;
-      color:var(--ink);
-      background:linear-gradient(180deg, var(--grad1), var(--grad2));
-      overflow-x:hidden;
-    }
+    body{font-family:"Tajawal",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial;color:var(--ink);background:linear-gradient(180deg,var(--grad1),var(--grad2))}
 
-    /* 🟦 ووترمارك شعار التجمع يغطّي الصفحة كلها */
-    .wm{
-      position:fixed; inset:0; z-index:-1; pointer-events:none;
+    /* 🔵 هيرو علوي: الشعار فوق، كبير، مع تلاشي ناعم */
+    .hero{
+      min-height:38vh; position:relative; display:flex; align-items:flex-end; justify-content:center;
+      padding:8vh 1.5rem 2rem; overflow:hidden;
     }
-    .wm::before{
-      /* تدرّج خلفي خفيف لإضاءة الوسط */
+    .hero::before{
       content:""; position:absolute; inset:0;
       background:
-        radial-gradient(60vmax 60vmax at 50% 35%, rgba(59,130,246,.10), transparent 65%),
-        radial-gradient(50vmax 50vmax at 80% 75%, rgba(34,211,238,.08), transparent 60%);
+        radial-gradient(70vmax 70vmax at 50% 10%, rgba(59,130,246,.12), transparent 60%),
+        radial-gradient(50vmax 50vmax at 85% 80%, rgba(34,211,238,.10), transparent 60%);
     }
-    .wm::after{
+    .hero::after{
       content:""; position:absolute; inset:0;
-      /* شعار كبير جدًا في المنتصف */
-      background:url("assets/TabukCluster.jpeg") center center / min(120vmin, 1200px) no-repeat;
-      opacity:.09; filter:grayscale(100%) contrast(110%);
-      /* تلاشي الحواف */
-      -webkit-mask-image: radial-gradient(closest-side, #000 70%, transparent 100%);
-      mask-image: radial-gradient(closest-side, #000 70%, transparent 100%);
+      background:url("assets/TabukCluster.jpeg") top center / clamp(320px, 48vmin, 1200px) no-repeat;
+      opacity:.08; filter:grayscale(100%) contrast(110%);
+      -webkit-mask-image: radial-gradient(closest-side, #000 72%, transparent 100%);
+              mask-image: radial-gradient(closest-side, #000 72%, transparent 100%);
+    }
+    .hero-title{
+      position:relative; z-index:1; text-align:center; color:#0f172a;
+      text-shadow:0 1px 0 rgba(255,255,255,.6);
     }
 
-    /* كارت اللوج إن */
+    /* كارت اللوج إن في النص تحت الهيرو */
     .card{
-      background:var(--panel);
-      border:1px solid var(--line);
-      border-radius:22px;
+      background:var(--panel); border:1px solid var(--line); border-radius:22px;
       box-shadow:0 26px 64px rgba(15,23,42,.10);
     }
     .inp{
-      width:100%; padding:14px 16px; border-radius:14px;
-      background:#fff; border:1px solid var(--line); color:var(--ink);
-      transition:border-color .15s, box-shadow .15s;
+      width:100%; padding:14px 16px; border-radius:14px; background:#fff; border:1px solid var(--line);
+      color:var(--ink); transition:border-color .15s, box-shadow .15s;
     }
     .inp::placeholder{color:#94a3b8}
-    .inp:focus{outline:none;border-color:#bfdbfe;box-shadow:0 0 0 4px rgba(59,130,246,.16)}
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.6rem;border-radius:14px;
-         padding:14px 18px;font-weight:800}
-    .btn-primary{background:linear-gradient(90deg, var(--accA), var(--accB)); color:#001018}
+    .inp:focus{outline:none; border-color:#bfdbfe; box-shadow:0 0 0 4px rgba(59,130,246,.16)}
+    .btn{display:inline-flex; align-items:center; justify-content:center; gap:.6rem; border-radius:14px; padding:14px 18px; font-weight:800}
+    .btn-primary{background:linear-gradient(90deg,var(--accA),var(--accB)); color:#001018}
     .btn-primary:hover{filter:brightness(.98)}
   </style>
 </head>
 <body>
 
-  <!-- خلفية الشعار تغطي الصفحة -->
-  <div class="wm" aria-hidden="true"></div>
+  <!-- الشعار فوق -->
+  <header class="hero">
+    <div class="hero-title">
+      <h1 class="text-3xl font-black">PPM TABUK</h1>
+      <p class="text-sm mt-1 text-slate-600">Biomedical Department – Tabuk Cluster</p>
+    </div>
+  </header>
 
-  <!-- كارت اللوج إن في المنتصف -->
-  <main class="min-h-screen flex items-center justify-center px-6 py-12">
-    <div class="w-full max-w-md">
+  <!-- الكارت تحت في المنتصف -->
+  <main class="px-6 pb-10 -mt-6">
+    <div class="max-w-md mx-auto">
       <div class="card p-6">
         <div class="mb-6 text-center">
-          <h3 class="text-2xl font-black tracking-tight text-slate-800">Welcome to MMP TABUK</h3>
+          <h3 class="text-2xl font-black tracking-tight text-slate-800">Welcome to PPM TABUK</h3>
           <p class="text-sm mt-1 text-slate-600">سجّل الدخول باستخدام <b>اسم المستخدم + كلمة المرور</b>.</p>
         </div>
 
@@ -85,14 +80,15 @@
             <label class="block text-sm mb-1 text-slate-700">اسم المستخدم</label>
             <input id="username" class="inp" placeholder="مثال: owner" autocomplete="username" required>
           </div>
+
           <div>
             <label class="block text-sm mb-1 text-slate-700">كلمة المرور</label>
             <div class="relative">
               <input id="password" type="password" class="inp pe-28" placeholder="••••••••" autocomplete="current-password" required>
-              <button type="button" id="togglePwd"
-                      class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500 hover:text-slate-700">إظهار</button>
+              <button type="button" id="togglePwd" class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500 hover:text-slate-700">إظهار</button>
             </div>
           </div>
+
           <div class="flex items-center justify-between">
             <label class="inline-flex items-center gap-2 text-sm text-slate-700">
               <input id="remember" type="checkbox" class="rounded"> تذكّرني
@@ -104,17 +100,16 @@
           <div id="msg" class="text-sm mt-1 text-red-600"></div>
         </form>
 
-        <!-- يظهر فقط لو مفيش SystemOwner -->
         <div id="ownerAlert" class="hidden mt-4">
           <a href="modules/users/bootstrap.html" class="btn w-full" style="background:#eef2f7; color:#0f172a">👑 إنشاء مالك النظام</a>
         </div>
       </div>
 
-      <p class="mt-6 text-center text-xs text-slate-500">© <span id="year"></span> BiomedicalDepartment </p>
+      <p class="mt-6 text-center text-xs text-slate-500">© <span id="year"></span> PPM TABUK</p>
     </div>
   </main>
 
-  <!-- منطق الدخول (Firebase) -->
+  <!-- لوجيك الدخول (كما هو) -->
   <script type="module">
     import { auth, db } from "./js/firebase.js";
     import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -124,7 +119,6 @@
     const rxUser=/^[a-z0-9_-]{4,24}$/;
     const normalize = u=>(u||"").trim().toLowerCase();
     const synthEmail = u=> `${normalize(u)}@ppm.local`;
-
     $("year").textContent = new Date().getFullYear();
 
     const DEFAULT_REDIRECT = "modules/dashboard/index.html";
@@ -140,7 +134,6 @@
         p.then(v=>{clearTimeout(t);res(v)}).catch(e=>{clearTimeout(t);rej(e)});
       });
     }
-
     async function ensureOwnerExists(){
       try{
         const snap=await withTimeout(getDocs(query(collection(db,"users"), where("role","==","SystemOwner"), limit(1))), 4000);
