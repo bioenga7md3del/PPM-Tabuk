@@ -5,63 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PPM TABUK • تسجيل الدخول</title>
 
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- خط -->
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
-
-  <!-- فافيكون (اختياري) -->
   <link rel="icon" href="assets/favicon.ico"/>
 
   <style>
     :root{
-      /* 👈 غيّر ده لو عايز لون خلفية مختلف */
-      --bg:#f6f9ff;         /* خلفية الصفحة (لون واحد) */
-      --ink:#0f172a;        /* نص */
-      --muted:#64748b;      /* نص ثانوي */
-      --line:#e2e8f0;       /* حد الكارت */
-      --panel:#ffffff;      /* خلفية الكارت */
-      --accA:#3b82f6; --accB:#22d3ee;  /* زر */
+      --bg:#f6f9ff;  --ink:#0f172a;  --muted:#64748b;
+      --line:#e2e8f0; --panel:#ffffff;
+      --accA:#3b82f6; --accB:#22d3ee;
     }
     html,body{height:100%}
-    body{
-      font-family:"Tajawal",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial;
-      color:var(--ink);
-      background:var(--bg);   /* ✅ خلفية بلون واحد */
-      overflow-x:hidden;
-    }
-    /* كارت اللوج إن */
-    .card{
-      background:var(--panel);
-      border:1px solid var(--line);
-      border-radius:22px;
-      box-shadow:0 24px 64px rgba(15,23,42,.10);
-    }
-    .inp{
-      width:100%; padding:14px 16px; border-radius:14px;
-      background:#fff; border:1px solid var(--line); color:var(--ink);
-      transition:border-color .15s, box-shadow .15s;
-    }
+    body{font-family:"Tajawal",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:var(--bg);color:var(--ink)}
+
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:22px;box-shadow:0 24px 64px rgba(15,23,42,.10)}
+    .inp{width:100%;padding:14px 16px;border-radius:14px;background:#fff;border:1px solid var(--line);color:var(--ink);transition:border-color .15s,box-shadow .15s}
     .inp::placeholder{color:#94a3b8}
     .inp:focus{outline:none;border-color:#bfdbfe;box-shadow:0 0 0 4px rgba(59,130,246,.16)}
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.6rem;border-radius:14px;
-         padding:14px 18px;font-weight:800}
-    .btn-primary{background:linear-gradient(90deg,var(--accA),var(--accB)); color:#001018}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.6rem;border-radius:14px;padding:14px 18px;font-weight:800}
+    .btn-primary{background:linear-gradient(90deg,var(--accA),var(--accB));color:#001018}
     .btn-primary:hover{filter:brightness(.98)}
+
+    /* إطار الشعار فوق الكارت */
+    .logo-frame{width:96px;height:96px;border-radius:24px;background:#fff;border:1px solid var(--line);
+                display:grid;place-items:center;box-shadow:0 16px 40px rgba(15,23,42,.12)}
+    .logo-img{width:78px;height:78px;object-fit:contain}
   </style>
 </head>
 <body>
 
-  <!-- كارت اللوج إن في منتصف الصفحة -->
+  <!-- محتوى الصفحة: الشعار ثم النص ثم الكارت في المنتصف -->
   <main class="min-h-screen flex items-center justify-center px-6 py-12">
     <div class="w-full max-w-md">
-      <div class="card p-6">
-        <div class="mb-6 text-center">
-          <h3 class="text-2xl font-black tracking-tight text-slate-800">Welcome to PPM TABUK</h3>
-          <p class="text-sm mt-1 text-slate-600">سجّل الدخول باستخدام <b>اسم المستخدم + كلمة المرور</b>.</p>
+      <div class="text-center mb-5">
+        <div class="logo-frame mx-auto">
+          <img src="assets/TabukCluster.jpeg" alt="Tabuk Health Cluster" class="logo-img">
         </div>
+        <h1 class="mt-3 text-base text-slate-700">الصيانة الطبية بتجمع تبوك الصحي</h1>
+      </div>
 
+      <div class="card p-6">
         <form id="loginForm" class="space-y-5" novalidate>
           <div>
             <label class="block text-sm mb-1 text-slate-700">اسم المستخدم</label>
@@ -90,7 +73,7 @@
 
         <!-- يظهر فقط لو مفيش SystemOwner -->
         <div id="ownerAlert" class="hidden mt-4">
-          <a href="modules/users/bootstrap.html" class="btn w-full" style="background:#eef2f7; color:#0f172a">👑 إنشاء مالك النظام</a>
+          <a href="modules/users/bootstrap.html" class="btn w-full" style="background:#eef2f7;color:#0f172a">👑 إنشاء مالك النظام</a>
         </div>
       </div>
 
@@ -108,7 +91,6 @@
     const rxUser=/^[a-z0-9_-]{4,24}$/;
     const normalize = u=>(u||"").trim().toLowerCase();
     const synthEmail = u=> `${normalize(u)}@ppm.local`;
-
     $("year").textContent = new Date().getFullYear();
 
     const DEFAULT_REDIRECT = "modules/dashboard/index.html";
