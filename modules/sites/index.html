@@ -17,29 +17,52 @@
   <!-- Loader للـ partials -->
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
 
-  <!-- تنسيق اللينك النشط -->
+  <!-- تنسيق اللينك النشط + إصلاح القوائم الفرعية -->
   <style>
-    #mainNav a.active {
+    /* فعّل الستايل على التوب-ناف فقط (المستوى الأول) */
+    #mainNav > nav a.active,
+    #mainNav > div > nav a.active {
       position: relative;
       color: #93c5fd !important;
       font-weight: 900 !important;
       letter-spacing: 0.3px;
       transition: color 0.25s ease-in-out;
     }
-    #mainNav a.active::after {
+    #mainNav > nav a.active::after,
+    #mainNav > div > nav a.active::after {
       content: "";
       position: absolute;
       left: 0; right: 0; bottom: -4px;
-      height: 2px; background-color: #60a5fa; border-radius: 2px;
-      transform: scaleX(0); transition: transform 0.25s ease-in-out;
+      height: 2px;
+      background-color: #60a5fa;
+      border-radius: 2px;
+      transform: scaleX(0);
+      transition: transform 0.25s ease-in-out;
     }
-    #mainNav a.active:hover::after { transform: scaleX(1); }
+    #mainNav > nav a.active:hover::after,
+    #mainNav > div > nav a.active:hover::after { transform: scaleX(1); }
 
+    /* إعادة لون/وزن روابط القوائم الفرعية */
+    #mainNav .menu a,
+    #mainNav [data-submenu] a,
+    #mainNav .dropdown a {
+      color: inherit !important;
+      font-weight: 600 !important;
+    }
+    #mainNav .menu a:hover,
+    #mainNav [data-submenu] a:hover,
+    #mainNav .dropdown a:hover {
+      color: #2563eb !important;
+    }
+
+    /* صلاحيات العرض */
     .read-only .for-edit{ display:none!important; }
+
+    /* الطباعة */
     @media print{ header,.no-print{display:none!important} table{width:100%} }
   </style>
 
-  <!-- سكربت الصفحة: Firebase + Sites logic + تمييز اللينك -->
+  <!-- سكربت الصفحة: Firebase + منطق Sites + تمييز اللينك -->
   <script type="module">
     /* ===== Firebase ===== */
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
@@ -53,7 +76,7 @@
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
     import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
 
-    // إعداد Firebase (نفس ملفك)
+    // إعداد Firebase (نفس مشروعك)
     const cfg = {
       apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
       authDomain:"pmqrtabuk.firebaseapp.com",
@@ -75,7 +98,7 @@
         try { await signOut(auth); } finally { location.replace("../../login.html"); }
       });
 
-      // تحديد التبويب الحالي
+      // تمييز التبويب الحالي
       const path = location.pathname.toLowerCase();
       document.querySelectorAll("#mainNav a").forEach(a => {
         const href = a.getAttribute("href")?.toLowerCase() || "";
@@ -97,9 +120,15 @@
         const name=(snap.exists() && (snap.data().name || snap.data().nameEn)) ? (snap.data().name || snap.data().nameEn) : (user.displayName||user.email);
         const el=document.getElementById('userName');
         if(el) el.textContent=name||'';
-      }catch{}
+        STATE.profile = snap.exists()? snap.data() : null;
+      }catch{
+        STATE.profile = null;
+      }
 
-      // بعد التأكد من الدخول: حمّل الصفحة
+      // ضبط الصلاحيات على أساس الدور
+      toggleEditByRole();
+
+      // تحميل البيانات
       await loadEngineers();
       await loadSites();
     });
@@ -130,24 +159,19 @@
     let STATE = { list:[], filtered:[], page:1, engineers:[], profile:null };
 
     /* ===== صلاحيـات ===== */
-    async function getCurrentUserProfile() {
-      const u = auth.currentUser;
-      if (!u) return null;
-      const snap = await getDoc(doc(db, 'users', u.uid));
-      return snap.exists() ? { id: snap.id, ...snap.data() } : null;
-    }
+    function roleKey(v){ return (v||'').toString().toLowerCase().replace(/[\s_]/g,''); }
     function canEdit(p){
       if(!p) return false;
-      const r = (p.role||'').toLowerCase();
-      return r==='admin' || r==='system owner' || r==='system_owner' || r==='owner';
+      const r = roleKey(p.role);
+      return r==='admin' || r==='systemowner' || r==='owner';
+    }
+    function toggleEditByRole(){
+      if(!canEdit(STATE.profile)) document.body.classList.add('read-only');
+      else document.body.classList.remove('read-only');
     }
 
     /* ===== تحميل المهندسين (role = Supervisor) ===== */
     async function loadEngineers(){
-      STATE.profile = await getCurrentUserProfile();
-      if(!canEdit(STATE.profile)) document.body.classList.add('read-only');
-      else document.body.classList.remove('read-only');
-
       const qy = query(collection(db,'users'), where('role','==','Supervisor'));
       const snaps = await getDocs(qy);
       STATE.engineers = snaps.docs.map(d=>({ id:d.id, name:(d.data().nameEn || d.data().displayName || d.id) }));
@@ -252,7 +276,12 @@
     function openDrawer(){
       drawer.classList.remove('hidden');
       drawerTitle.textContent = editCode ? `تعديل موقع (${editCode})` : 'موقع جديد';
-      if(!editCode){ siteForm.reset(); document.getElementById('logoPreview').src=''; siteForm.code.disabled=false; logoInput.dataset.url=''; }
+      if(!editCode){
+        siteForm.reset();
+        document.getElementById('logoPreview').src='';
+        siteForm.code.disabled=false;
+        logoInput.dataset.url='';
+      }
     }
     function closeDrawer(){ editCode=null; drawer.classList.add('hidden'); }
     document.addEventListener('click', e=>{ if(e.target?.dataset?.close !== undefined || e.target.closest('[data-close]')) closeDrawer(); });
@@ -312,7 +341,7 @@
         contractor: payload.contractor,
         type: payload.type,
         location: payload.location,
-        primaryEngineerId: payload.primaryEngineerId || null,
+            primaryEngineerId: payload.primaryEngineerId || null,
         backupEngineerId: payload.backupEngineerId || null,
         primaryActive: payload.primaryActive,
         logoUrl: payload.logoUrl || null,
@@ -437,7 +466,7 @@
           <input name="code" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="TBC-001" required>
         </label>
         <label class="text-sm">اسم الموقع
-          <input name="name" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="مركز صحي الورود" required>
+          <input name="name" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="مركز صحي ..." required>
         </label>
         <label class="text-sm">Latitude
           <input name="lat" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="28.383" type="number" step="any">
@@ -467,7 +496,7 @@
         </label>
 
         <div class="col-span-2 grid grid-cols-[72px,1fr] gap-3 items-center">
-          <img id="logoPreview" class="w-16 h-16 rounded border object-cover" alt="logo preview"/>
+          <img id="logoPreview" class="w-16 ه-16 rounded border object-cover" alt="logo preview"/>
           <label class="text-sm">لوجو الموقع (Storage)
             <input id="logoInput" type="file" accept="image/*" class="mt-1 w-full px-3 py-2 rounded-xl border for-edit">
           </label>
