@@ -16,7 +16,7 @@
   <!-- Loader للـ partials -->
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
 
-  <!-- Leaflet (خريطة) -->
+  <!-- Leaflet (خريطة لالتقاط الإحداثيات بسهولة) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -72,7 +72,7 @@
       apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
       authDomain:"pmqrtabuk.firebaseapp.com",
       projectId:"pmqrtabuk",
-      storageBucket:"pmqrtabuk.firebasestorage.app",
+      storageBucket:"pmqrtabuk.firebasestorage.app",  // لو لقيت مشاكل رفع، جرّب pmqrtabuk.appspot.com
       messagingSenderId:"305570616285",
       appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
     };
@@ -232,7 +232,8 @@
             <td class="px-4 py-3">${x.backupEngineerId ? userName(x.backupEngineerId) : '-'}</td>
             <td class="px-4 py-3">${inactive}</td>
             <td class="px-4 py-3">
-              <a class="text-indigo-600 hover:underline" href="modules/assets/index.html?site=${encodeURIComponent(x.code)}">أجهزة الموقع</a>
+              <a class="text-indigo-600 hover:underline"
+                 href="/PPM-Tabuk/modules/assets/index.html?site=${encodeURIComponent(x.name || x.code)}">أجهزة الموقع</a>
               <span class="text-slate-300">•</span>
               ${editBtns}
             </td>
@@ -262,10 +263,10 @@
       drawerTitle.textContent = editCode ? `تعديل موقع (${editCode})` : 'موقع جديد';
       if(!editCode){
         siteForm.reset();
-        document.getElementById('logoPreview').src='';
-        siteForm.code.disabled=false;
-        logoInput.dataset.url='';
-        // إعادة تموضع الخريطة
+        const p = document.getElementById('logoPreview');
+        p && p.removeAttribute('src');
+        logoInput.value = '';
+        delete logoInput.dataset.url;          // مهم: امسح أي URL قديم
         setTimeout(initOrResetMap, 50);
       } else {
         setTimeout(initOrResetMap, 50);
@@ -324,10 +325,10 @@
     function tryParseLatLng(txt){
       if(!txt) return null;
       // صيغة "lat,lng"
-      const m1 = txt.trim().match(/(-?\\d+\\.?\\d*)\\s*,\\s*(-?\\d+\\.?\\d*)/);
+      const m1 = txt.trim().match(/(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/);
       if(m1) return {lat:parseFloat(m1[1]), lng:parseFloat(m1[2])};
       // لينك مابس فيه @lat,lng
-      const m2 = txt.match(/@(-?\\d+\\.?\\d*),(-?\\d+\\.?\\d*)/);
+      const m2 = txt.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
       if(m2) return {lat:parseFloat(m2[1]), lng:parseFloat(m2[2])};
       return null;
     }
@@ -363,8 +364,10 @@
       siteForm.primaryEngineer.value = d.primaryEngineerId||'';
       siteForm.backupEngineer.value = d.backupEngineerId||'';
       siteForm.primaryActive.checked = !!d.primaryActive;
-      document.getElementById('logoPreview').src = d.logoUrl||'';
-      logoInput.dataset.url = d.logoUrl||'';
+
+      const pv = document.getElementById('logoPreview');
+      pv.src = d.logoUrl || '';
+      logoInput.dataset.url = d.logoUrl || '';
 
       openDrawer();
     }
@@ -388,7 +391,7 @@
       await uploadBytes(r, file);
       const url = await getDownloadURL(r);
       document.getElementById('logoPreview').src = url;
-      logoInput.dataset.url = url;
+      logoInput.dataset.url = url;           // نستخدمه فقط في الحفظ
     });
 
     // حفظ
@@ -415,6 +418,7 @@
       await loadSites();
     });
 
+    // نجمع البيانات (نستخدم رابط الرفع فقط)
     function collectForm(){
       const code = siteForm.code.value.trim();
       const name = siteForm.name.value.trim();
@@ -425,7 +429,10 @@
       const primaryEngineerId = siteForm.primaryEngineer.value || '';
       const backupEngineerId = siteForm.backupEngineer.value || '';
       const primaryActive = siteForm.primaryActive.checked;
-      const logoUrl = logoInput.dataset.url || document.getElementById('logoPreview').src || '';
+
+      const uploadedUrl = logoInput.dataset.url || '';
+      const logoUrl = (/^https?:/i.test(uploadedUrl)) ? uploadedUrl : '';
+
       if(!code) throw alert('Site Code مطلوب');
       if(!name) throw alert('Site Name مطلوب');
 
