@@ -73,25 +73,41 @@
     </footer>
   </main>
 
-  <script>
-    document.getElementById('y').textContent = new Date().getFullYear();
-    const pass = document.getElementById('pass');
-    const toggle = document.getElementById('toggleBtn');
-    toggle.addEventListener('click', ()=> {
-      const show = pass.type === 'password';
-      pass.type = show ? 'text' : 'password';
-      toggle.textContent = show ? 'إخفاء' : 'إظهار';
-    });
+ <script>
+  document.getElementById('y').textContent = new Date().getFullYear();
 
-    document.getElementById('loginForm').addEventListener('submit', (e)=>{
-      e.preventDefault();
-      const u = document.getElementById('user').value.trim();
-      const p = document.getElementById('pass').value.trim();
-      const err = document.getElementById('err');
-      if(!u || !p){ err.style.display='block'; return; }
-      // إعادة توجيه
-      window.location.href = '/PPM-Tabuk/modules/dashboard/index.html';
-    });
-  </script>
+  const pass   = document.getElementById('pass');
+  const toggle = document.getElementById('toggleBtn');
+  toggle.addEventListener('click', ()=> {
+    const show = pass.type === 'password';
+    pass.type = show ? 'text' : 'password';
+    toggle.textContent = show ? 'إخفاء' : 'إظهار';
+  });
+
+  document.getElementById('loginForm').addEventListener('submit', (e)=>{
+    e.preventDefault();
+
+    const u = document.getElementById('user').value.trim();
+    const p = document.getElementById('pass').value.trim();
+    const err = document.getElementById('err');
+    if(!u || !p){ err.style.display='block'; return; }
+
+    // ✅ احسب اسم الريبو تلقائيًا (GitHub Pages project page)
+    const parts = location.pathname.split('/').filter(Boolean);
+    // أول جزء في المسار هو اسم الريبو لما تكون الصفحة زي: /PPM-Tabuk/login.html
+    const repo = parts.length ? `/${parts[0]}` : '';
+
+    // الهدف النهائي داخل الريبو
+    const target = repo ? `${repo}/modules/dashboard/index.html`
+                        : 'modules/dashboard/index.html'; // لو بتفتحه محليًا من file://
+
+    // جرّب تطبعه في الكونソل لو حابب تتأكد
+    console.log('Redirecting to:', target);
+
+    // التحويل
+    window.location.assign(target);
+  });
+</script>
+
 </body>
 </html>
