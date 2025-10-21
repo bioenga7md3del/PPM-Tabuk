@@ -1,1 +1,442 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>PPM TABUK • Preventive Maintenance</title>
 
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../../css/theme-light.css">
+  <!-- (اختياري) مبدّل الثيم -->
+  <script src="../../js/theme.js" defer></script>
+
+  <!-- لودر الـ partials (لازم يكون موجود) -->
+  <script src="../../js/include.js" defer></script>
+</head>
+
+
+
+
+<!-- تنسيق اللينك النشط -->
+<style>
+  /* تمييز اللينك النشط */
+  #mainNav a.active {
+    position: relative;
+    color: #93c5fd !important;       /* أزرق فاتح */
+    font-weight: 900 !important;     /* خط سميك */
+    letter-spacing: 0.3px;
+    transition: color 0.25s ease-in-out;
+  }
+
+  #mainNav a.active::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -4px;
+    height: 2px;
+    background-color: #60a5fa;       /* خط أزرق تحته */
+    border-radius: 2px;
+    transform: scaleX(0);
+    transition: transform 0.25s ease-in-out;
+  }
+
+  #mainNav a.active:hover::after {
+    transform: scaleX(1);
+  }
+
+  #mainNav a:hover {
+    color: #bfdbfe !important;       /* افتح عند المرور */
+  }
+</style>
+
+<!-- سكربت تحديد الصفحة وتفعيل اللينك -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+  // إعداد Firebase
+  const cfg = {
+    apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
+    authDomain:"pmqrtabuk.firebaseapp.com",
+    projectId:"pmqrtabuk",
+    storageBucket:"pmqrtabuk.firebasestorage.app",
+    messagingSenderId:"305570616285",
+    appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
+  };
+  const app = initializeApp(cfg);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  // بعد تحميل الهيدر
+  document.addEventListener("partials:loaded", () => {
+    // زر الخروج
+    const btnLogout = document.getElementById("btnLogout");
+    if (btnLogout) {
+      btnLogout.addEventListener("click", async () => {
+        try { await signOut(auth); } finally { location.replace("../../login.html"); }
+      });
+    }
+
+    // ✅ تمييز اللينك الحالي
+    const path = location.pathname.toLowerCase();
+    document.querySelectorAll("#mainNav a").forEach(a => {
+      const href = a.getAttribute("href")?.toLowerCase() || "";
+      if (path.endsWith("dashboard/index.html") && href.includes("dashboard")) a.classList.add("active");
+      else if (path.endsWith("assets/index.html") && href.includes("assets")) a.classList.add("active");
+      else if (path.endsWith("preventive/index.html") && href.includes("preventive")) a.classList.add("active");
+      else if (path.endsWith("corrective/index.html") && href.includes("corrective")) a.classList.add("active");
+      else if (path.endsWith("sites/index.html") && href.includes("sites")) a.classList.add("active");
+      else if (path.endsWith("users/index.html") && href.includes("users")) a.classList.add("active");
+    });
+  });
+
+  // عرض اسم المستخدم
+  onAuthStateChanged(auth, async (user)=>{
+    if(!user){ location.replace("../../login.html"); return; }
+    try{
+      const snap=await getDoc(doc(db,'users',user.uid));
+      const name=(snap.exists() && snap.data().name) ? snap.data().name : (user.displayName||user.email);
+      const el=document.getElementById('userName');
+      if(el) el.textContent=name||'';
+    }catch{}
+  });
+</script>
+
+
+
+
+
+  
+<body>
+
+  <!-- ✅ الهيدر الموحد -->
+  <header data-include="../../partials/header.html"></header>
+
+  <main class="w-full max-w-none mx-auto p-3 md:p-6 space-y-6">
+
+    <!-- CREATE BUTTON -->
+    <section class="flex flex-wrap justify-between items-center">
+      <h1 class="text-xl font-bold text-slate-800"> Preventive Maintenance</h1>
+      <a href="PPMPlan.html" class="btn btn-brand shadow">➕ Create PPM Plan</a>
+    </section>
+
+    <!-- FILTERS -->
+    <section class="card p-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <input id="f_control" class="field" placeholder="Control Number"/>
+        <input id="f_name" class="field" placeholder="Device Name"/>
+        <select id="f_site" class="field"></select>
+        <select id="f_department" class="field"></select>
+        <select id="f_due" class="field">
+          <option value="">All</option>
+          <option value="this_month">This Month (Next PM)</option>
+          <option value="overdue_30">Overdue 30+ (Next PM)</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- TABLE (ثابت LTR عشان ترتيب الأعمدة) -->
+    <section class="card">
+      <div class="overflow-auto" dir="ltr">
+        <table class="min-w-full text-sm table">
+          <thead class="bg-slate-800 text-white">
+            <tr>
+              <th class="p-2">#</th>
+              <th class="p-2">Control</th>
+              <th class="p-2">Name</th>
+              <th class="p-2">Site</th>
+              <th class="p-2">Department</th>
+              <th class="p-2">Last PM</th>
+              <th class="p-2">Next PM</th>
+              <th class="p-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div id="pager" class="flex flex-col md:flex-row gap-2 md:items-center md:justify-between p-2">
+        <div id="pageStats" class="text-xs text-slate-500"></div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-slate-500">Rows per page:</label>
+          <select id="pageSize" class="px-2 py-1 rounded bg-slate-100 border text-sm">
+            <option>20</option><option selected>50</option><option>100</option><option>1000</option><option value="all">All</option>
+          </select>
+          <button id="prevPage" class="px-2 py-1 rounded bg-slate-700 text-white text-sm">Prev</button>
+          <span id="pageInfo" class="text-xs text-slate-500 min-w-[4rem] text-center">1/1</span>
+          <button id="nextPage" class="px-2 py-1 rounded bg-slate-700 text-white text-sm">Next</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== Logic ===== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    const cfg = {
+      apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
+      authDomain:"pmqrtabuk.firebaseapp.com",
+      projectId:"pmqrtabuk",
+      storageBucket:"pmqrtabuk.firebasestorage.app",
+      messagingSenderId:"305570616285",
+      appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
+    };
+    const app = initializeApp(cfg);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+
+    // عناصر الصفحة (الهيدر هيتحقن بعد include.js، لذلك بنجيبها بعد الحدث)
+    let userName, btnLogout;
+    document.addEventListener('partials:loaded', ()=>{
+      userName  = document.getElementById('userName');
+      btnLogout = document.getElementById('btnLogout');
+      // ربط لوج أوت بعد ظهور الزر
+      btnLogout?.addEventListener('click', async()=>{ try{await signOut(auth);}finally{location.replace("../../login.html");} });
+    });
+
+    const tbody = document.getElementById('tbody');
+    const modal = document.getElementById('editModal');
+    const editId   = document.getElementById('edit_id');
+    const editLast = document.getElementById('edit_last');
+    const editNext = document.getElementById('edit_next');
+    const closeEdit= document.getElementById('closeEdit');
+    const saveEdit = document.getElementById('saveEdit');
+
+    let ALL=[], VIEW=[], userSites=[], userDepts=[], page=1;
+
+    const filters={
+      control:document.getElementById('f_control'),
+      name:document.getElementById('f_name'),
+      site:document.getElementById('f_site'),
+      department:document.getElementById('f_department'),
+      due:document.getElementById('f_due')
+    };
+
+    const pageSizeEl=document.getElementById('pageSize');
+    const pageInfoEl=document.getElementById('pageInfo');
+    const pageStats=document.getElementById('pageStats');
+    const prevBtn=document.getElementById('prevPage');
+    const nextBtn=document.getElementById('nextPage');
+
+    // === Helpers (Dates) ===
+    const toISO = d => d ? new Date(d).toISOString().slice(0,10) : '';
+    const parseDate = (v) => {
+      if(!v) return null;
+      if(/^\d{4}-\d{2}-\d{2}$/.test(String(v))) return new Date(String(v)+'T00:00:00');
+      const t = new Date(v); return isNaN(t)? null : t;
+    };
+    const addMonths = (date, months=6) => {
+      if(!date) return null;
+      const d = new Date(date.getTime());
+      const day = d.getDate();
+      d.setMonth(d.getMonth()+months);
+      if(d.getDate() < day) d.setDate(0);
+      d.setHours(0,0,0,0);
+      return d;
+    };
+    const isInThisMonth = (v) => {
+      const d = parseDate(v); if(!d) return false;
+      const now = new Date(); return (d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth());
+    };
+    const isOverdue30 = (v) => {
+      const d = parseDate(v); if(!d) return false;
+      const now = new Date(); now.setHours(0,0,0,0);
+      return (now - d) >= (31*24*60*60*1000);
+    };
+
+    // ==== Auth Guard ====
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ location.replace("../../login.html"); return; }
+
+      // اسم المستخدم
+      try{
+        const snap = await getDoc(doc(db,'users',user.uid));
+        const name = (snap.exists() && snap.data().name) ? snap.data().name : (user.displayName || user.email);
+        (document.getElementById('userName')||{}).textContent = name || '';
+      }catch{}
+
+      await fillFilters();
+      await loadAssets();
+    });
+
+    // Fill Site/Department filters
+    async function fillFilters(){
+      const qs = await getDocs(collection(db,'assets'));
+      const sites = new Set(), depts = new Set();
+      qs.forEach(d=>{
+        const a=d.data();
+        if(a.site) sites.add(a.site);
+        if(a.department) depts.add(a.department);
+      });
+      const siteSel = filters.site;
+      const deptSel = filters.department;
+      siteSel.innerHTML='<option value="">All Sites</option>';
+      deptSel.innerHTML='<option value="">All Departments</option>';
+      [...sites].sort().forEach(s=>{
+        if(userSites.length==0 || userSites.includes(s))
+          siteSel.innerHTML += `<option value="${s}">${s}</option>`;
+      });
+      [...depts].sort().forEach(d=>{
+        if(userDepts.length==0 || userDepts.includes(d))
+          deptSel.innerHTML += `<option value="${d}">${d}</option>`;
+      });
+    }
+
+    async function loadAssets(){
+      const qs = await getDocs(query(collection(db,'assets'), orderBy('control')));
+      ALL = qs.docs.map(d=>({id:d.id,...d.data()}));
+      applyFiltersAndRender();
+
+      const onChange = ()=>{ page=1; applyFiltersAndRender(); };
+      filters.control.addEventListener('input', onChange);
+      filters.name.addEventListener('input', onChange);
+      filters.site.addEventListener('change', onChange);
+      filters.department.addEventListener('change', onChange);
+      filters.due.addEventListener('change', onChange);
+
+      pageSizeEl.addEventListener('change', ()=>{page=1; renderTable();});
+      prevBtn.addEventListener('click', ()=>{ if(page>1){ page--; renderTable(); }});
+      nextBtn.addEventListener('click', ()=>{ const total=getTotalPages(); if(page<total){ page++; renderTable(); }});
+    }
+
+    function normalize(v){ return String(v||'').toLowerCase().trim(); }
+
+    function applyFiltersAndRender(){
+      const q = {
+        control: normalize(filters.control.value),
+        name: normalize(filters.name.value),
+        site: normalize(filters.site.value),
+        department: normalize(filters.department.value),
+        due: filters.due.value||''
+      };
+      VIEW = ALL.filter(x=>{
+        const c=normalize(x.control||x.controlNumber||'');
+        const n=normalize(x.name||x.deviceName||'');
+        const s=normalize(x.site||'');
+        const d=normalize(x.department||'');
+
+        const last = x.pm_date || '';
+        const next = x.next_date || '';
+
+        if(q.control && !c.includes(q.control)) return false;
+        if(q.name && !n.includes(q.name)) return false;
+        if(q.site && s!==q.site) return false;
+        if(q.department && d!==q.department) return false;
+        if(userSites.length && !userSites.includes(x.site)) return false;
+        if(userDepts.length && !userDepts.includes(x.department)) return false;
+
+        if(q.due==='this_month' && !isInThisMonth(next)) return false;
+        if(q.due==='overdue_30' && !isOverdue30(next)) return false;
+
+        return true;
+      });
+      renderTable();
+    }
+
+    function getPageSize(){
+      const v=pageSizeEl.value;
+      if(v==='all') return VIEW.length||1;
+      return parseInt(v,10)||50;
+    }
+    function getTotalPages(){
+      const ps=getPageSize();
+      return Math.max(1,Math.ceil((VIEW.length||0)/ps));
+    }
+
+    function renderTable(){
+      const ps=getPageSize();
+      const total=getTotalPages();
+      page=Math.min(page,total);
+      const start=(page-1)*ps;
+      const chunk=VIEW.slice(start,start+ps);
+      tbody.innerHTML='';
+      let i=start+1;
+      for(const a of chunk){
+        const control=a.control||a.controlNumber||'';
+        const name=a.name||'';
+        const site=a.site||'';
+        const dept=a.department||'';
+
+        const last=a.pm_date||'';
+        const next=a.next_date||'';
+
+        const tr=document.createElement('tr');
+        tr.className='border-b border-slate-200';
+        tr.innerHTML=`
+          <td class="p-2 text-center">${i++}</td>
+          <td class="p-2 whitespace-nowrap mono">${control||'—'}</td>
+          <td class="p-2">${name||'—'}</td>
+          <td class="p-2">${site||'—'}</td>
+          <td class="p-2">${dept||'—'}</td>
+          <td class="p-2">${last||'—'}</td>
+          <td class="p-2">${next||'—'}</td>
+          <td class="p-2">
+            <div class="flex gap-2">
+              <button data-edit="${a.id}" class="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded">Edit</button>
+              <a href="qr.html?control=${encodeURIComponent(control)}" target="_blank" class="px-2 py-1 bg-slate-700 hover:bg-slate-800 text-white text-xs rounded">QR</a>
+              <a href="sticker.html#view/${encodeURIComponent(control)}" target="_blank" class="px-2 py-1 bg-sky-600 hover:bg-sky-700 text-white text-xs rounded">Sticker</a>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+      pageInfoEl.textContent=`${page}/${total}`;
+      const from=VIEW.length?(start+1):0;
+      const to=Math.min(start+chunk.length,VIEW.length);
+      pageStats.textContent=`Showing ${from}–${to} of ${VIEW.length} devices`;
+      prevBtn.disabled=(page<=1);
+      nextBtn.disabled=(page>=total);
+    }
+
+    // === Edit modal ===
+    document.addEventListener('click',(e)=>{
+      const b=e.target.closest('button[data-edit]');
+      if(!b) return;
+      const id=b.dataset.edit;
+      const dev=ALL.find(x=>x.id===id);
+      if(!dev) return;
+      editId.value=id;
+
+      const lastRaw = dev.pm_date || '';
+      const lastDate = parseDate(lastRaw);
+      editLast.value = lastDate ? toISO(lastDate) : '';
+
+      const nextDate = addMonths(lastDate,6);
+      editNext.value = nextDate ? toISO(nextDate) : '';
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    });
+
+    editLast.addEventListener('input', ()=>{
+      const d = parseDate(editLast.value);
+      const n = addMonths(d,6);
+      editNext.value = n ? toISO(n) : '';
+    });
+
+    closeEdit.onclick=()=>{modal.classList.add('hidden');modal.classList.remove('flex');};
+
+    saveEdit.onclick=async()=>{
+      const id=editId.value;
+      const last=editLast.value||'';
+      const next=editNext.value||'';
+      try{
+        await updateDoc(doc(db,'assets',id),{
+          pm_date:last,
+          next_date:next,
+          updatedAt:serverTimestamp()
+        });
+        modal.classList.add('hidden');
+        await loadAssets();
+        alert('✅ Preventive data updated successfully');
+      }catch(err){
+        alert('❌ Update failed: '+err.message);
+      }
+    };
+  </script>
+</body>
+</html>
