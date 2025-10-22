@@ -280,3 +280,33 @@ html.dark .card{ background: var(--surface); border-color: var(--border); }
 html.dark .topbar{ background: var(--brand); }
 html.dark #mainNav a:hover,
 html.dark .dd .dd-btn:hover{ background: rgba(255,255,255,.15); }
+
+/* ===== Unified Active Nav Link (red) ===== */
+
+/* Top-level links + level-1 in dropdown header (anchor داخل dd) */
+#mainNav > a.active,
+#mainNav .dd > a.active {
+  color: #ef4444 !important;     /* 🔴 أحمر واضح */
+  font-weight: 800 !important;   /* سُمك مريح */
+}
+
+/* إلغاء أي تأثيرات أو خطوط سفلية قديمة */
+#mainNav > a.active::after,
+#mainNav .dd > a.active::after {
+  content: none !important;
+}
+
+/* منع أي gradients أو text-clip قديمة */
+#mainNav > a,
+#mainNav .dd > a {
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+}
+
+/* Hover خفيف */
+#mainNav > a:hover,
+#mainNav .dd > a:hover {
+  color: #fca5a5 !important;     /* أحمر فاتح عند المرور */
+}
+
+
