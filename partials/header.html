@@ -1,113 +1,142 @@
-  <!-- Assets -->
-  <a href="/PPM-Tabuk/modules/assets/index.html" data-to="assets"
-     class="inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M21 7v8l-9 4-9-4V7"/>
-    </svg>
-    <span>Assets</span>
-  </a>
+<!-- partials/header.html -->
+<header class="px-3 md:px-6 mt-3">
+  <style>
+    /* ===== Active page marker: ONLY top-level link becomes red ===== */
+    #mainNav > a.active,
+    #mainNav .dd > a.active{
+      color:#ef4444 !important;            /* red */
+      font-weight:800;
+    }
+    /* Keep dropdown look neutral + consistent */
+    #mainNav .dd .dd-panel{ color:inherit; }
+    #mainNav .dd .dd-panel .dd-item{
+      display:flex; align-items:center; gap:.5rem;
+      padding:.45rem .65rem; border-radius:.6rem;
+      color:inherit !important; font-weight:600;
+      transition:background .15s ease;
+    }
+    #mainNav .dd .dd-panel .dd-item:hover{ background:#f1f5f9; }
+    #mainNav .dd .dd-panel .dd-item svg{
+      width:16px; height:16px; flex:0 0 16px; opacity:.85;
+    }
+  </style>
 
-  <!-- Preventive -->
-  <a href="/PPM-Tabuk/modules/preventive/index.html" data-to="preventive"
-     class="inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 2l7 4v5c0 5-3 9-7 11-4-2-7-6-7-11V6l7-4z"/><path d="M9 12l2 2 4-4"/>
-    </svg>
-    <span>Preventive</span>
-  </a>
+  <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between rounded-xl">
+    <!-- LEFT: main nav -->
+    <nav id="mainNav" class="flex items-center gap-2 md:gap-3 text-white text-[15px] md:text-[16px] font-medium">
+      <!-- Dashboard -->
+      <a href="/PPM-Tabuk/modules/dashboard/index.html" data-to="dashboard"
+         class="inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        <span>Dashboard</span>
+      </a>
 
-  <!-- Corrective (click dropdown) -->
-  <div class="dd relative" data-dd="corrective">
-    <button type="button" class="dd-btn inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14.7 6.3a4 4 0 1 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4z"/>
-      </svg>
-      <span>Corrective</span>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </button>
-    <div class="dd-panel card" role="menu" aria-hidden="true">
-      <a class="dd-item" href="/PPM-Tabuk/modules/corrective/index.html?tab=ticket" data-to="corrective">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h18M3 16h18M7 8v8"/></svg>
-        <span>Ticket</span>
+      <!-- Assets -->
+      <a href="/PPM-Tabuk/modules/assets/index.html" data-to="assets"
+         class="inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M21 7v8l-9 4-9-4V7"/>
+        </svg>
+        <span>Assets</span>
       </a>
-      <a class="dd-item" href="/PPM-Tabuk/modules/spares/index.html" data-to="spares">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82l.03.08a2 2 0 1 1-3.4 0l.03-.08A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82l.06.06A2 2 0 1 1 4.9 19l.06.06A1.65 1.65 0 0 0 6.6 15a1.65 1.65 0 0 0-1-.6A1.65 1.65 0 0 0 3.78 13l-.08-.03a2 2 0 1 1 0-3.94l.08-.03A1.65 1.65 0 0 0 5.6 9a1.65 1.65 0 0 0-1-.6A1.65 1.65 0 0 0 3 6.6l-.06-.06A2 2 0 1 1 5.77 3.7l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-1.82-.33l-.08.03a2 2 0 1 1 3.4 0l-.03.08A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1-.6l.06-.06A2 2 0 1 1 19.1 6.6l-.06.06A1.65 1.65 0 0 0 19.4 9c.36.16.78.16 1.14 0l.08-.03a2 2 0 1 1 0 3.94l-.08-.03c-.36-.16-.78-.16-1.14 0Z"/></svg>
-        <span>SparePart</span>
+
+      <!-- Preventive -->
+      <a href="/PPM-Tabuk/modules/preventive/index.html" data-to="preventive"
+         class="inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l7 4v5c0 5-3 9-7 11-4-2-7-6-7-11V6l7-4z"/><path d="M9 12l2 2 4-4"/>
+        </svg>
+        <span>Preventive</span>
       </a>
-      <a class="dd-item" href="/PPM-Tabuk/modules/corrective/index.html?tab=wo" data-to="corrective">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
-        <span>WorkOrder</span>
+
+      <!-- Corrective (click dropdown) -->
+      <div class="dd relative" data-dd="corrective">
+        <button type="button" class="dd-btn inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.7 6.3a4 4 0 1 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4z"/>
+          </svg>
+          <span>Corrective</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="dd-panel card" role="menu" aria-hidden="true">
+          <a class="dd-item" href="/PPM-Tabuk/modules/corrective/index.html?tab=ticket" data-to="corrective">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h18M3 16h18M7 8v8"/></svg>
+            <span>Ticket</span>
+          </a>
+          <a class="dd-item" href="/PPM-Tabuk/modules/spares/index.html" data-to="spares">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82l.03.08a2 2 0 1 1-3.4 0l.03-.08A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82l.06.06A2 2 0 1 1 4.9 19l.06.06A1.65 1.65 0 0 0 6.6 15a1.65 1.65 0 0 0-1-.6A1.65 1.65 0 0 0 3.78 13l-.08-.03a2 2 0 1 1 0-3.94l.08-.03A1.65 1.65 0 0 0 5.6 9a1.65 1.65 0 0 0-1-.6A1.65 1.65 0 0 0 3 6.6l-.06-.06A2 2 0 1 1 5.77 3.7l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-1.82-.33l-.08.03a2 2 0 1 1 3.4 0l-.03.08A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1-.6l.06-.06A2 2 0 1 1 19.1 6.6l-.06.06A1.65 1.65 0 0 0 19.4 9c.36.16.78.16 1.14 0l.08-.03a2 2 0 1 1 0 3.94l-.08-.03c-.36-.16-.78-.16-1.14 0Z"/></svg>
+            <span>SparePart</span>
+          </a>
+          <a class="dd-item" href="/PPM-Tabuk/modules/corrective/index.html?tab=wo" data-to="corrective">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+            <span>WorkOrder</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Sites (hover dropdown; click navigates) -->
+      <div class="dd relative" data-dd="sites">
+        <a href="/PPM-Tabuk/modules/sites/index.html"
+           class="inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15"
+           data-to="sites">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="3"/>
+          </svg>
+          <span>Sites</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </a>
+        <div class="dd-panel card" role="menu" aria-hidden="true">
+          <a class="dd-item" href="/PPM-Tabuk/modules/sites/departments.html" data-to="sites">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20.59 13.41 11 4H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.82Z"/>
+              <path d="M7 7h.01"/>
+            </svg>
+            <span>Department</span>
+          </a>
+          <a class="dd-item" href="/PPM-Tabuk/modules/sites/rooms.html" data-to="sites">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M3 9h18M9 21V9"/>
+            </svg>
+            <span>Rooms</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Users -->
+      <a href="/PPM-Tabuk/modules/users/index.html" data-to="users"
+         class="inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>Users</span>
       </a>
+    </nav>
+
+    <!-- RIGHT: user, theme, logout -->
+    <div class="flex items-center gap-2 md:gap-3 flex-row-reverse">
+      <button id="btnLogout" class="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white">Logout</button>
+      <button id="themeBtn" onclick="toggleTheme()" title="Toggle Theme"
+        class="w-9 h-9 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 text-white shadow transition">🌓</button>
+      <a id="userName" class="font-semibold text-white hover:underline cursor-pointer"
+         href="/PPM-Tabuk/modules/users/index.html#settings" title="User settings"></a>
+      <span class="text-white/60">|</span>
     </div>
   </div>
-
-  <!-- Sites (hover dropdown; click navigates) -->
-  <div class="dd relative" data-dd="sites">
-    <a href="/PPM-Tabuk/modules/sites/index.html"
-       class="inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15"
-       data-to="sites">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="3"/>
-      </svg>
-      <span>Sites</span>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </a>
-    <div class="dd-panel card" role="menu" aria-hidden="true">
-      <a class="dd-item" href="/PPM-Tabuk/modules/sites/departments.html" data-to="sites">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20.59 13.41 11 4H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.82Z"/>
-          <path d="M7 7h.01"/>
-        </svg>
-        <span>Department</span>
-      </a>
-      <!-- Building (اختياري - إحذف إذا غير مستخدم) -->
-      <!--
-      <a class="dd-item" href="/PPM-Tabuk/modules/sites/buildings.html" data-to="sites">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 21h18"/><path d="M6 21V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13"/>
-          <path d="M9 21V12h6v9"/><path d="M9 6h6"/>
-        </svg>
-        <span>Building</span>
-      </a>
-      -->
-      <a class="dd-item" href="/PPM-Tabuk/modules/sites/rooms.html" data-to="sites">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2"/>
-          <path d="M3 9h18M9 21V9"/>
-        </svg>
-        <span>Rooms</span>
-      </a>
-    </div>
-  </div>
-
-  <!-- Users -->
-  <a href="/PPM-Tabuk/modules/users/index.html" data-to="users"
-     class="inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/>
-      <circle cx="9" cy="7" r="4"/>
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-    </svg>
-    <span>Users</span>
-  </a>
-</nav>
-
-<!-- RIGHT: user, theme, logout -->
-<div class="flex items-center gap-2 md:gap-3 flex-row-reverse">
-  <button id="btnLogout" class="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white">Logout</button>
-  <button id="themeBtn" onclick="toggleTheme()" title="Toggle Theme"
-    class="w-9 h-9 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 text-white shadow transition">🌓</button>
-  <a id="userName" class="font-semibold text-white hover:underline cursor-pointer"
-     href="/PPM-Tabuk/modules/users/index.html#settings" title="User settings"></a>
-  <span class="text-white/60">|</span>
-</div>
+</header>
