@@ -3,42 +3,17 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>PPM TABUK • Sites</title>
+  <title>PPM TABUK • Dashboard</title>
 
-  <!-- Tailwind -->
+  <!-- Tailwind فقط لستايل بسيط للنص -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Theme + header loader -->
+  <!-- الثيم الموحد (مطلوب للهيدر) -->
   <link rel="stylesheet" href="../../css/theme-light.css">
   <script src="../../js/theme.js" defer></script>
+
+  <!-- Loader للـ partials (مطلوب للهيدر) -->
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
-
-  <!-- 🔧 Fix: active style only for top link, never for dropdown items -->
-<style>
-  /* فعّل اللون الأحمر للّنك العلوي فقط */
-  #mainNav > a.is-active,
-  #mainNav > .dd > a.is-active{
-    color:#ef4444 !important;
-    font-weight:800;
-  }
-
-  /* ثبّت ألوان القائمة المنسدلة مهما كان اللنك العلوي مفعّل */
-  #mainNav .dd .dd-panel{
-    color:#1f2937 !important;          /* نص رمادي غامق ثابت */
-  }
-  #mainNav .dd .dd-panel .dd-item{
-    color:#1f2937 !important;          /* العناصر داخل القائمة */
-  }
-  #mainNav .dd .dd-panel .dd-item:hover{
-    color:#2563eb !important;          /* لون الهوفر الأزرق المعتاد */
-  }
-
-  /* الأيقونات تفضل محايدة */
-  #mainNav .dd .dd-panel .dd-item svg{
-    color:inherit !important;
-  }
-</style>
-
   
   <!-- Leaflet (map picker) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -61,20 +36,6 @@
     .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem}
     .field{padding:.6rem .8rem;border:1px solid #cbd5e1;border-radius:1rem}
     #mapPicker{height:280px;border:1px solid #cbd5e1;border-radius:1rem}
-
-    /* ✅ Active only for the top Sites link (red); do not style dropdown items */
-    #mainNav > a.active,
-    #mainNav .dd > a.active{
-      color:#ef4444 !important;
-      font-weight:800;
-    }
-    #mainNav .dd .dd-panel .dd-item{
-      color:inherit !important;
-      font-weight:inherit !important;
-    }
-    #mainNav .dd .dd-panel .dd-item:hover{
-      color:inherit !important;
-    }
   </style>
 </head>
 
