@@ -33,275 +33,7 @@
     .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem}
     .field{padding:.6rem .8rem;border:1px solid #cbd5e1;border-radius:1rem}
   </style>
-
-  <script type="module">
-    /* ===== Firebase ===== */
-    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import {
-      getFirestore, collection, doc, getDoc, getDocs,
-      setDoc, deleteDoc, query, orderBy, where, serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-    import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
-
-    const cfg = {
-      apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1_00",
-      authDomain:"pmqrtabuk.firebaseapp.com",
-      projectId:"pmqrtabuk",
-      storageBucket:"pmqrtabuk.appspot.com",
-      messagingSenderId:"305570616285",
-      appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
-    };
-    const app = getApps().length ? getApps()[0] : initializeApp(cfg);
-    const auth = getAuth(app);
-    const db   = getFirestore(app);
-
-    /* ===== Utilities ===== */
-    const $ = (id)=>document.getElementById(id);
-    const PAGE_SIZE = 10;
-
-    // --- Role helpers (يدعم String أو Array ويطبع/يشيل مسافات و Underscore) ---
-    const norm = v => (v||'').toString().toLowerCase().replace(/[\s_]/g,'');
-    function hasRole(profile, wanted){
-      if(!profile) return false;
-      const r = profile.role;
-      if(Array.isArray(r)){
-        const bag = r.map(norm);
-        return wanted.some(w => bag.includes(w));
-      }else{
-        return wanted.includes(norm(r));
-      }
-    }
-    const canEdit = p => hasRole(p, ['admin','systemowner','owner']);
-
-    let USER_DISPLAY_NAME = ''; // نخزن الاسم ونحطه أول ما الهيدر يجهز
-
-    /* ===== Header hooks ===== */
-    document.addEventListener("partials:loaded", () => {
-      // زر الخروج
-      const btnLogout = document.getElementById("btnLogout");
-      if (btnLogout) btnLogout.addEventListener("click", async () => {
-        try { await signOut(auth); } finally { location.replace("../../login.html"); }
-      });
-
-      // فعل "Sites" كـ active
-      const topSites = document.querySelector('#mainNav .dd[data-dd="sites"] > a[data-to="sites"]');
-      if (topSites) topSites.classList.add('active');
-
-      // Bold لقائمة Department الفرعية
-      const depItem = document.querySelector('#mainNav .dd[data-dd="sites"] .dd-panel a[href*="sites/departments"]');
-      if (depItem) depItem.style.fontWeight = '800';
-
-      // احقن اسم المستخدم لو كان اتحسب قبل ما الهيدر يخلص
-      const nameEl = document.getElementById('userName');
-      if(nameEl && USER_DISPLAY_NAME) nameEl.textContent = USER_DISPLAY_NAME;
-    });
-
-    /* ===== Elements ===== */
-    const fSearch = $('fSearch');
-    const fSite   = $('fSite');
-    const tbody   = $('tbodyDep');
-    const pageInfo= $('pageInfo');
-    const prevBtn = $('prevPage');
-    const nextBtn = $('nextPage');
-    const btnAdd  = $('btnAdd');
-    const btnExport=$('btnExport');
-    const btnPrint =$('btnPrint');
-
-    const drawer = $('drawer');
-    const drawerTitle = $('drawerTitle');
-    const depForm = $('depForm');
-    const selSite = $('siteSelect');
-
-    let EDIT_CODE = null; // department code if editing
-    let STATE = { list:[], filtered:[], page:1, sites:[], profile:null };
-
-    function reflectPerm(){
-      // لو Admin/SystemOwner يشيل read-only علشان زرار الإضافة يظهر
-      if(!canEdit(STATE.profile)) document.body.classList.add('read-only');
-      else document.body.classList.remove('read-only');
-    }
-
-    /* ===== Auth ===== */
-    onAuthStateChanged(auth, async (user)=>{
-      if(!user){ location.replace("../../login.html"); return; }
-      try{
-        const snap=await getDoc(doc(db,'users',user.uid));
-        STATE.profile = snap.exists()? snap.data() : null;
-
-        // جهز اسم العرض
-        USER_DISPLAY_NAME =
-          (snap.exists() && (snap.data().nameEn || snap.data().name || snap.data().displayName))
-            ? (snap.data().nameEn || snap.data().name || snap.data().displayName)
-            : (user.displayName || user.email);
-
-        // لو الهيدر اتحمّل بالفعل حط الاسم الآن
-        const nameEl = document.getElementById('userName');
-        if(nameEl) nameEl.textContent = USER_DISPLAY_NAME || '';
-      }catch{
-        STATE.profile=null;
-        USER_DISPLAY_NAME = user.displayName || user.email || '';
-      }
-
-      reflectPerm();          // يحدد ظهور زر الإضافة
-      await loadSites();      // للمودال والفلاتر
-      await loadDepartments();
-      fillSiteFilter();
-    });
-
-    /* ===== Load Sites for dropdowns ===== */
-    async function loadSites(){
-      const qs = await getDocs(query(collection(db,'sites'), orderBy('name')));
-      STATE.sites = qs.docs.map(d=>({ code:d.id, name:d.data().name || d.id }));
-      // Fill create/edit select
-      selSite.innerHTML = '<option value="">— Select site —</option>' +
-        STATE.sites.map(s=>`<option value="${s.code}">${s.name} (${s.code})</option>`).join('');
-    }
-
-    /* ===== Load Departments ===== */
-    async function loadDepartments(){
-      const qs = await getDocs(query(collection(db,'department'), orderBy('name')));
-      STATE.list = qs.docs.map(d=>({ code:d.id, ...d.data() }));
-      applyFilters();
-    }
-
-    /* ===== Filters ===== */
-    function fillSiteFilter(){
-      fSite.innerHTML = '<option value="">All sites</option>' +
-        STATE.sites.map(s=>`<option value="${s.code}">${s.name}</option>`).join('');
-    }
-    function applyFilters(){
-      const q = (fSearch.value||'').trim().toLowerCase();
-      const site = fSite.value||'';
-      STATE.filtered = STATE.list.filter(x=>{
-        const okQ = !q || (x.name||'').toLowerCase().includes(q) || (x.code||'').toLowerCase().includes(q);
-        const okS = !site || (x.siteCode||'')===site;
-        return okQ && okS;
-      });
-      STATE.page = 1;
-      renderTable();
-    }
-    fSearch.addEventListener('input', applyFilters);
-    fSite.addEventListener('change', applyFilters);
-
-    /* ===== Table & Paging ===== */
-    function pageSlice(){ const s=(STATE.page-1)*PAGE_SIZE; return STATE.filtered.slice(s, s+PAGE_SIZE); }
-    const siteName = code => (STATE.sites.find(s=>s.code===code)?.name || code || '-');
-
-    function renderTable(){
-      const rows = pageSlice().map(x=>{
-        const editBtns = canEdit(STATE.profile)
-          ? `<button data-act="edit" data-code="${x.code}" class="text-blue-600 hover:underline">Edit</button>
-             <span class="text-slate-300">•</span>
-             <button data-act="del" data-code="${x.code}" class="text-red-600 hover:underline">Delete</button>`
-          : '<span class="text-slate-400">View</span>';
-
-        return `
-          <tr class="border-b">
-            <td class="px-4 py-3">
-              <div class="font-semibold">${x.name||'-'}</div>
-              <div class="text-xs text-slate-500">${x.code||''}</div>
-            </td>
-            <td class="px-4 py-3">${siteName(x.siteCode)}</td>
-            <td class="px-4 py-3">${editBtns}</td>
-          </tr>
-        `;
-      }).join('');
-      tbody.innerHTML = rows || `<tr><td class="px-4 py-6 text-center text-slate-500" colspan="3">No departments found.</td></tr>`;
-
-      const totalPages = Math.max(1, Math.ceil(STATE.filtered.length / PAGE_SIZE));
-      pageInfo.textContent = `Page ${STATE.page} / ${totalPages} — ${STATE.filtered.length} total`;
-      prevBtn.disabled = STATE.page<=1;
-      nextBtn.disabled = STATE.page>=totalPages;
-
-      tbody.querySelectorAll('button[data-act]').forEach(b=>{
-        b.addEventListener('click', ()=> {
-          const act=b.dataset.act, code=b.dataset.code;
-          if(act==='edit') openEdit(code);
-          if(act==='del') confirmDelete(code);
-        });
-      });
-    }
-    prevBtn.addEventListener('click', ()=>{ STATE.page=Math.max(1,STATE.page-1); renderTable(); });
-    nextBtn.addEventListener('click', ()=>{ const tp=Math.ceil(STATE.filtered.length/PAGE_SIZE); STATE.page=Math.min(tp,STATE.page+1); renderTable(); });
-
-    /* ===== Drawer (Add/Edit) ===== */
-    function openDrawer(){
-      drawer.classList.remove('hidden');
-      drawerTitle.textContent = EDIT_CODE ? `Edit department (${EDIT_CODE})` : 'New department';
-      if(!EDIT_CODE){
-        depForm.reset();
-        depForm.code.disabled = false;
-      }
-    }
-    function closeDrawer(){ EDIT_CODE=null; drawer.classList.add('hidden'); }
-    document.addEventListener('click', e=>{
-      if(e.target?.dataset?.close !== undefined || e.target.closest('[data-close]')) closeDrawer();
-    });
-    btnAdd.addEventListener('click', ()=>{ if(!canEdit(STATE.profile)) return; openDrawer(); });
-
-    async function openEdit(code){
-      const snap = await getDoc(doc(db,'department',code));
-      if(!snap.exists()) return alert('Department not found');
-      const d = snap.data();
-      EDIT_CODE = code;
-
-      depForm.code.value = code; depForm.code.disabled = true;
-      depForm.name.value = d.name || '';
-      depForm.siteCode.value = d.siteCode || '';
-
-      openDrawer();
-    }
-
-    async function confirmDelete(code){
-      if(!canEdit(STATE.profile)) return;
-      if(!confirm(`Delete department ${code}?`)) return;
-      await deleteDoc(doc(db,'department',code));
-      await loadDepartments();
-    }
-
-    depForm.addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      if(!canEdit(STATE.profile)) return;
-
-      const code = depForm.code.value.trim();
-      const name = depForm.name.value.trim();
-      const siteCode = depForm.siteCode.value;
-
-      if(!code) return alert('Department code is required');
-      if(!name) return alert('Department name is required');
-      if(!siteCode) return alert('Please select a site');
-
-      // store siteName for quick listing
-      const sName = siteName(siteCode);
-
-      await setDoc(doc(db,'department', code), {
-        name, siteCode, siteName: sName,
-        updatedAt: serverTimestamp(),
-        createdAt: EDIT_CODE ? undefined : serverTimestamp()
-      }, { merge:true });
-
-      closeDrawer();
-      depForm.code.disabled = false;
-      await loadDepartments();
-    });
-
-    /* ===== Export & Print ===== */
-    btnExport.addEventListener('click', ()=>{
-      const data = STATE.filtered.map(x=>({
-        Code: x.code||'',
-        Name: x.name||'',
-        Site: siteName(x.siteCode)
-      }));
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Departments');
-      XLSX.writeFile(wb, `departments_${new Date().toISOString().slice(0,10)}.xlsx`);
-    });
-    btnPrint.addEventListener('click', ()=> window.print() );
-  </script>
 </head>
-
 <body>
   <!-- Header -->
   <header data-include="/PPM-Tabuk/partials/header.html?v=2" class="w-full max-w-none"></header>
@@ -385,5 +117,243 @@
       </form>
     </div>
   </div>
+
+  <!-- Page script -->
+  <script type="module">
+    /* ===== Use your shared Firebase app ===== */
+    import { auth, db } from "../../js/firebase.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      collection, doc, getDoc, getDocs,
+      setDoc, deleteDoc, query, orderBy, where, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
+
+    /* ===== Small utils ===== */
+    const $ = (id)=>document.getElementById(id);
+    const PAGE_SIZE = 10;
+    const norm = v => (v||'').toString().toLowerCase().replace(/[\s_]/g,'');
+
+    // Role check (supports "Admin" / "SystemOwner")
+    function canEdit(profile){
+      if(!profile) return false;
+      const r = profile.role;
+      if(Array.isArray(r)){
+        const bag = r.map(norm);
+        return bag.includes('admin') || bag.includes('systemowner') || bag.includes('owner');
+      }else{
+        const k = norm(r);
+        return k==='admin' || k==='systemowner' || k==='owner';
+      }
+    }
+
+    /* ===== Elements ===== */
+    const fSearch = $('fSearch');
+    const fSite   = $('fSite');
+    const tbody   = $('tbodyDep');
+    const pageInfo= $('pageInfo');
+    const prevBtn = $('prevPage');
+    const nextBtn = $('nextPage');
+    const btnAdd  = $('btnAdd');
+    const btnExport=$('btnExport');
+    const btnPrint =$('btnPrint');
+
+    const drawer = $('drawer');
+    const drawerTitle = $('drawerTitle');
+    const depForm = $('depForm');
+    const selSite = $('siteSelect');
+
+    let EDIT_CODE = null;
+    let STATE = { list:[], filtered:[], page:1, sites:[], profile:null };
+    let USER_DISPLAY_NAME = '';
+
+    /* ===== Header & active nav ===== */
+    document.addEventListener("partials:loaded", () => {
+      // logout
+      const btnLogout = document.getElementById("btnLogout");
+      if (btnLogout) btnLogout.addEventListener("click", async () => {
+        try { await signOut(auth); } finally { location.replace("../../login.html"); }
+      });
+      // mark Sites active
+      const topSites = document.querySelector('#mainNav .dd[data-dd="sites"] > a[data-to="sites"]');
+      if (topSites) topSites.classList.add('active');
+      // highlight submenu item
+      const depItem = document.querySelector('#mainNav .dd[data-dd="sites"] .dd-panel a[href*="sites/departments"]');
+      if (depItem) depItem.style.fontWeight = '800';
+      // put username if we already have it
+      const el = document.getElementById('userName'); if(el && USER_DISPLAY_NAME) el.textContent = USER_DISPLAY_NAME;
+    });
+
+    /* ===== Auth ===== */
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ location.replace("../../login.html"); return; }
+      try{
+        const snap = await getDoc(doc(db,'users',user.uid));
+        STATE.profile = snap.exists()? snap.data() : null;
+        USER_DISPLAY_NAME =
+          (snap.exists() && (snap.data().nameEn || snap.data().name || snap.data().displayName))
+            ? (snap.data().nameEn || snap.data().name || snap.data().displayName)
+            : (user.displayName || user.email);
+        const el=document.getElementById('userName');
+        if(el) el.textContent = USER_DISPLAY_NAME || '';
+      }catch{
+        STATE.profile=null;
+      }
+
+      // show/hide edit UI by role
+      if(!canEdit(STATE.profile)) document.body.classList.add('read-only');
+      else document.body.classList.remove('read-only');
+
+      await loadSites();
+      await loadDepartments();
+      fillSiteFilter();
+    });
+
+    /* ===== Load Sites (for dropdowns & filter) ===== */
+    async function loadSites(){
+      const qs = await getDocs(query(collection(db,'sites'), orderBy('name')));
+      STATE.sites = qs.docs.map(d=>({ code:d.id, name:d.data().name || d.id }));
+      selSite.innerHTML = '<option value="">— Select site —</option>' +
+        STATE.sites.map(s=>`<option value="${s.code}">${s.name} (${s.code})</option>`).join('');
+    }
+
+    /* ===== Load Departments ===== */
+    async function loadDepartments(){
+      const qs = await getDocs(query(collection(db,'department'), orderBy('name')));
+      STATE.list = qs.docs.map(d=>({ code:d.id, ...d.data() }));
+      applyFilters();
+    }
+
+    /* ===== Filters ===== */
+    function fillSiteFilter(){
+      fSite.innerHTML = '<option value="">All sites</option>' +
+        STATE.sites.map(s=>`<option value="${s.code}">${s.name}</option>`).join('');
+    }
+    function applyFilters(){
+      const q = (fSearch.value||'').trim().toLowerCase();
+      const site = fSite.value||'';
+      STATE.filtered = STATE.list.filter(x=>{
+        const okQ = !q || (x.name||'').toLowerCase().includes(q) || (x.code||'').toLowerCase().includes(q);
+        const okS = !site || (x.siteCode||'')===site;
+        return okQ && okS;
+      });
+      STATE.page = 1;
+      renderTable();
+    }
+    fSearch.addEventListener('input', applyFilters);
+    fSite.addEventListener('change', applyFilters);
+
+    /* ===== Table + Pagination ===== */
+    function pageSlice(){ const s=(STATE.page-1)*PAGE_SIZE; return STATE.filtered.slice(s, s+PAGE_SIZE); }
+    const siteName = code => (STATE.sites.find(s=>s.code===code)?.name || code || '-');
+
+    function renderTable(){
+      const rows = pageSlice().map(x=>{
+        const editBtns = canEdit(STATE.profile)
+          ? `<button data-act="edit" data-code="${x.code}" class="text-blue-600 hover:underline">Edit</button>
+             <span class="text-slate-300">•</span>
+             <button data-act="del" data-code="${x.code}" class="text-red-600 hover:underline">Delete</button>`
+          : '<span class="text-slate-400">View</span>';
+
+        return `
+          <tr class="border-b">
+            <td class="px-4 py-3">
+              <div class="font-semibold">${x.name||'-'}</div>
+              <div class="text-xs text-slate-500">${x.code||''}</div>
+            </td>
+            <td class="px-4 py-3">${siteName(x.siteCode)}</td>
+            <td class="px-4 py-3">${editBtns}</td>
+          </tr>
+        `;
+      }).join('');
+      tbody.innerHTML = rows || `<tr><td class="px-4 py-6 text-center text-slate-500" colspan="3">No departments found.</td></tr>`;
+
+      const totalPages = Math.max(1, Math.ceil(STATE.filtered.length / PAGE_SIZE));
+      pageInfo.textContent = `Page ${STATE.page} / ${totalPages} — ${STATE.filtered.length} total`;
+      prevBtn.disabled = STATE.page<=1;
+      nextBtn.disabled = STATE.page>=totalPages;
+
+      tbody.querySelectorAll('button[data-act]').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          const act=b.dataset.act, code=b.dataset.code;
+          if(act==='edit') openEdit(code);
+          if(act==='del') confirmDelete(code);
+        });
+      });
+    }
+    prevBtn.addEventListener('click', ()=>{ STATE.page=Math.max(1,STATE.page-1); renderTable(); });
+    nextBtn.addEventListener('click', ()=>{ const tp=Math.ceil(STATE.filtered.length/PAGE_SIZE); STATE.page=Math.min(tp,STATE.page+1); renderTable(); });
+
+    /* ===== Drawer: Add/Edit ===== */
+    function openDrawer(){
+      drawer.classList.remove('hidden');
+      drawerTitle.textContent = EDIT_CODE ? `Edit department (${EDIT_CODE})` : 'New department';
+      if(!EDIT_CODE){ depForm.reset(); depForm.code.disabled = false; }
+    }
+    function closeDrawer(){ EDIT_CODE=null; drawer.classList.add('hidden'); }
+    document.addEventListener('click', e=>{
+      if(e.target?.dataset?.close !== undefined || e.target.closest('[data-close]')) closeDrawer();
+    });
+    btnAdd.addEventListener('click', ()=>{ if(!canEdit(STATE.profile)) return; openDrawer(); });
+
+    async function openEdit(code){
+      const snap = await getDoc(doc(db,'department',code));
+      if(!snap.exists()) return alert('Department not found');
+      const d = snap.data();
+      EDIT_CODE = code;
+
+      depForm.code.value = code; depForm.code.disabled = true;
+      depForm.name.value = d.name || '';
+      depForm.siteCode.value = d.siteCode || '';
+
+      openDrawer();
+    }
+
+    async function confirmDelete(code){
+      if(!canEdit(STATE.profile)) return;
+      if(!confirm(`Delete department ${code}?`)) return;
+      await deleteDoc(doc(db,'department',code));
+      await loadDepartments();
+    }
+
+    depForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(!canEdit(STATE.profile)) return;
+
+      const code = depForm.code.value.trim();
+      const name = depForm.name.value.trim();
+      const siteCode = depForm.siteCode.value;
+
+      if(!code) return alert('Department code is required');
+      if(!name) return alert('Department name is required');
+      if(!siteCode) return alert('Please select a site');
+
+      const sName = siteName(siteCode);
+
+      await setDoc(doc(db,'department', code), {
+        name, siteCode, siteName: sName,
+        updatedAt: serverTimestamp(),
+        createdAt: EDIT_CODE ? undefined : serverTimestamp()
+      }, { merge:true });
+
+      closeDrawer();
+      depForm.code.disabled = false;
+      await loadDepartments();
+    });
+
+    /* ===== Export & Print ===== */
+    btnExport.addEventListener('click', ()=>{
+      const data = STATE.filtered.map(x=>({
+        Code: x.code||'',
+        Name: x.name||'',
+        Site: siteName(x.siteCode)
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Departments');
+      XLSX.writeFile(wb, `departments_${new Date().toISOString().slice(0,10)}.xlsx`);
+    });
+    btnPrint.addEventListener('click', ()=> window.print() );
+  </script>
 </body>
 </html>
