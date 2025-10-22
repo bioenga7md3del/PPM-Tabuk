@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>PPM TABUK • Rooms</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Theme + partial loader -->
+  <link rel="stylesheet" href="../../css/theme-light.css">
+  <script src="../../js/theme.js" defer></script>
+  <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
+
+  <style>
+    /* Active top links */
+    #mainNav > a.active,
+    #mainNav .dd > a.active{
+      position:relative;font-weight:900;letter-spacing:.3px;color:#93c5fd!important;
+    }
+    #mainNav > a.active::after,
+    #mainNav .dd > a.active::after{
+      content:"";position:absolute;left:0;right:0;bottom:-4px;height:2px;background:#60a5fa;border-radius:2px;transform:scaleX(0);transition:transform .25s;
+    }
+    #mainNav > a.active:hover::after,
+    #mainNav .dd > a.active:hover::after{transform:scaleX(1)}
+    #mainNav .dd .dd-panel .dd-item{color:inherit!important;font-weight:600!important}
+    #mainNav .dd .dd-panel .dd-item:hover{color:#2563eb!important}
+
+    .read-only .for-edit{display:none!important;}
+    @media print{ header,.no-print{display:none!important} table{width:100%} }
+
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem}
+    .field{padding:.6rem .8rem;border:1px solid #cbd5e1;border-radius:1rem}
+    .hint{font-size:.75rem;color:#64748b}
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header data-include="/PPM-Tabuk/partials/header.html?v=2" class="w-full max-w-none"></header>
+
+  <main class="w-full max-w-none mx-auto p-3 md:p-6 space-y-6">
+    <!-- Toolbar -->
+    <div class="flex items-center gap-2 no-print">
+      <button id="btnPrint" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm inline-flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 3 18 3 18 9"/><path d="M6 14H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="2"/></svg>
+        Print
+      </button>
+      <button id="btnExport" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm inline-flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export Excel
+      </button>
+      <button id="btnAdd" class="for-edit px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm inline-flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add room
+      </button>
+    </div>
+
+    <!-- Filters (Site -> Department) -->
+    <section class="grid md:grid-cols-4 gap-3 no-print">
+      <input id="fSearch" type="text" placeholder="Search by name or code" class="field">
+      <select id="fSite" class="field">
+        <option value="">All sites</option>
+      </select>
+      <select id="fDept" class="field" disabled>
+        <option value="">All departments</option>
+      </select>
+      <select id="fType" class="field">
+        <option value="">All types</option>
+        <option value="Room">Room</option>
+        <option value="Lab">Lab</option>
+        <option value="OR">OR</option>
+      </select>
+    </section>
+
+    <!-- Table -->
+    <section class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+            <tr>
+              <th class="text-left px-4 py-3">Room</th>
+              <th class="text-left px-4 py-3">Site</th>
+              <th class="text-left px-4 py-3">Department</th>
+              <th class="text-left px-4 py-3">Floor</th>
+              <th class="text-left px-4 py-3">Type</th>
+              <th class="text-left px-4 py-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyRooms" class="divide-y divide-slate-200"></tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between px-4 py-3">
+        <div id="pageInfo" class="text-xs text-slate-500">Page 1</div>
+        <div class="flex gap-2">
+          <button id="prevPage" class="px-3 py-1.5 rounded-xl border border-slate-300 disabled:opacity-50">Prev</button>
+          <button id="nextPage" class="px-3 py-1.5 rounded-xl border border-slate-300 disabled:opacity-50">Next</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Drawer (Add/Edit) -->
+  <div id="drawer" class="fixed inset-0 hidden">
+    <div class="absolute inset-0 bg-black/30" data-close></div>
+    <div class="absolute right-0 top-0 h-full w-full sm:w-[560px] bg-white shadow-xl p-6 overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h2 id="drawerTitle" class="text-xl font-bold">New room</h2>
+        <button class="px-3 py-1.5 rounded-xl border" data-close>Close</button>
+      </div>
+
+      <form id="roomForm" class="grid grid-cols-2 gap-3">
+        <label class="text-sm">Room code
+          <input name="code" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="RM-001" required>
+        </label>
+        <label class="text-sm">Room name/number
+          <input name="name" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="Room 1" required>
+        </label>
+
+        <!-- ✅ Department only (site is inferred) -->
+        <label class="text-sm col-span-2">Department
+          <select id="deptSelect" name="departmentCode" class="mt-1 w-full px-3 py-2 rounded-xl border" required>
+            <option value="">— Select department —</option>
+          </select>
+          <div class="hint mt-1">Site will be filled automatically from the selected department.</div>
+        </label>
+
+        <label class="text-sm">Floor (optional)
+          <input name="floor" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="G / 1 / 2 ...">
+        </label>
+        <label class="text-sm">Type (optional)
+          <input name="type" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="Room / Lab / OR ...">
+        </label>
+
+        <div class="col-span-2 flex gap-2 mt-2">
+          <button type="submit" class="for-edit px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white">Save</button>
+          <button type="button" data-close class="px-4 py-2 rounded-xl border">Cancel</button>
+        </div>
+        <p class="text-xs text-slate-500 col-span-2">The document ID will be the <strong>room code</strong>.</p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Page script -->
+  <script type="module">
+    import { auth, db } from "/PPM-Tabuk/js/firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      collection, doc, getDoc, getDocs, setDoc, deleteDoc,
+      query, orderBy, where, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
+
+    const $ = id => document.getElementById(id);
+    const PAGE_SIZE = 10;
+    const norm = v => (v||'').toString().toLowerCase().replace(/[\s_]/g,'');
+
+    // Role check
+    function canEdit(profile){
+      if(!profile) return false;
+      const r = profile.role;
+      if(Array.isArray(r)){
+        const bag = r.map(norm);
+        return bag.includes('admin') || bag.includes('systemowner') || bag.includes('owner');
+      } else {
+        const k = norm(r);
+        return k==='admin' || k==='systemowner' || k==='owner';
+      }
+    }
+
+    // Elements
+    const fSearch = $('fSearch');
+    const fSite   = $('fSite');
+    const fDept   = $('fDept');
+    const fType   = $('fType');
+    const tbody   = $('tbodyRooms');
+    const pageInfo= $('pageInfo');
+    const prevBtn = $('prevPage');
+    const nextBtn = $('nextPage');
+    const btnAdd  = $('btnAdd');
+    const btnExport=$('btnExport');
+    const btnPrint =$('btnPrint');
+
+    const drawer = $('drawer');
+    const drawerTitle = $('drawerTitle');
+    const roomForm = $('roomForm');
+    const deptSel  = $('deptSelect');
+
+    let PROFILE=null, ALLOW_EDIT=false;
+    let SITES=[], DEPTS=[], ROOMS=[];
+    let FILTERED=[], PAGE=1;
+
+    // Active nav after header
+    document.addEventListener("partials:loaded", ()=>{
+      const topSites = document.querySelector('#mainNav .dd[data-dd="sites"] > a[data-to="sites"]');
+      if (topSites) topSites.classList.add('active');
+      const roomsItem = document.querySelector('#mainNav .dd[data-dd="sites"] .dd-panel a[href*="sites/rooms"]');
+      if (roomsItem) roomsItem.style.fontWeight = '800';
+    });
+
+    // Auth
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ location.replace("/PPM-Tabuk/login.html"); return; }
+      const snap = await getDoc(doc(db,'users',user.uid));
+      PROFILE = snap.exists()? snap.data() : null;
+      ALLOW_EDIT = canEdit(PROFILE);
+      if(!ALLOW_EDIT) document.body.classList.add('read-only');
+
+      await loadSites();
+      await loadDepartments();
+      await loadRooms();
+
+      fillFilters();
+      applyFilters();
+
+      // URL preselects (optional)
+      const usp = new URLSearchParams(location.search);
+      const siteParam = usp.get('site');
+      const deptParam = usp.get('department');
+      if(siteParam){
+        const opt = [...fSite.options].find(o => (o.value||'').toLowerCase()===siteParam.toLowerCase());
+        if(opt){ fSite.value = opt.value; onFilterSiteChange(); }
+      }
+      if(deptParam){
+        const opt = [...fDept.options].find(o => (o.value||'').toLowerCase()===deptParam.toLowerCase());
+        if(opt){ fDept.value = opt.value; }
+      }
+      applyFilters();
+    });
+
+    // Loaders
+    async function loadSites(){
+      const qs = await getDocs(query(collection(db,'sites'), orderBy('name')));
+      SITES = qs.docs.map(d=>({ code:d.id, name:d.data().name||d.id }));
+    }
+    async function loadDepartments(){
+      const qs = await getDocs(query(collection(db,'department'), orderBy('name')));
+      DEPTS = qs.docs.map(d=>({
+        code:d.id,
+        name:d.data().name||d.id,
+        siteCode:d.data().siteCode||'',
+        siteName:d.data().siteName||''
+      }));
+      // form select (all departments)
+      deptSel.innerHTML = '<option value="">— Select department —</option>' +
+        DEPTS.map(d=>`<option value="${d.code}">${d.name} — ${d.siteName||d.siteCode}</option>`).join('');
+    }
+    async function loadRooms(){
+      const qs = await getDocs(query(collection(db,'room'), orderBy('name')));
+      ROOMS = qs.docs.map(d=>({ code:d.id, ...d.data() }));
+    }
+
+    // Filters (Site -> Departments)
+    function fillFilters(){
+      // Site filter
+      fSite.innerHTML = '<option value="">All sites</option>' + SITES.map(s=>`<option value="${s.code}">${s.name}</option>`).join('');
+      onFilterSiteChange();
+    }
+    function onFilterSiteChange(){
+      const sc = fSite.value||'';
+      const list = sc ? DEPTS.filter(d=> d.siteCode===sc) : DEPTS.slice(0);
+      fDept.disabled = !sc;
+      fDept.innerHTML = '<option value="">All departments</option>' + list.map(d=>`<option value="${d.code}">${d.name}</option>`).join('');
+    }
+
+    fSearch.addEventListener('input', applyFilters);
+    fSite.addEventListener('change', ()=>{ onFilterSiteChange(); applyFilters(); });
+    fDept.addEventListener('change', applyFilters);
+    fType.addEventListener('change', applyFilters);
+
+    function applyFilters(){
+      const q = (fSearch.value||'').trim().toLowerCase();
+      const site = fSite.value||'';
+      const dept = fDept.value||'';
+      const type = (fType.value||'').trim().toLowerCase();
+
+      FILTERED = ROOMS.filter(r=>{
+        const okQ = !q || (r.name||'').toLowerCase().includes(q) || (r.code||'').toLowerCase().includes(q);
+        const okS = !site || (r.siteCode||'')===site;               // site inferred from department (stored in room)
+        const okD = !dept || (r.departmentCode||'')===dept;
+        const okT = !type || (r.type||'').toLowerCase()===type;
+        return okQ && okS && okD && okT;
+      });
+      PAGE = 1;
+      renderTable();
+    }
+
+    // Table & paging
+    function pageSlice(){ const s=(PAGE-1)*PAGE_SIZE; return FILTERED.slice(s, s+PAGE_SIZE); }
+    const siteName = sc => (SITES.find(s=>s.code===sc)?.name || sc || '-');
+    const deptName = dc => (DEPTS.find(d=>d.code===dc)?.name || dc || '-');
+
+    function renderTable(){
+      const rows = pageSlice().map(r=>{
+        const depName = r.departmentName || deptName(r.departmentCode);
+        const actions = ALLOW_EDIT
+          ? `<a class="px-2 py-1 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs" href="/PPM-Tabuk/modules/assets/index.html?department=${encodeURIComponent(depName||'')}">Open assets</a>
+             <span class="text-slate-300">•</span>
+             <button data-act="edit" data-code="${r.code}" class="text-blue-600 hover:underline">Edit</button>
+             <span class="text-slate-300">•</span>
+             <button data-act="del" data-code="${r.code}" class="text-red-600 hover:underline">Delete</button>`
+          : `<a class="px-2 py-1 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs" href="/PPM-Tabuk/modules/assets/index.html?department=${encodeURIComponent(depName||'')}">Open assets</a>`;
+
+        return `
+          <tr class="border-b">
+            <td class="px-4 py-3">
+              <div class="font-semibold">${r.name||'-'}</div>
+              <div class="text-xs text-slate-500">${r.code||''}</div>
+            </td>
+            <td class="px-4 py-3">${r.siteName || siteName(r.siteCode)}</td>
+            <td class="px-4 py-3">${depName || '-'}</td>
+            <td class="px-4 py-3">${r.floor || '-'}</td>
+            <td class="px-4 py-3">${r.type || '-'}</td>
+            <td class="px-4 py-3 flex items-center gap-2 flex-wrap">${actions}</td>
+          </tr>`;
+      }).join('');
+      tbody.innerHTML = rows || `<tr><td class="px-4 py-6 text-center text-slate-500" colspan="6">No rooms found.</td></tr>`;
+
+      const totalPages = Math.max(1, Math.ceil(FILTERED.length / PAGE_SIZE));
+      pageInfo.textContent = `Page ${PAGE} / ${totalPages} — ${FILTERED.length} total`;
+      prevBtn.disabled = PAGE<=1;
+      nextBtn.disabled = PAGE>=totalPages;
+
+      tbody.querySelectorAll('button[data-act]').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          const act=b.dataset.act, code=b.dataset.code;
+          if(act==='edit') openEdit(code);
+          if(act==='del') confirmDelete(code);
+        });
+      });
+    }
+    prevBtn.addEventListener('click', ()=>{ PAGE=Math.max(1,PAGE-1); renderTable(); });
+    nextBtn.addEventListener('click', ()=>{ const tp=Math.ceil(FILTERED.length/PAGE_SIZE); PAGE=Math.min(tp,PAGE+1); renderTable(); });
+
+    // Drawer
+    function openDrawer(){
+      drawer.classList.remove('hidden');
+      drawerTitle.textContent = EDIT_CODE ? `Edit room (${EDIT_CODE})` : 'New room';
+      if(!EDIT_CODE){
+        roomForm.reset();
+        roomForm.code.disabled = false;
+      }
+    }
+    function closeDrawer(){ EDIT_CODE=null; drawer.classList.add('hidden'); }
+    document.addEventListener('click', e=>{
+      if(e.target?.dataset?.close !== undefined || e.target.closest('[data-close]')) closeDrawer();
+    });
+    btnAdd.addEventListener('click', ()=>{ if(!ALLOW_EDIT) return; openDrawer(); });
+
+    // CRUD
+    let EDIT_CODE = null;
+
+    async function openEdit(code){
+      const snap = await getDoc(doc(db,'room',code));
+      if(!snap.exists()) return alert('Room not found');
+      const r = snap.data();
+      EDIT_CODE = code;
+
+      roomForm.code.value = code; roomForm.code.disabled = true;
+      roomForm.name.value = r.name || '';
+      // set department
+      deptSel.value = r.departmentCode || '';
+      roomForm.floor.value = r.floor || '';
+      roomForm.type.value = r.type || '';
+
+      openDrawer();
+    }
+
+    async function confirmDelete(code){
+      if(!ALLOW_EDIT) return;
+      if(!confirm(`Delete room ${code}?`)) return;
+      await deleteDoc(doc(db,'room',code));
+      await loadRooms();
+      applyFilters();
+    }
+
+    roomForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(!ALLOW_EDIT) return;
+
+      const code = roomForm.code.value.trim();
+      const name = roomForm.name.value.trim();
+      const departmentCode = roomForm.departmentCode.value;
+
+      const floor = roomForm.floor.value.trim() || '';
+      const type  = roomForm.type.value.trim() || '';
+
+      if(!code) return alert('Room code is required');
+      if(!name) return alert('Room name/number is required');
+      if(!departmentCode) return alert('Please select a department');
+
+      // 🔎 get department to infer site
+      const dep = DEPTS.find(d=> d.code===departmentCode);
+      if(!dep) return alert('Selected department not found');
+
+      const siteCode = dep.siteCode || '';
+      const siteName = dep.siteName || (siteCode || '');
+
+      await setDoc(doc(db,'room', code), {
+        name,
+        departmentCode,
+        departmentName: dep.name || departmentCode,
+        siteCode,
+        siteName,
+        floor: floor || null,
+        type: type || null,
+        updatedAt: serverTimestamp(),
+        createdAt: EDIT_CODE ? undefined : serverTimestamp()
+      }, { merge:true });
+
+      closeDrawer();
+      roomForm.code.disabled = false;
+      await loadRooms();
+      applyFilters();
+    });
+
+    // Export & Print
+    btnExport.addEventListener('click', ()=>{
+      const data = FILTERED.map(r=>({
+        Code: r.code||'',
+        Name: r.name||'',
+        Site: r.siteName || r.siteCode || '',
+        Department: r.departmentName || r.departmentCode || '',
+        Floor: r.floor || '',
+        Type: r.type || ''
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Rooms');
+      XLSX.writeFile(wb, `rooms_${new Date().toISOString().slice(0,10)}.xlsx`);
+    });
+    btnPrint.addEventListener('click', ()=> window.print() );
+  </script>
+</body>
+</html>
