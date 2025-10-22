@@ -45,7 +45,7 @@
     import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
 
     const cfg = {
-      apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
+      apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1_00",
       authDomain:"pmqrtabuk.firebaseapp.com",
       projectId:"pmqrtabuk",
       storageBucket:"pmqrtabuk.appspot.com",
@@ -56,26 +56,48 @@
     const auth = getAuth(app);
     const db   = getFirestore(app);
 
-    /* ===== Header: mark Sites active & Department menu highlighted ===== */
+    /* ===== Utilities ===== */
+    const $ = (id)=>document.getElementById(id);
+    const PAGE_SIZE = 10;
+
+    // --- Role helpers (يدعم String أو Array ويطبع/يشيل مسافات و Underscore) ---
+    const norm = v => (v||'').toString().toLowerCase().replace(/[\s_]/g,'');
+    function hasRole(profile, wanted){
+      if(!profile) return false;
+      const r = profile.role;
+      if(Array.isArray(r)){
+        const bag = r.map(norm);
+        return wanted.some(w => bag.includes(w));
+      }else{
+        return wanted.includes(norm(r));
+      }
+    }
+    const canEdit = p => hasRole(p, ['admin','systemowner','owner']);
+
+    let USER_DISPLAY_NAME = ''; // نخزن الاسم ونحطه أول ما الهيدر يجهز
+
+    /* ===== Header hooks ===== */
     document.addEventListener("partials:loaded", () => {
+      // زر الخروج
       const btnLogout = document.getElementById("btnLogout");
       if (btnLogout) btnLogout.addEventListener("click", async () => {
         try { await signOut(auth); } finally { location.replace("../../login.html"); }
       });
 
-      // Activate "Sites" top link
+      // فعل "Sites" كـ active
       const topSites = document.querySelector('#mainNav .dd[data-dd="sites"] > a[data-to="sites"]');
       if (topSites) topSites.classList.add('active');
 
-      // Optionally bold the Department item in submenu if exists
+      // Bold لقائمة Department الفرعية
       const depItem = document.querySelector('#mainNav .dd[data-dd="sites"] .dd-panel a[href*="sites/departments"]');
       if (depItem) depItem.style.fontWeight = '800';
+
+      // احقن اسم المستخدم لو كان اتحسب قبل ما الهيدر يخلص
+      const nameEl = document.getElementById('userName');
+      if(nameEl && USER_DISPLAY_NAME) nameEl.textContent = USER_DISPLAY_NAME;
     });
 
     /* ===== Elements ===== */
-    const $ = (id)=>document.getElementById(id);
-    const PAGE_SIZE = 10;
-
     const fSearch = $('fSearch');
     const fSite   = $('fSite');
     const tbody   = $('tbodyDep');
@@ -89,20 +111,13 @@
     const drawer = $('drawer');
     const drawerTitle = $('drawerTitle');
     const depForm = $('depForm');
-
     const selSite = $('siteSelect');
 
     let EDIT_CODE = null; // department code if editing
     let STATE = { list:[], filtered:[], page:1, sites:[], profile:null };
 
-    /* ===== Roles ===== */
-    const norm = v=> (v||'').toString().toLowerCase().replace(/[\s_]/g,'');
-    const canEdit = p=>{
-      if(!p) return false;
-      const r = norm(p.role);
-      return r==='admin' || r==='systemowner' || r==='owner';
-    };
     function reflectPerm(){
+      // لو Admin/SystemOwner يشيل read-only علشان زرار الإضافة يظهر
       if(!canEdit(STATE.profile)) document.body.classList.add('read-only');
       else document.body.classList.remove('read-only');
     }
@@ -113,15 +128,23 @@
       try{
         const snap=await getDoc(doc(db,'users',user.uid));
         STATE.profile = snap.exists()? snap.data() : null;
-        const el=document.getElementById('userName');
-        if(el){
-          const name=(snap.exists() && (snap.data().name || snap.data().nameEn)) ? (snap.data().name || snap.data().nameEn) : (user.displayName||user.email);
-          el.textContent=name||'';
-        }
-      }catch{ STATE.profile=null; }
-      reflectPerm();
 
-      await loadSites();       // needed for dropdowns
+        // جهز اسم العرض
+        USER_DISPLAY_NAME =
+          (snap.exists() && (snap.data().nameEn || snap.data().name || snap.data().displayName))
+            ? (snap.data().nameEn || snap.data().name || snap.data().displayName)
+            : (user.displayName || user.email);
+
+        // لو الهيدر اتحمّل بالفعل حط الاسم الآن
+        const nameEl = document.getElementById('userName');
+        if(nameEl) nameEl.textContent = USER_DISPLAY_NAME || '';
+      }catch{
+        STATE.profile=null;
+        USER_DISPLAY_NAME = user.displayName || user.email || '';
+      }
+
+      reflectPerm();          // يحدد ظهور زر الإضافة
+      await loadSites();      // للمودال والفلاتر
       await loadDepartments();
       fillSiteFilter();
     });
@@ -364,4 +387,3 @@
   </div>
 </body>
 </html>
-
