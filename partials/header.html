@@ -47,15 +47,15 @@
             <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </button>
-        <div class="dd-panel card absolute mt-1 hidden z-20" role="menu" aria-hidden="true">
-          <a class="dd-item px-3 py-2 hover:bg-slate-100 rounded" href="/PPM-Tabuk/modules/corrective/index.html?tab=ticket" data-to="corrective">
-            <span>📝</span><span> Ticket</span>
+        <div class="dd-panel card" role="menu" aria-hidden="true">
+          <a class="dd-item" href="/PPM-Tabuk/modules/corrective/index.html?tab=ticket" data-to="corrective">
+            <span>📝</span><span>Ticket</span>
           </a>
-          <a class="dd-item px-3 py-2 hover:bg-slate-100 rounded" href="/PPM-Tabuk/modules/spares/index.html" data-to="spares">
-            <span>⚙️</span><span> SparePart</span>
+          <a class="dd-item" href="/PPM-Tabuk/modules/spares/index.html" data-to="spares">
+            <span>⚙️</span><span>SparePart</span>
           </a>
-          <a class="dd-item px-3 py-2 hover:bg-slate-100 rounded" href="/PPM-Tabuk/modules/corrective/index.html?tab=wo" data-to="corrective">
-            <span>📄</span><span> WorkOrder</span>
+          <a class="dd-item" href="/PPM-Tabuk/modules/corrective/index.html?tab=wo" data-to="corrective">
+            <span>📄</span><span>WorkOrder</span>
           </a>
         </div>
       </div>
@@ -72,15 +72,15 @@
             <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </a>
-        <div class="dd-panel card absolute mt-1 hidden z-20" role="menu" aria-hidden="true">
-          <a class="dd-item px-3 py-2 hover:bg-slate-100 rounded" href="/PPM-Tabuk/modules/sites/departments.html" data-to="sites">
-            <span>🏷️</span><span> Department</span>
+        <div class="dd-panel card" role="menu" aria-hidden="true">
+          <a class="dd-item" href="/PPM-Tabuk/modules/sites/departments.html" data-to="sites">
+            <span>🏷️</span><span>Department</span>
           </a>
-          <a class="dd-item px-3 py-2 hover:bg-slate-100 rounded" href="/PPM-Tabuk/modules/sites/buildings.html" data-to="sites">
-            <span>🏢</span><span> Building</span>
+          <a class="dd-item" href="/PPM-Tabuk/modules/sites/buildings.html" data-to="sites">
+            <span>🏢</span><span>Building</span>
           </a>
-          <a class="dd-item px-3 py-2 hover:bg-slate-100 rounded" href="/PPM-Tabuk/modules/sites/rooms.html" data-to="sites">
-            <span>🏠</span><span> Rooms</span>
+          <a class="dd-item" href="/PPM-Tabuk/modules/sites/rooms.html" data-to="sites">
+            <span>🏠</span><span>Rooms</span>
           </a>
         </div>
       </div>
@@ -111,88 +111,3 @@
 
   </div>
 </header>
-
-<!-- ===== Script (module) داخل الجزئية ===== -->
-<script type="module">
-  // ✅ استخدم نفس Firebase app الخاص بالمشروع (بدون initialize جديد)
-  import { auth, db } from "/PPM-Tabuk/js/firebase.js";
-  import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-
-  // تفعيل القوائم المنسدلة (hover للـSites، click للـCorrective)
-  const initDropdowns = ()=>{
-    document.querySelectorAll('.dd').forEach(dd=>{
-      const panel = dd.querySelector('.dd-panel');
-      const btn   = dd.querySelector('.dd-btn');
-      if(!panel) return;
-
-      if(dd.dataset.dd === 'sites'){
-        dd.addEventListener('mouseenter', ()=> panel.classList.remove('hidden'));
-        dd.addEventListener('mouseleave', ()=> panel.classList.add('hidden'));
-      } else {
-        // Corrective: click toggle
-        btn?.addEventListener('click', ()=>{
-          panel.classList.toggle('hidden');
-        });
-        document.addEventListener('click', (e)=>{
-          if(!dd.contains(e.target)) panel.classList.add('hidden');
-        });
-      }
-    });
-  };
-
-  // تمييز اللينك النشط (المستوى الأول فقط)
-  const markActive = ()=>{
-    const path = location.pathname.toLowerCase();
-    const mark = (sel) => { const a = document.querySelector(sel); if (a) a.classList.add("active"); };
-
-    if (path.includes("/dashboard/")) {
-      mark('#mainNav a[data-to="dashboard"]');
-    } else if (path.includes("/assets/")) {
-      mark('#mainNav a[data-to="assets"]');
-    } else if (path.includes("/preventive/")) {
-      mark('#mainNav a[data-to="preventive"]');
-    } else if (path.includes("/corrective/")) {
-      mark('#mainNav .dd[data-dd="corrective"] .dd-btn');
-    } else if (path.includes("/sites/")) {
-      mark('#mainNav .dd[data-dd="sites"] > a[data-to="sites"]');
-    } else if (path.includes("/users/")) {
-      mark('#mainNav a[data-to="users"]');
-    }
-  };
-
-  // زر الخروج
-  const wireLogout = ()=>{
-    const btnLogout = document.getElementById("btnLogout");
-    if (btnLogout) {
-      btnLogout.addEventListener("click", async () => {
-        try { await signOut(auth); } finally { location.replace("/PPM-Tabuk/login.html"); }
-      });
-    }
-  };
-
-  // عرض اسم المستخدم (nameEn -> name -> displayName -> email)
-  const setUserName = (txt)=>{
-    const el = document.getElementById("userName");
-    if (el) el.textContent = txt || "";
-  };
-
-  // مراقبة تسجيل الدخول
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) { location.replace("/PPM-Tabuk/login.html"); return; }
-    try {
-      const snap = await getDoc(doc(db, "users", user.uid));
-      const name =
-        (snap.exists() && (snap.data().nameEn || snap.data().name || snap.data().displayName)) ||
-        user.displayName || user.email;
-      setUserName(name);
-    } catch (_) {
-      setUserName(user.displayName || user.email || "");
-    }
-  });
-
-  // تهيئة عناصر الـHeader
-  initDropdowns();
-  markActive();
-  wireLogout();
-</script>
