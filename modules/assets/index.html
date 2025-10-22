@@ -107,7 +107,7 @@
     const db   = getFirestore(app);
 
     // Elements
-    const tbody   = document.getElementById("tbody");
+    const tbody    = document.getElementById("tbody");
     const fControl = document.getElementById('f_control');
     const fName    = document.getElementById('f_name');
     const fSite    = document.getElementById('f_site');
@@ -115,6 +115,9 @@
 
     let ALL = [];
     let FILTERED = [];
+
+    // URL filters (department/room/site)
+    let URL_FILTERS = { site:'', deptName:'', deptCode:'', roomName:'', roomCode:'' };
 
     // After header is loaded
     document.addEventListener("partials:loaded", () => {
@@ -141,51 +144,129 @@
 
       await loadAssets();
       await fillFilters();
-
-      // Optional: filter by ?site= from URL
-      const siteParam = new URLSearchParams(location.search).get('site');
-      if (siteParam) {
-        const opt = [...fSite.options].find(o => (o.value||'').toLowerCase() === siteParam.toLowerCase());
-        if (opt) fSite.value = opt.value;
-      }
-      applyFilters(siteParam);
+      readURLFiltersAndPrefill();
+      applyFilters();
     });
 
     async function loadAssets(){
       const qs = await getDocs(query(collection(db,'assets'), orderBy('control')));
-      ALL = qs.docs.map((d, i) => ({ id:d.id, idx:i+1, ...d.data() }));
+      // طَبِّع الحقول لتسهيل الفلترة (site/department/room قد تكون بأسماء مختلفة)
+      ALL = qs.docs.map((d, i) => {
+        const a = d.data();
+        return {
+          id: d.id,
+          idx: i+1,
+          ...a,
+          __siteKey: (a.siteCode || a.site || a.siteName || ''),      // قيمة للمقارنة/الفلترة
+          __deptCode: (a.departmentCode || ''),                        // كود القسم
+          __deptName: (a.department || a.departmentName || ''),        // اسم القسم
+          __roomCode: (a.roomCode || ''),                              // كود الغرفة
+          __roomName: (a.room || a.roomName || '')                     // اسم الغرفة
+        };
+      });
     }
 
     async function fillFilters(){
-      const sites = new Set(), depts = new Set();
+      // جهّز مجموعات القيم المميّزة
+      const siteSet = new Set();
+      const deptMap = new Map(); // key: deptCode OR deptName, val: display text
+
       ALL.forEach(a => {
-        if(a.site) sites.add(a.site);
-        if(a.department) depts.add(a.department);
+        const siteKey = (a.__siteKey || '').toString().trim();
+        if (siteKey) siteSet.add(siteKey);
+
+        const dCode = (a.__deptCode || '').toString().trim();
+        const dName = (a.__deptName || '').toString().trim();
+        if (dCode) {
+          if (!deptMap.has(dCode)) deptMap.set(dCode, dName || dCode);
+        } else if (dName) {
+          if (!deptMap.has(dName)) deptMap.set(dName, dName);
+        }
       });
-      fSite.innerHTML = '<option value="">All sites</option>' + [...sites].sort().map(s=>`<option value="${s}">${s}</option>`).join('');
-      fDept.innerHTML = '<option value="">All departments</option>' + [...depts].sort().map(d=>`<option value="${d}">${d}</option>`).join('');
+
+      // Site options (value = siteKey)
+      fSite.innerHTML = '<option value="">All sites</option>' +
+        [...siteSet].sort().map(s => `<option value="${s}">${s}</option>`).join('');
+
+      // Department options (value = deptCode إن وُجد، وإلا الاسم)
+      fDept.innerHTML = '<option value="">All departments</option>' +
+        [...deptMap.entries()]
+          .sort((a,b) => a[1].localeCompare(b[1]))
+          .map(([val, label]) => `<option value="${val}">${label}</option>`)
+          .join('');
     }
 
-    function applyFilters(siteParamFromURL=null){
+    function readURLFiltersAndPrefill(){
+      const usp = new URLSearchParams(location.search);
+      const siteParam  = usp.get('site');
+      const deptNameParam = usp.get('department');
+      const deptCodeParam = usp.get('departmentCode');
+      const roomNameParam = usp.get('room');
+      const roomCodeParam = usp.get('roomCode');
+
+      URL_FILTERS = {
+        site: (siteParam||'').trim(),
+        deptName: (deptNameParam||'').trim(),
+        deptCode: (deptCodeParam||'').trim(),
+        roomName: (roomNameParam||'').trim(),
+        roomCode: (roomCodeParam||'').trim()
+      };
+
+      // حاول تضبط السيلكتات على قد ما تقدر من URL
+      if (URL_FILTERS.site) {
+        const opt = [...fSite.options].find(o => (o.value||'').toLowerCase() === URL_FILTERS.site.toLowerCase());
+        if (opt) fSite.value = opt.value;
+      }
+      if (URL_FILTERS.deptCode) {
+        const optD = [...fDept.options].find(o => (o.value||'').toLowerCase() === URL_FILTERS.deptCode.toLowerCase());
+        if (optD) fDept.value = optD.value;
+      } else if (URL_FILTERS.deptName) {
+        // طابق بالاسم (label)
+        const optD = [...fDept.options].find(o => (o.textContent||'').toLowerCase() === URL_FILTERS.deptName.toLowerCase());
+        if (optD) fDept.value = optD.value;
+      }
+    }
+
+    function applyFilters(){
       const qControl = (fControl.value||'').trim().toLowerCase();
       const qName    = (fName.value||'').trim().toLowerCase();
-      const qSiteSel = (fSite.value||'').trim().toLowerCase();
-      const qDeptSel = (fDept.value||'').trim().toLowerCase();
-      const qSiteURL = (siteParamFromURL||'').trim().toLowerCase();
+      const qSiteSel = (fSite.value||'').trim().toLowerCase();       // من السيلكت
+      const qDeptSel = (fDept.value||'').trim().toLowerCase();       // من السيلكت
+
+      // URL params (site/department/room)
+      const qSiteURL  = (URL_FILTERS.site||'').toLowerCase();
+      const qDeptName = (URL_FILTERS.deptName||'').toLowerCase();
+      const qDeptCode = (URL_FILTERS.deptCode||'').toLowerCase();
+      const qRoomName = (URL_FILTERS.roomName||'').toLowerCase();
+      const qRoomCode = (URL_FILTERS.roomCode||'').toLowerCase();
 
       FILTERED = ALL.filter(a=>{
         const control = (a.control||'').toString().toLowerCase();
         const name    = (a.name||'').toString().toLowerCase();
-        const site    = (a.site||'').toString().toLowerCase();
-        const dept    = (a.department||'').toString().toLowerCase();
 
+        const siteKey = (a.__siteKey||'').toString().toLowerCase();
+
+        const deptCodeField = (a.__deptCode||'').toString().toLowerCase();
+        const deptNameField = (a.__deptName||'').toString().toLowerCase();
+
+        const roomCodeField = (a.__roomCode||'').toString().toLowerCase();
+        const roomNameField = (a.__roomName||'').toString().toLowerCase();
+
+        // فلاتر من الواجهة
         const okC  = !qControl || control.includes(qControl);
         const okN  = !qName    || name.includes(qName);
-        const okS1 = !qSiteSel || site === qSiteSel;     // dropdown
-        const okS2 = !qSiteURL || site.includes(qSiteURL); // from ?site=
-        const okD  = !qDeptSel || dept === qDeptSel;
+        const okS1 = !qSiteSel || siteKey === qSiteSel;
+        // القسم في الواجهة: القيمة قد تكون كود القسم أو الاسم (حسب المتاح)
+        const okD1 = !qDeptSel || deptCodeField === qDeptSel || deptNameField === qDeptSel;
 
-        return okC && okN && okS1 && okS2 && okD;
+        // فلاتر من URL
+        const okS2 = !qSiteURL  || siteKey.includes(qSiteURL);
+        const okD2 = !qDeptCode || deptCodeField === qDeptCode;
+        const okD3 = !qDeptName || deptNameField === qDeptName || deptNameField.includes(qDeptName);
+        const okR1 = !qRoomCode || roomCodeField === qRoomCode;
+        const okR2 = !qRoomName || roomNameField === qRoomName || roomNameField.includes(qRoomName);
+
+        return okC && okN && okS1 && okD1 && okS2 && okD2 && okD3 && okR1 && okR2;
       });
 
       renderTable();
@@ -198,14 +279,16 @@
         return;
       }
       FILTERED.forEach((a, i) => {
+        const siteDisp = a.site || a.siteName || a.siteCode || '—';
+        const deptDisp = a.department || a.departmentName || a.departmentCode || '—';
         const tr = document.createElement('tr');
         tr.className = 'border-b border-slate-200';
         tr.innerHTML = `
           <td class="p-2 text-center">${i+1}</td>
           <td class="p-2 whitespace-nowrap mono">${a.control||'—'}</td>
           <td class="p-2">${a.name||'—'}</td>
-          <td class="p-2">${a.site||'—'}</td>
-          <td class="p-2">${a.department||'—'}</td>
+          <td class="p-2">${siteDisp}</td>
+          <td class="p-2">${deptDisp}</td>
           <td class="p-2">${a.brand||'—'}</td>
           <td class="p-2">${a.model||'—'}</td>
           <td class="p-2">${a.serial||'—'}</td>
@@ -218,6 +301,7 @@
       });
     }
 
+    // UI listeners
     [fControl, fName].forEach(inp => inp.addEventListener('input', ()=>applyFilters()));
     [fSite, fDept].forEach(sel => sel.addEventListener('change', ()=>applyFilters()));
   </script>
