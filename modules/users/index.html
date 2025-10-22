@@ -5,14 +5,48 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PPM TABUK • Users</title>
 
+  <!-- Tailwind فقط لستايل بسيط للنص -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- الثيم الموحد (مطلوب للهيدر) -->
   <link rel="stylesheet" href="../../css/theme-light.css">
   <script src="../../js/theme.js" defer></script>
+
+  <!-- Loader للـ partials (مطلوب للهيدر) -->
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
+
+  <!-- أيقونة الموقع -->
   <link rel="icon" href="/PPM-Tabuk/assets/favicon.ico"/>
 
-  
+  <!-- ستايل خاص بالصفحة (اختياري) -->
+  <style>
+    #mainNav a.active{
+      position:relative;font-weight:900;letter-spacing:.3px;
+      background:linear-gradient(90deg,#60a5fa,#3b82f6,#60a5fa);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      animation:shimmer 3s linear infinite;
+    }
+    @keyframes shimmer{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.06)}
+    .muted{color:#64748b}
+    .inp{border:1px solid #e5e7eb;border-radius:12px;padding:.7rem .9rem;width:100%}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:12px;padding:.7rem 1rem;font-weight:700}
+    .btn-primary{background:#2563eb;color:white}
+    .btn-danger{background:#ef4444;color:white}
+    .btn-soft{background:#f1f5f9}
+    .badge{display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .6rem;border-radius:999px;font-size:.75rem}
+    .badge-green{background:rgba(16,185,129,.12);color:#047857}
+    .kbd{border:1px solid #e5e7eb;border-bottom-width:2px;border-radius:8px;padding:.05rem .45rem;background:#f8fafc}
+    .table-kbd{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;padding:.15rem .35rem;border:1px solid #e5e7eb;border-radius:6px;background:#f8fafc}
+
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.45);z-index:60}
+    .modal.show{display:flex}
+    .modal .panel{width:min(720px,94vw)}
+    .x{cursor:pointer}
+  </style>
 </head>
+
 <body class="bg-slate-50 text-slate-800">
   <div data-include="../../partials/header.html"></div>
 
