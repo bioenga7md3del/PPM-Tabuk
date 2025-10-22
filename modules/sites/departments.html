@@ -1,1 +1,367 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>PPM TABUK • Departments</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Theme + partial loader -->
+  <link rel="stylesheet" href="../../css/theme-light.css">
+  <script src="../../js/theme.js" defer></script>
+  <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
+
+  <style>
+    /* Active only on top-level items */
+    #mainNav > a.active,
+    #mainNav .dd > a.active{
+      position:relative;font-weight:900;letter-spacing:.3px;color:#93c5fd!important;
+    }
+    #mainNav > a.active::after,
+    #mainNav .dd > a.active::after{
+      content:"";position:absolute;left:0;right:0;bottom:-4px;height:2px;background:#60a5fa;border-radius:2px;transform:scaleX(0);transition:transform .25s;
+    }
+    #mainNav > a.active:hover::after,
+    #mainNav .dd > a.active:hover::after{transform:scaleX(1)}
+    #mainNav .dd .dd-panel .dd-item{color:inherit!important;font-weight:600!important}
+    #mainNav .dd .dd-panel .dd-item:hover{color:#2563eb!important}
+
+    .read-only .for-edit{display:none!important;}
+    @media print{ header,.no-print{display:none!important} table{width:100%} }
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem}
+    .field{padding:.6rem .8rem;border:1px solid #cbd5e1;border-radius:1rem}
+  </style>
+
+  <script type="module">
+    /* ===== Firebase ===== */
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      getFirestore, collection, doc, getDoc, getDocs,
+      setDoc, deleteDoc, query, orderBy, where, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
+
+    const cfg = {
+      apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
+      authDomain:"pmqrtabuk.firebaseapp.com",
+      projectId:"pmqrtabuk",
+      storageBucket:"pmqrtabuk.appspot.com",
+      messagingSenderId:"305570616285",
+      appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
+    };
+    const app = getApps().length ? getApps()[0] : initializeApp(cfg);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+
+    /* ===== Header: mark Sites active & Department menu highlighted ===== */
+    document.addEventListener("partials:loaded", () => {
+      const btnLogout = document.getElementById("btnLogout");
+      if (btnLogout) btnLogout.addEventListener("click", async () => {
+        try { await signOut(auth); } finally { location.replace("../../login.html"); }
+      });
+
+      // Activate "Sites" top link
+      const topSites = document.querySelector('#mainNav .dd[data-dd="sites"] > a[data-to="sites"]');
+      if (topSites) topSites.classList.add('active');
+
+      // Optionally bold the Department item in submenu if exists
+      const depItem = document.querySelector('#mainNav .dd[data-dd="sites"] .dd-panel a[href*="sites/departments"]');
+      if (depItem) depItem.style.fontWeight = '800';
+    });
+
+    /* ===== Elements ===== */
+    const $ = (id)=>document.getElementById(id);
+    const PAGE_SIZE = 10;
+
+    const fSearch = $('fSearch');
+    const fSite   = $('fSite');
+    const tbody   = $('tbodyDep');
+    const pageInfo= $('pageInfo');
+    const prevBtn = $('prevPage');
+    const nextBtn = $('nextPage');
+    const btnAdd  = $('btnAdd');
+    const btnExport=$('btnExport');
+    const btnPrint =$('btnPrint');
+
+    const drawer = $('drawer');
+    const drawerTitle = $('drawerTitle');
+    const depForm = $('depForm');
+
+    const selSite = $('siteSelect');
+
+    let EDIT_CODE = null; // department code if editing
+    let STATE = { list:[], filtered:[], page:1, sites:[], profile:null };
+
+    /* ===== Roles ===== */
+    const norm = v=> (v||'').toString().toLowerCase().replace(/[\s_]/g,'');
+    const canEdit = p=>{
+      if(!p) return false;
+      const r = norm(p.role);
+      return r==='admin' || r==='systemowner' || r==='owner';
+    };
+    function reflectPerm(){
+      if(!canEdit(STATE.profile)) document.body.classList.add('read-only');
+      else document.body.classList.remove('read-only');
+    }
+
+    /* ===== Auth ===== */
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ location.replace("../../login.html"); return; }
+      try{
+        const snap=await getDoc(doc(db,'users',user.uid));
+        STATE.profile = snap.exists()? snap.data() : null;
+        const el=document.getElementById('userName');
+        if(el){
+          const name=(snap.exists() && (snap.data().name || snap.data().nameEn)) ? (snap.data().name || snap.data().nameEn) : (user.displayName||user.email);
+          el.textContent=name||'';
+        }
+      }catch{ STATE.profile=null; }
+      reflectPerm();
+
+      await loadSites();       // needed for dropdowns
+      await loadDepartments();
+      fillSiteFilter();
+    });
+
+    /* ===== Load Sites for dropdowns ===== */
+    async function loadSites(){
+      const qs = await getDocs(query(collection(db,'sites'), orderBy('name')));
+      STATE.sites = qs.docs.map(d=>({ code:d.id, name:d.data().name || d.id }));
+      // Fill create/edit select
+      selSite.innerHTML = '<option value="">— Select site —</option>' +
+        STATE.sites.map(s=>`<option value="${s.code}">${s.name} (${s.code})</option>`).join('');
+    }
+
+    /* ===== Load Departments ===== */
+    async function loadDepartments(){
+      const qs = await getDocs(query(collection(db,'department'), orderBy('name')));
+      STATE.list = qs.docs.map(d=>({ code:d.id, ...d.data() }));
+      applyFilters();
+    }
+
+    /* ===== Filters ===== */
+    function fillSiteFilter(){
+      fSite.innerHTML = '<option value="">All sites</option>' +
+        STATE.sites.map(s=>`<option value="${s.code}">${s.name}</option>`).join('');
+    }
+    function applyFilters(){
+      const q = (fSearch.value||'').trim().toLowerCase();
+      const site = fSite.value||'';
+      STATE.filtered = STATE.list.filter(x=>{
+        const okQ = !q || (x.name||'').toLowerCase().includes(q) || (x.code||'').toLowerCase().includes(q);
+        const okS = !site || (x.siteCode||'')===site;
+        return okQ && okS;
+      });
+      STATE.page = 1;
+      renderTable();
+    }
+    fSearch.addEventListener('input', applyFilters);
+    fSite.addEventListener('change', applyFilters);
+
+    /* ===== Table & Paging ===== */
+    function pageSlice(){ const s=(STATE.page-1)*PAGE_SIZE; return STATE.filtered.slice(s, s+PAGE_SIZE); }
+    const siteName = code => (STATE.sites.find(s=>s.code===code)?.name || code || '-');
+
+    function renderTable(){
+      const rows = pageSlice().map(x=>{
+        const editBtns = canEdit(STATE.profile)
+          ? `<button data-act="edit" data-code="${x.code}" class="text-blue-600 hover:underline">Edit</button>
+             <span class="text-slate-300">•</span>
+             <button data-act="del" data-code="${x.code}" class="text-red-600 hover:underline">Delete</button>`
+          : '<span class="text-slate-400">View</span>';
+
+        return `
+          <tr class="border-b">
+            <td class="px-4 py-3">
+              <div class="font-semibold">${x.name||'-'}</div>
+              <div class="text-xs text-slate-500">${x.code||''}</div>
+            </td>
+            <td class="px-4 py-3">${siteName(x.siteCode)}</td>
+            <td class="px-4 py-3">${editBtns}</td>
+          </tr>
+        `;
+      }).join('');
+      tbody.innerHTML = rows || `<tr><td class="px-4 py-6 text-center text-slate-500" colspan="3">No departments found.</td></tr>`;
+
+      const totalPages = Math.max(1, Math.ceil(STATE.filtered.length / PAGE_SIZE));
+      pageInfo.textContent = `Page ${STATE.page} / ${totalPages} — ${STATE.filtered.length} total`;
+      prevBtn.disabled = STATE.page<=1;
+      nextBtn.disabled = STATE.page>=totalPages;
+
+      tbody.querySelectorAll('button[data-act]').forEach(b=>{
+        b.addEventListener('click', ()=> {
+          const act=b.dataset.act, code=b.dataset.code;
+          if(act==='edit') openEdit(code);
+          if(act==='del') confirmDelete(code);
+        });
+      });
+    }
+    prevBtn.addEventListener('click', ()=>{ STATE.page=Math.max(1,STATE.page-1); renderTable(); });
+    nextBtn.addEventListener('click', ()=>{ const tp=Math.ceil(STATE.filtered.length/PAGE_SIZE); STATE.page=Math.min(tp,STATE.page+1); renderTable(); });
+
+    /* ===== Drawer (Add/Edit) ===== */
+    function openDrawer(){
+      drawer.classList.remove('hidden');
+      drawerTitle.textContent = EDIT_CODE ? `Edit department (${EDIT_CODE})` : 'New department';
+      if(!EDIT_CODE){
+        depForm.reset();
+        depForm.code.disabled = false;
+      }
+    }
+    function closeDrawer(){ EDIT_CODE=null; drawer.classList.add('hidden'); }
+    document.addEventListener('click', e=>{
+      if(e.target?.dataset?.close !== undefined || e.target.closest('[data-close]')) closeDrawer();
+    });
+    btnAdd.addEventListener('click', ()=>{ if(!canEdit(STATE.profile)) return; openDrawer(); });
+
+    async function openEdit(code){
+      const snap = await getDoc(doc(db,'department',code));
+      if(!snap.exists()) return alert('Department not found');
+      const d = snap.data();
+      EDIT_CODE = code;
+
+      depForm.code.value = code; depForm.code.disabled = true;
+      depForm.name.value = d.name || '';
+      depForm.siteCode.value = d.siteCode || '';
+
+      openDrawer();
+    }
+
+    async function confirmDelete(code){
+      if(!canEdit(STATE.profile)) return;
+      if(!confirm(`Delete department ${code}?`)) return;
+      await deleteDoc(doc(db,'department',code));
+      await loadDepartments();
+    }
+
+    depForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(!canEdit(STATE.profile)) return;
+
+      const code = depForm.code.value.trim();
+      const name = depForm.name.value.trim();
+      const siteCode = depForm.siteCode.value;
+
+      if(!code) return alert('Department code is required');
+      if(!name) return alert('Department name is required');
+      if(!siteCode) return alert('Please select a site');
+
+      // store siteName for quick listing
+      const sName = siteName(siteCode);
+
+      await setDoc(doc(db,'department', code), {
+        name, siteCode, siteName: sName,
+        updatedAt: serverTimestamp(),
+        createdAt: EDIT_CODE ? undefined : serverTimestamp()
+      }, { merge:true });
+
+      closeDrawer();
+      depForm.code.disabled = false;
+      await loadDepartments();
+    });
+
+    /* ===== Export & Print ===== */
+    btnExport.addEventListener('click', ()=>{
+      const data = STATE.filtered.map(x=>({
+        Code: x.code||'',
+        Name: x.name||'',
+        Site: siteName(x.siteCode)
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Departments');
+      XLSX.writeFile(wb, `departments_${new Date().toISOString().slice(0,10)}.xlsx`);
+    });
+    btnPrint.addEventListener('click', ()=> window.print() );
+  </script>
+</head>
+
+<body>
+  <!-- Header -->
+  <header data-include="/PPM-Tabuk/partials/header.html?v=2" class="w-full max-w-none"></header>
+
+  <main class="w-full max-w-none mx-auto p-3 md:p-6 space-y-6">
+    <!-- Toolbar -->
+    <div class="flex items-center gap-2 no-print">
+      <button id="btnPrint" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm inline-flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 3 18 3 18 9"/><path d="M6 14H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="2"/></svg>
+        Print
+      </button>
+      <button id="btnExport" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm inline-flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export Excel
+      </button>
+      <button id="btnAdd" class="for-edit px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm inline-flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add department
+      </button>
+    </div>
+
+    <!-- Filters -->
+    <section class="grid md:grid-cols-3 gap-3 no-print">
+      <input id="fSearch" type="text" placeholder="Search by name or code" class="field">
+      <select id="fSite" class="field">
+        <option value="">All sites</option>
+      </select>
+    </section>
+
+    <!-- Table -->
+    <section class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+            <tr>
+              <th class="text-left px-4 py-3">Department</th>
+              <th class="text-left px-4 py-3">Site</th>
+              <th class="text-left px-4 py-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyDep" class="divide-y divide-slate-200"></tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between px-4 py-3">
+        <div id="pageInfo" class="text-xs text-slate-500">Page 1</div>
+        <div class="flex gap-2">
+          <button id="prevPage" class="px-3 py-1.5 rounded-xl border border-slate-300 disabled:opacity-50">Prev</button>
+          <button id="nextPage" class="px-3 py-1.5 rounded-xl border border-slate-300 disabled:opacity-50">Next</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Drawer -->
+  <div id="drawer" class="fixed inset-0 hidden">
+    <div class="absolute inset-0 bg-black/30" data-close></div>
+    <div class="absolute right-0 top-0 h-full w-full sm:w-[540px] bg-white shadow-xl p-6 overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h2 id="drawerTitle" class="text-xl font-bold">New department</h2>
+        <button class="px-3 py-1.5 rounded-xl border" data-close>Close</button>
+      </div>
+
+      <form id="depForm" class="grid grid-cols-2 gap-3">
+        <label class="text-sm">Department code
+          <input name="code" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="DEP-001" required>
+        </label>
+        <label class="text-sm">Department name
+          <input name="name" class="mt-1 w-full px-3 py-2 rounded-xl border" placeholder="Cardiology" required>
+        </label>
+        <label class="text-sm col-span-2">Site
+          <select id="siteSelect" name="siteCode" class="mt-1 w-full px-3 py-2 rounded-xl border" required>
+            <option value="">— Select site —</option>
+          </select>
+        </label>
+
+        <div class="col-span-2 flex gap-2 mt-2">
+          <button type="submit" class="for-edit px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white">Save</button>
+          <button type="button" data-close class="px-4 py-2 rounded-xl border">Cancel</button>
+        </div>
+        <p class="text-xs text-slate-500 col-span-2">The document ID will be the <strong>department code</strong>.</p>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
 
