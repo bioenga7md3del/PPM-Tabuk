@@ -3,27 +3,18 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>PPM TABUK • Preventive Maintenance</title>
+  <title>PPM TABUK • Dashboard</title>
 
-  <!-- Tailwind -->
+  <!-- Tailwind فقط لستايل بسيط للنص -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Theme + Partials -->
-  <link rel="stylesheet" href="/PPM-Tabuk/css/theme-light.css?v=4">
-  <script src="/PPM-Tabuk/js/theme.js" defer></script>
-  <script src="/PPM-Tabuk/js/include.js?v=4" defer></script>
+  <!-- الثيم الموحد (مطلوب للهيدر) -->
+  <link rel="stylesheet" href="../../css/theme-light.css">
+  <script src="../../js/theme.js" defer></script>
 
-  <!-- Active nav: Red only -->
-  <style>
-    #mainNav > a.active,
-    #mainNav .dd > a.active { color:#ef4444!important; font-weight:800!important; }
-    #mainNav > a.active::after,
-    #mainNav .dd > a.active::after { content:none!important; }
-    #mainNav > a, #mainNav .dd > a {
-      background:none!important; -webkit-text-fill-color:initial!important;
-    }
-    #mainNav > a:hover, #mainNav .dd > a:hover { color:#fca5a5!important; }
-  </style>
+  <!-- Loader للـ partials (مطلوب للهيدر) -->
+  <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
+  
 </head>
 
 <body>
