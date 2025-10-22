@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>PPM TABUK • Department Profile</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Theme + partial loader -->
+  <link rel="stylesheet" href="../../css/theme-light.css">
+  <script src="../../js/theme.js" defer></script>
+  <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
+
+  <style>
+    /* Active only on top-level items */
+    #mainNav > a.active,
+    #mainNav .dd > a.active{
+      position:relative;font-weight:900;letter-spacing:.3px;color:#93c5fd!important;
+    }
+    #mainNav > a.active::after,
+    #mainNav .dd > a.active::after{
+      content:"";position:absolute;left:0;right:0;bottom:-4px;height:2px;background:#60a5fa;border-radius:2px;transform:scaleX(0);transition:transform .25s;
+    }
+    #mainNav > a.active:hover::after,
+    #mainNav .dd > a.active:hover::after{transform:scaleX(1)}
+    #mainNav .dd .dd-panel .dd-item{color:inherit!important;font-weight:600!important}
+    #mainNav .dd .dd-panel .dd-item:hover{color:#2563eb!important}
+
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem}
+    .field{padding:.6rem .8rem;border:1px solid #cbd5e1;border-radius:1rem}
+    .badge{padding:.15rem .5rem;border-radius:.6rem;border:1px solid #cbd5e1;background:#f8fafc;font-size:.75rem}
+
+    .read-only .only-edit{display:none!important;}
+    @media print{ header,.no-print{display:none!important} table{width:100%} }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header data-include="/PPM-Tabuk/partials/header.html?v=2" class="w-full max-w-none"></header>
+
+  <main class="w-full max-w-[1200px] mx-auto p-3 md:p-6 space-y-6">
+    <!-- Title bar -->
+    <div class="flex items-center justify-between">
+      <h1 id="title" class="text-xl font-bold text-slate-800">Department</h1>
+      <div class="flex gap-2">
+        <a id="btnOpenAssets" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm inline-flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Open assets
+        </a>
+        <button id="btnEditTechs" class="only-edit px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm inline-flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+          Edit technicians
+        </button>
+        <button id="btnPrint" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm inline-flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 3 18 3 18 9"/><path d="M6 14H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="2"/></svg>
+          Print
+        </button>
+      </div>
+    </div>
+
+    <!-- Top info -->
+    <section class="card p-4">
+      <div class="grid md:grid-cols-4 gap-4">
+        <div>
+          <div class="text-slate-500 text-xs">Department name</div>
+          <div id="depName" class="font-semibold">—</div>
+        </div>
+        <div>
+          <div class="text-slate-500 text-xs">Department code</div>
+          <div id="depCode" class="font-semibold">—</div>
+        </div>
+        <div>
+          <div class="text-slate-500 text-xs">Site</div>
+          <div>
+            <span id="siteName" class="font-semibold">—</span>
+            <span id="siteCode" class="text-xs text-slate-500 ml-1"></span>
+          </div>
+        </div>
+        <div class="flex items-end gap-3">
+          <div>
+            <div class="text-slate-500 text-xs">Technicians</div>
+            <div id="techCount" class="font-semibold">0</div>
+          </div>
+          <div>
+            <div class="text-slate-500 text-xs">Devices</div>
+            <div id="devCount" class="font-semibold">—</div>
+          </div>
+          <div>
+            <div class="text-slate-500 text-xs">Open WOs</div>
+            <div id="woCount" class="font-semibold">—</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Responsible technicians -->
+    <section class="card p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold">Responsible technician(s)</h2>
+        <button id="btnEditTechs2" class="only-edit px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm">Manage</button>
+      </div>
+      <div id="techList" class="flex flex-wrap gap-2">
+        <span class="text-slate-500 text-sm">No technicians assigned.</span>
+      </div>
+    </section>
+
+    <!-- Devices in department (placeholder for now) -->
+    <section class="card p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold">Devices in this department</h2>
+        <div class="flex gap-2">
+          <a id="btnOpenAssets2" class="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-sm">Open in Assets</a>
+          <button class="px-3 py-1.5 rounded-xl border border-slate-300 text-sm" disabled title="Coming soon">Export</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+            <tr>
+              <th class="text-left px-3 py-2">Control</th>
+              <th class="text-left px-3 py-2">Name</th>
+              <th class="text-left px-3 py-2">Brand</th>
+              <th class="text-left px-3 py-2">Model</th>
+              <th class="text-left px-3 py-2">Serial</th>
+            </tr>
+          </thead>
+          <tbody id="devBody">
+            <tr><td colspan="5" class="px-3 py-4 text-slate-500">Devices table placeholder — linking by department <b>code</b> will be added later.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Work orders in department (placeholder for now) -->
+    <section class="card p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold">Work Orders</h2>
+        <div class="flex gap-2">
+          <button class="px-3 py-1.5 rounded-xl border border-slate-300 text-sm" disabled title="Coming soon">Export</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+            <tr>
+              <th class="text-left px-3 py-2">WO#</th>
+              <th class="text-left px-3 py-2">Status</th>
+              <th class="text-left px-3 py-2">Asset</th>
+              <th class="text-left px-3 py-2">Created</th>
+              <th class="text-left px-3 py-2">Priority</th>
+            </tr>
+          </thead>
+          <tbody id="woBody">
+            <tr><td colspan="5" class="px-3 py-4 text-slate-500">Work orders table placeholder — linking by department <b>code</b> will be added later.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Drawer: manage technicians -->
+  <div id="drawer" class="fixed inset-0 hidden">
+    <div class="absolute inset-0 bg-black/30" data-close></div>
+    <div class="absolute right-0 top-0 h-full w-full sm:w-[560px] bg-white shadow-xl p-6 overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold">Manage technicians</h2>
+        <button class="px-3 py-1.5 rounded-xl border" data-close>Close</button>
+      </div>
+
+      <form id="techForm" class="space-y-4">
+        <div>
+          <label class="text-sm text-slate-600">Search technicians</label>
+          <input id="techSearch" placeholder="Type to filter list..." class="mt-1 w-full field">
+        </div>
+        <div id="techCheckList" class="border rounded-xl p-3 max-h-[50vh] overflow-y-auto space-y-1">
+          <!-- checkboxes will be injected -->
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="only-edit px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white">Save</button>
+          <button type="button" class="px-4 py-2 rounded-xl border" data-close>Cancel</button>
+        </div>
+
+        <p class="text-xs text-slate-500">Assigning here will update each user's <code>deptscope</code> array in Firestore.</p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Page script -->
+  <script type="module">
+    import { auth, db } from "/PPM-Tabuk/js/firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      doc, getDoc, collection, getDocs, query, where, orderBy,
+      updateDoc, arrayUnion, arrayRemove
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    const $ = id => document.getElementById(id);
+    const qs = sel => document.querySelector(sel);
+    const qsp = new URLSearchParams(location.search);
+    const depCode = (qsp.get('code')||'').trim();
+
+    // Elements
+    const title = $('title');
+    const depNameEl = $('depName');
+    const depCodeEl = $('depCode');
+    const siteNameEl = $('siteName');
+    const siteCodeEl = $('siteCode');
+    const techCountEl = $('techCount');
+
+    const techList = $('techList');
+    const btnEditTechs = $('btnEditTechs');
+    const btnEditTechs2 = $('btnEditTechs2');
+
+    const btnOpenAssets = $('btnOpenAssets');
+    const btnOpenAssets2 = $('btnOpenAssets2');
+
+    const btnPrint = $('btnPrint');
+
+    const drawer = $('drawer');
+    const techForm = $('techForm');
+    const techSearch = $('techSearch');
+    const techCheckList = $('techCheckList');
+
+    // State
+    let PROFILE = null;
+    let CAN_EDIT = false;
+
+    let depDoc = null;                // { code, name, siteCode, siteName }
+    let allTechs = [];                // [{id,name,email}, ...] all users role=Technician
+    let assignedTechs = [];           // subset where deptscope array-contains depCode
+
+    // ===== Utilities =====
+    const norm = v => (v||'').toString().toLowerCase().replace(/[\s_]/g,'');
+    const canEdit = p=>{
+      if(!p) return false;
+      const r = p.role;
+      if(Array.isArray(r)){
+        const bag=r.map(norm);
+        return bag.includes('admin') || bag.includes('systemowner') || bag.includes('owner');
+      } else {
+        const k=norm(r);
+        return k==='admin'||k==='systemowner'||k==='owner';
+      }
+    };
+
+    function openDrawer(){ drawer.classList.remove('hidden'); }
+    function closeDrawer(){ drawer.classList.add('hidden'); }
+    document.addEventListener('click', e=>{
+      if(e.target?.dataset?.close !== undefined || e.target.closest('[data-close]')) closeDrawer();
+    });
+
+    // ===== Auth
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ location.replace("/PPM-Tabuk/login.html"); return; }
+      const profSnap = await getDoc(doc(db,'users',user.uid));
+      PROFILE = profSnap.exists()? profSnap.data() : null;
+      CAN_EDIT = canEdit(PROFILE);
+      if(!CAN_EDIT){
+        document.body.classList.add('read-only');
+      }
+
+      if(!depCode){
+        alert('Missing ?code= parameter'); return;
+      }
+
+      await loadDepartment();
+      await loadTechnicians();
+      await loadAssigned();
+      renderHeader();
+      renderTechs();
+
+      wireUI();
+    });
+
+    // ===== Loaders
+    async function loadDepartment(){
+      const snap = await getDoc(doc(db,'department', depCode));
+      if(!snap.exists()){ alert('Department not found'); return; }
+      depDoc = { code: depCode, ...snap.data() };
+    }
+
+    async function loadTechnicians(){
+      // all technicians (role == 'Technician'), sort by name
+      const q1 = query(collection(db,'users'), where('role','==','Technician'));
+      const s1 = await getDocs(q1);
+      allTechs = s1.docs.map(d=>{
+        const u=d.data();
+        return {
+          id:d.id,
+          name: u.nameEn || u.name || u.displayName || d.id,
+          email: u.email || '',
+          deptscope: Array.isArray(u.deptscope) ? u.deptscope : []
+        };
+      }).sort((a,b)=> a.name.localeCompare(b.name));
+    }
+
+    async function loadAssigned(){
+      // technicians who already include depCode in deptscope
+      const q2 = query(collection(db,'users'), where('role','==','Technician'), where('deptscope','array-contains', depCode));
+      const s2 = await getDocs(q2);
+      const ids = new Set(s2.docs.map(d=>d.id));
+      assignedTechs = allTechs.filter(u=> ids.has(u.id));
+    }
+
+    // ===== Render
+    function renderHeader(){
+      document.title = `PPM TABUK • Department ${depDoc?.name || depDoc?.code || ''}`;
+      $('title').textContent = `Department: ${depDoc?.name || depDoc?.code || ''}`;
+
+      depNameEl.textContent = depDoc?.name || '—';
+      depCodeEl.textContent = depDoc?.code || '—';
+      siteNameEl.textContent = depDoc?.siteName || '—';
+      siteCodeEl.textContent = depDoc?.siteCode ? `(${depDoc.siteCode})` : '';
+      techCountEl.textContent = assignedTechs.length.toString();
+
+      // open assets buttons (NOTE: assets currently filters by name; later we’ll switch to code)
+      const url = `/PPM-Tabuk/modules/assets/index.html?department=${encodeURIComponent(depDoc?.name || '')}`;
+      btnOpenAssets.href = url;
+      btnOpenAssets2.href = url;
+    }
+
+    function renderTechs(){
+      if(!assignedTechs.length){
+        techList.innerHTML = '<span class="text-slate-500 text-sm">No technicians assigned.</span>';
+        return;
+      }
+      techList.innerHTML = assignedTechs.map(t=>`
+        <span class="badge inline-flex items-center gap-2">
+          <span class="font-medium">${escapeHtml(t.name)}</span>
+          ${t.email? `<span class="text-slate-500">${escapeHtml(t.email)}</span>`:''}
+        </span>
+      `).join('');
+    }
+
+    function renderChecklist(filterText=''){
+      const f = filterText.trim().toLowerCase();
+      const assignedSet = new Set(assignedTechs.map(t=>t.id));
+      techCheckList.innerHTML = allTechs
+        .filter(u => !f || u.name.toLowerCase().includes(f) || (u.email||'').toLowerCase().includes(f))
+        .map(u=>`
+          <label class="flex items-center gap-2 py-1">
+            <input type="checkbox" class="rounded" value="${u.id}" ${assignedSet.has(u.id)?'checked':''}>
+            <span class="flex-1">
+              <span class="font-medium">${escapeHtml(u.name)}</span>
+              ${u.email? `<span class="text-slate-500 text-xs ml-2">${escapeHtml(u.email)}</span>`:''}
+            </span>
+          </label>
+        `).join('');
+    }
+
+    // ===== UI wiring
+    function wireUI(){
+      btnPrint.addEventListener('click', ()=> window.print());
+
+      const openManage = ()=>{ renderChecklist(); openDrawer(); };
+      btnEditTechs?.addEventListener('click', ()=> CAN_EDIT && openManage());
+      btnEditTechs2?.addEventListener('click', ()=> CAN_EDIT && openManage());
+
+      techSearch.addEventListener('input', ()=> renderChecklist(techSearch.value||''));
+
+      techForm.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        if(!CAN_EDIT) return;
+
+        const checkboxes = Array.from(techCheckList.querySelectorAll('input[type="checkbox"]'));
+        const selectedIds = new Set(checkboxes.filter(c=>c.checked).map(c=>c.value));
+        const beforeIds = new Set(assignedTechs.map(t=>t.id));
+
+        const toAdd = [...selectedIds].filter(id=> !beforeIds.has(id));
+        const toRemove = [...beforeIds].filter(id=> !selectedIds.has(id));
+
+        try{
+          // Update users' deptscope arrays
+          await Promise.all([
+            ...toAdd.map(id => updateDoc(doc(db,'users',id), { deptscope: arrayUnion(depCode) })),
+            ...toRemove.map(id => updateDoc(doc(db,'users',id), { deptscope: arrayRemove(depCode) })),
+          ]);
+
+          // refresh assigned
+          await loadAssigned();
+          techCountEl.textContent = assignedTechs.length.toString();
+          renderTechs();
+          closeDrawer();
+        }catch(err){
+          console.error(err);
+          alert('Failed to update technicians. Please check permissions/rules.');
+        }
+      });
+    }
+
+    // ===== Helpers
+    function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+
+    // ===== After header load: mark Sites active + make submenu bold (optional)
+    document.addEventListener("partials:loaded", () => {
+      const topSites = document.querySelector('#mainNav .dd[data-dd="sites"] > a[data-to="sites"]');
+      if (topSites) topSites.classList.add('active');
+      const depItem = document.querySelector('#mainNav .dd[data-dd="sites"] .dd-panel a[href*="sites/departments"]');
+      if (depItem) depItem.style.fontWeight = '800';
+    });
+  </script>
+</body>
+</html>
