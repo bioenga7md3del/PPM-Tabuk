@@ -8,35 +8,46 @@
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Theme (كما في الداشبورد) -->
+  <!-- Theme + header loader -->
   <link rel="stylesheet" href="../../css/theme-light.css">
   <script src="../../js/theme.js" defer></script>
-
-  <!-- Partials loader (كما في الداشبورد) -->
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
 
   <!-- Leaflet (map picker) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Active nav: Red only -->
-  <style>
-    /* اجعل اللينك النشط أحمر فقط */
-    #mainNav > a.active,
-    #mainNav .dd > a.active { color:#ef4444!important; font-weight:800!important; }
-    #mainNav > a.active::after,
-    #mainNav .dd > a.active::after { content:none!important; }
-    #mainNav > a, #mainNav .dd > a {
-      background:none!important; -webkit-text-fill-color:initial!important;
-    }
-    #mainNav > a:hover, #mainNav .dd > a:hover { color:#fca5a5!important; }
+  <!-- XLSX (export) -->
+  <script type="module">
+    import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
+    window.__XLSX__ = XLSX;
+  </script>
 
-    .read-only .for-edit{display:none!important;}
+  <style>
+    /* Show edit controls only for Admin/SystemOwner */
+    .read-only .for-edit{ display:none !important; }
+
+    /* Print */
     @media print{ header,.no-print{display:none!important} table{width:100%} }
+
+    /* Small helpers */
     .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem}
     .field{padding:.6rem .8rem;border:1px solid #cbd5e1;border-radius:1rem}
     #mapPicker{height:280px;border:1px solid #cbd5e1;border-radius:1rem}
-    /* ⚠️ بدون ستايلات داخلية للقوائم المسدلة للحفاظ على التوحيد */
+
+    /* ✅ Active only for the top Sites link (red); do not style dropdown items */
+    #mainNav > a.active,
+    #mainNav .dd > a.active{
+      color:#ef4444 !important;
+      font-weight:800;
+    }
+    #mainNav .dd .dd-panel .dd-item{
+      color:inherit !important;
+      font-weight:inherit !important;
+    }
+    #mainNav .dd .dd-panel .dd-item:hover{
+      color:inherit !important;
+    }
   </style>
 </head>
 
@@ -48,7 +59,7 @@
     <!-- Toolbar -->
     <div class="flex items-center gap-2 no-print">
       <button id="btnPrint" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm inline-flex items-center gap-2">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 3 18 3 18 9"/><path d="M6 14H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="2"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 3 18 3 18 9"/><path d="M6 14H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1 2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="2"/></svg>
         Print
       </button>
       <button id="btnExport" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-sm inline-flex items-center gap-2">
@@ -181,28 +192,26 @@
     import { auth, db } from "/PPM-Tabuk/js/firebase.js";
     import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import {
-      collection, query, where, orderBy, getDocs, doc, getDoc,
+      collection, query, where, getDocs, doc, getDoc,
       setDoc, deleteDoc, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
     import { getStorage, ref as sref, uploadBytes, getDownloadURL }
       from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
-    import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
 
-    const storage = getStorage();
+    const storage = getStorage(); // uses default app from firebase.js
+    const XLSX = window.__XLSX__;
 
-    /* بعد تحميل الهيدر: Logout + تفعيل Active للـ Sites */
-    document.addEventListener("partials:loaded", async () => {
+    /* Activate Sites top link only (do not touch dropdown) + logout binding */
+    document.addEventListener("partials:loaded", () => {
       const btnLogout = document.getElementById("btnLogout");
-      if (btnLogout) btnLogout.addEventListener("click", async (e) => {
-        e.preventDefault();
-        try { await signOut(auth); } finally { location.replace("/PPM-Tabuk/login.html"); }
+      if (btnLogout) btnLogout.addEventListener("click", async () => {
+        try { await signOut(auth); } finally { location.replace("../../login.html"); }
       });
-
-      const aSites = document.querySelector('#mainNav .dd[data-dd="sites"] > a[data-to="sites"]');
-      if (aSites) aSites.classList.add('active');
+      const topSites = document.querySelector('#mainNav .dd[data-dd="sites"] > a[data-to="sites"]');
+      if (topSites) topSites.classList.add("active");
     });
 
-    /* ===== Helpers / Elements ===== */
+    /* Elements & state */
     const $ = (id)=>document.getElementById(id);
     const PAGE_SIZE = 10;
 
@@ -226,11 +235,11 @@
     const primSel = $('primaryEngineer');
     const backSel = $('backupEngineer');
 
-    let map, marker;
+    let map, marker; // <- تعريف واحد فقط
     let editCode = null;
     let STATE = { list:[], filtered:[], page:1, engineers:[], profile:null };
 
-    /* ===== Roles ===== */
+    /* Roles */
     const norm = v => (v||'').toString().toLowerCase().replace(/[\s_]/g,'');
     function canEdit(p){
       if(!p) return false;
@@ -243,14 +252,12 @@
       else document.body.classList.remove('read-only');
     }
 
-    /* ===== Auth ===== */
+    /* Auth */
     onAuthStateChanged(auth, async (user)=>{
-      if(!user){ location.replace("/PPM-Tabuk/login.html"); return; }
+      if(!user){ location.replace("../../login.html"); return; }
       try{
         const snap=await getDoc(doc(db,'users',user.uid));
         STATE.profile = snap.exists()? snap.data() : null;
-
-        // اسم المستخدم في الهيدر (nameEn ثم name ثم displayName ثم email)
         const name = (STATE.profile?.nameEn || STATE.profile?.name || user.displayName || user.email || '');
         const el = document.getElementById('userName');
         if (el) el.textContent = name;
@@ -260,7 +267,7 @@
       await loadSites();
     });
 
-    /* ===== Engineers (role: Supervisor) ===== */
+    /* Engineers (role: Supervisor) */
     async function loadEngineers(){
       const qy = query(collection(db,'users'), where('role','==','Supervisor'));
       const snaps = await getDocs(qy);
@@ -270,15 +277,24 @@
     }
     function userName(uid){ const m=STATE.engineers.find(u=>u.id===uid); return m? m.name : (uid||'-'); }
 
-    /* ===== Load sites ===== */
+    /* Load sites (no orderBy to avoid index issues; sort client-side) */
     async function loadSites(){
-      const snaps = await getDocs(query(collection(db,'sites'), orderBy('name')));
-      STATE.list = snaps.docs.map(d=> ({ code:d.id, ...d.data() }));
-      applyFilters();
-      fillContractorFilter();
+      try{
+        const snaps = await getDocs(collection(db,'sites'));
+        STATE.list = snaps.docs.map(d => ({ code:d.id, ...d.data() }))
+          .sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+        applyFilters();
+        fillContractorFilter();
+        console.log(`[Sites] loaded: ${STATE.list.length} record(s)`);
+      }catch(err){
+        console.error('[Sites] load error:', err);
+        tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-red-600">
+          Failed to load sites. Check console for details.
+        </td></tr>`;
+      }
     }
 
-    /* ===== Filters ===== */
+    /* Filters */
     function fillContractorFilter(){
       const set = new Set(STATE.list.map(x=>x.contractor).filter(Boolean));
       fContractor.innerHTML = '<option value="">All contractors</option>' + Array.from(set).sort().map(c=>`<option>${c}</option>`).join('');
@@ -300,7 +316,7 @@
     fContractor.addEventListener('change', applyFilters);
     fType.addEventListener('change', applyFilters);
 
-    /* ===== Table & Paging ===== */
+    /* Table + Pagination */
     function pageSlice(){ const s=(STATE.page-1)*PAGE_SIZE; return STATE.filtered.slice(s, s+PAGE_SIZE); }
 
     function renderTable(){
@@ -363,8 +379,27 @@
     prevBtn.addEventListener('click', ()=>{ STATE.page=Math.max(1,STATE.page-1); renderTable(); });
     nextBtn.addEventListener('click', ()=>{ const tp=Math.ceil(STATE.filtered.length/PAGE_SIZE); STATE.page=Math.min(tp,STATE.page+1); renderTable(); });
 
-    /* ===== Map picker ===== */
-    let map, marker;
+    /* Drawer */
+    function openDrawer(){
+      drawer.classList.remove('hidden');
+      drawerTitle.textContent = editCode ? `Edit site (${editCode})` : 'New site';
+      if(!editCode){
+        siteForm.reset();
+        logoPreview.removeAttribute('src');
+        logoInput.value = '';
+        delete logoInput.dataset.url;
+        setTimeout(initOrResetMap, 50);
+      } else {
+        setTimeout(initOrResetMap, 50);
+      }
+    }
+    function closeDrawer(){ editCode=null; drawer.classList.add('hidden'); }
+    document.addEventListener('click', e=>{
+      if(e.target?.dataset?.close !== undefined || e.target.closest('[data-close]')) closeDrawer();
+    });
+    btnAdd.addEventListener('click', ()=>{ if(!canEdit(STATE.profile)) return; openDrawer(); });
+
+    /* Map picker */
     function initOrResetMap(){
       const latInput = siteForm.lat, lngInput = siteForm.lng;
       const def = [28.383, 36.566]; // Tabuk approx
@@ -408,7 +443,7 @@
       return null;
     }
     ['lat','lng','locPaste'].forEach(k=>{
-      const input = k==='locPaste' ? document.getElementById('locPaste') : siteForm[k];
+      const input = k==='locPaste' ? $('locPaste') : siteForm[k];
       if(input){
         input.addEventListener('change', ()=>{
           const lat = parseFloat(siteForm.lat.value);
@@ -423,26 +458,7 @@
       }
     });
 
-    /* ===== Drawer / CRUD ===== */
-    function openDrawer(){
-      drawer.classList.remove('hidden');
-      drawerTitle.textContent = editCode ? `Edit site (${editCode})` : 'New site';
-      if(!editCode){
-        siteForm.reset();
-        logoPreview.removeAttribute('src');
-        logoInput.value = '';
-        delete logoInput.dataset.url;
-        setTimeout(initOrResetMap, 50);
-      } else {
-        setTimeout(initOrResetMap, 50);
-      }
-    }
-    function closeDrawer(){ editCode=null; drawer.classList.add('hidden'); }
-    document.addEventListener('click', e=>{
-      if(e.target?.dataset?.close !== undefined || e.target.closest('[data-close]')) closeDrawer();
-    });
-    btnAdd.addEventListener('click', ()=>{ if(!canEdit(STATE.profile)) return; openDrawer(); });
-
+    /* CRUD */
     async function openEdit(code){
       const snap = await getDoc(doc(db,'sites',code));
       if(!snap.exists()) return alert('Site not found');
@@ -471,7 +487,7 @@
       await loadSites();
     }
 
-    // Upload logo (Firebase Storage)
+    // Upload logo
     logoInput.addEventListener('change', async ()=>{
       const file = logoInput.files?.[0];
       if(!file) return;
@@ -540,7 +556,7 @@
       };
     }
 
-    /* ===== Export & Print ===== */
+    /* Export & Print */
     btnExport.addEventListener('click', ()=>{
       const data = STATE.filtered.map(x=>({
         Name:x.name||'', Code:x.code||'',
