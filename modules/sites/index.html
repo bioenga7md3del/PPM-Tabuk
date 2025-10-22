@@ -19,29 +19,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <style>
-    /* Active link only on top-level links */
-    #mainNav > a.active,
-    #mainNav .dd > a.active{
-      position:relative;font-weight:900;letter-spacing:.3px;
-      color:#93c5fd !important;
-    }
-    #mainNav > a.active::after,
-    #mainNav .dd > a.active::after{
-      content:"";position:absolute;left:0;right:0;bottom:-4px;height:2px;
-      background:#60a5fa;border-radius:2px;transform:scaleX(0);transition:transform .25s
-    }
-    #mainNav > a.active:hover::after,
-    #mainNav .dd > a.active:hover::after{transform:scaleX(1)}
-    /* Keep submenu items normal */
-    #mainNav .dd .dd-panel .dd-item{color:inherit!important;font-weight:600!important}
-    #mainNav .dd .dd-panel .dd-item:hover{color:#2563eb!important}
-
-    .read-only .for-edit{ display:none!important; }
-    @media print{ header,.no-print{display:none!important} table{width:100%} }
-
-    #mapPicker { height: 260px; border-radius: 12px; overflow: hidden; }
-  </style>
+  
 
   <script type="module">
     /* ===== Firebase ===== */
