@@ -10,26 +10,16 @@
   <script src="../../js/theme.js" defer></script>
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
 
+  <!-- Active nav: Red only (بسيط) -->
   <style>
-    /* Active link (level 1 only) */
     #mainNav > a.active,
-    #mainNav .dd > a.active{
-      position:relative;font-weight:900;letter-spacing:.3px;
-      background:linear-gradient(90deg,#60a5fa,#3b82f6,#60a5fa);
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-      animation:shimmer 3s linear infinite;
-    }
-    @keyframes shimmer{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+    #mainNav .dd > a.active { color:#ef4444!important; font-weight:800!important; }
     #mainNav > a.active::after,
-    #mainNav .dd > a.active::after{
-      content:"";position:absolute;left:0;right:0;bottom:-4px;height:2px;
-      background:linear-gradient(90deg,#3b82f6,#60a5fa,#3b82f6);border-radius:2px;
-      transform:scaleX(0);transition:transform .25s ease-in-out
+    #mainNav .dd > a.active::after { content:none!important; }
+    #mainNav > a, #mainNav .dd > a {
+      background:none!important; -webkit-text-fill-color:initial!important;
     }
-    #mainNav > a.active:hover::after,
-    #mainNav .dd > a.active:hover::after{transform:scaleX(1)}
-    #mainNav .dd .dd-panel .dd-item{color:inherit!important;font-weight:600!important}
-    #mainNav .dd .dd-panel .dd-item:hover{color:#2563eb!important}
+    #mainNav > a:hover, #mainNav .dd > a:hover { color:#fca5a5!important; }
 
     .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
     .btn{padding:.4rem .75rem;border-radius:.75rem;border:1px solid #cbd5e1;font-size:.875rem}
@@ -90,21 +80,9 @@
   </main>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-
-    const cfg = {
-      apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
-      authDomain:"pmqrtabuk.firebaseapp.com",
-      projectId:"pmqrtabuk",
-      storageBucket:"pmqrtabuk.firebasestorage.app",
-      messagingSenderId:"305570616285",
-      appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
-    };
-    const app = initializeApp(cfg);
-    const auth = getAuth(app);
-    const db   = getFirestore(app);
+    import { auth, db } from "/PPM-Tabuk/js/firebase.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import { doc, getDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
     // Elements
     const tbody    = document.getElementById("tbody");
@@ -119,25 +97,30 @@
     // URL filters (department/room/site)
     let URL_FILTERS = { site:'', deptName:'', deptCode:'', roomName:'', roomCode:'' };
 
-    // After header is loaded
+    // بعد تحميل الهيدر: Logout + تفعيل Active للـ Assets
     document.addEventListener("partials:loaded", () => {
       const btnLogout = document.getElementById("btnLogout");
       if (btnLogout) {
-        btnLogout.addEventListener("click", async () => {
-          try { await signOut(auth); } finally { location.replace("../../login.html"); }
+        btnLogout.addEventListener("click", async (e) => {
+          e.preventDefault();
+          try { await signOut(auth); } finally { location.replace("/PPM-Tabuk/login.html"); }
         });
       }
-      // Highlight current top-level link
-      const path = location.pathname.toLowerCase();
-      if (path.endsWith("assets/index.html")) {
-        const top = document.querySelector('#mainNav a[href*="assets/index.html"]');
-        if (top) top.classList.add('active');
-      }
+      markActive("assets");
     });
+
+    function markActive(key){
+      const sel = [
+        `#mainNav > a[data-to="${key}"]`,
+        `#mainNav .dd[data-dd="${key}"] > a[data-to="${key}"]`
+      ].join(",");
+      const a = document.querySelector(sel);
+      if (a) a.classList.add("active");
+    }
 
     // Auth + load
     onAuthStateChanged(auth, async (user) => {
-      if (!user) { location.replace("../../login.html"); return; }
+      if (!user) { location.replace("/PPM-Tabuk/login.html"); return; }
       const snap = await getDoc(doc(db, "users", user.uid));
       const name = snap.exists() ? (snap.data().name || snap.data().nameEn || user.email) : user.email;
       const el = document.getElementById("userName"); if (el) el.textContent = name;
