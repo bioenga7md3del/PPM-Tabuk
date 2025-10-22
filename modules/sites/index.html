@@ -13,6 +13,33 @@
   <script src="../../js/theme.js" defer></script>
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
 
+  <!-- 🔧 Fix: active style only for top link, never for dropdown items -->
+<style>
+  /* فعّل اللون الأحمر للّنك العلوي فقط */
+  #mainNav > a.is-active,
+  #mainNav > .dd > a.is-active{
+    color:#ef4444 !important;
+    font-weight:800;
+  }
+
+  /* ثبّت ألوان القائمة المنسدلة مهما كان اللنك العلوي مفعّل */
+  #mainNav .dd .dd-panel{
+    color:#1f2937 !important;          /* نص رمادي غامق ثابت */
+  }
+  #mainNav .dd .dd-panel .dd-item{
+    color:#1f2937 !important;          /* العناصر داخل القائمة */
+  }
+  #mainNav .dd .dd-panel .dd-item:hover{
+    color:#2563eb !important;          /* لون الهوفر الأزرق المعتاد */
+  }
+
+  /* الأيقونات تفضل محايدة */
+  #mainNav .dd .dd-panel .dd-item svg{
+    color:inherit !important;
+  }
+</style>
+
+  
   <!-- Leaflet (map picker) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
