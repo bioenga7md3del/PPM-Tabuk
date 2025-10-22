@@ -8,13 +8,12 @@
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Theme -->
+  <!-- Theme (كما في الداشبورد) -->
   <link rel="stylesheet" href="../../css/theme-light.css">
   <script src="../../js/theme.js" defer></script>
 
-  <!-- Partials loader + Header init (اسم المستخدم و Active link موحّد) -->
+  <!-- Partials loader (كما في الداشبورد) -->
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
-  <script type="module" src="/PPM-Tabuk/js/header-init.js?v=1"></script>
 
   <!-- Leaflet (map picker) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -26,11 +25,12 @@
     .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem}
     .field{padding:.6rem .8rem;border:1px solid #cbd5e1;border-radius:1rem}
     #mapPicker{height:280px;border:1px solid #cbd5e1;border-radius:1rem}
+    /* ⚠️ مفيش أي ستايل يمس عناصر الدروب-داون الداخلية علشان يفضل شكلها موحّد */
   </style>
 </head>
 
-<body>
-  <!-- Header partial -->
+<body class="bg-slate-50 min-h-screen">
+  <!-- ✅ الهيدر فقط (زي الداشبورد) -->
   <header data-include="/PPM-Tabuk/partials/header.html?v=2" class="w-full max-w-none"></header>
 
   <main class="w-full max-w-none mx-auto p-3 md:p-6 space-y-6">
@@ -165,10 +165,10 @@
     </div>
   </div>
 
-  <!-- Page script -->
+  <!-- Page script (بدون header-init.js؛ نفس أسلوب الداشبورد) -->
   <script type="module">
     import { auth, db } from "/PPM-Tabuk/js/firebase.js";
-    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import {
       collection, query, where, orderBy, getDocs, doc, getDoc,
       setDoc, deleteDoc, serverTimestamp
@@ -177,7 +177,19 @@
       from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
     import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
 
-    const storage = getStorage(); // uses the default app from firebase.js
+    const storage = getStorage();
+
+    /* بعد ما الهيدر يتحمّل: فعل Logout + اكتب اسم المستخدم + فعّل Active Link لِـ Sites */
+    document.addEventListener("partials:loaded", async () => {
+      const btnLogout = document.getElementById("btnLogout");
+      if (btnLogout) btnLogout.addEventListener("click", async () => {
+        try { await signOut(auth); } finally { location.replace("../../login.html"); }
+      });
+
+      // تمييز Sites كـ Active (بدون ستايلات إضافية عشان الدروب داون يفضل موحّد)
+      const aSites = document.querySelector('#mainNav .dd[data-dd="sites"] > a[data-to="sites"]');
+      if (aSites) aSites.classList.add('active');
+    });
 
     /* ===== Helpers / Elements ===== */
     const $ = (id)=>document.getElementById(id);
@@ -226,6 +238,11 @@
       try{
         const snap=await getDoc(doc(db,'users',user.uid));
         STATE.profile = snap.exists()? snap.data() : null;
+
+        // اسم المستخدم في الهيدر (nameEn ثم name ثم displayName ثم email)
+        const name = (STATE.profile?.nameEn || STATE.profile?.name || user.displayName || user.email || '');
+        const el = document.getElementById('userName');
+        if (el) el.textContent = name;
       }catch{ STATE.profile=null; }
       reflectPermissions();
       await loadEngineers();
@@ -353,10 +370,9 @@
     document.addEventListener('click', e=>{
       if(e.target?.dataset?.close !== undefined || e.target.closest('[data-close]')) closeDrawer();
     });
-    $('btnAdd').addEventListener('click', ()=>{ if(!canEdit(STATE.profile)) return; openDrawer(); });
+    btnAdd.addEventListener('click', ()=>{ if(!canEdit(STATE.profile)) return; openDrawer(); });
 
     /* ===== Map picker ===== */
-    let map, marker;
     function initOrResetMap(){
       const latInput = siteForm.lat, lngInput = siteForm.lng;
       const def = [28.383, 36.566]; // Tabuk approx
@@ -514,7 +530,7 @@
     }
 
     /* ===== Export & Print ===== */
-    $('btnExport').addEventListener('click', ()=>{
+    btnExport.addEventListener('click', ()=>{
       const data = STATE.filtered.map(x=>({
         Name:x.name||'', Code:x.code||'',
         Latitude: x.location?.lat ?? '', Longitude: x.location?.lng ?? '',
@@ -529,7 +545,7 @@
       XLSX.utils.book_append_sheet(wb, ws, 'Sites');
       XLSX.writeFile(wb, `sites_${new Date().toISOString().slice(0,10)}.xlsx`);
     });
-    $('btnPrint').addEventListener('click', ()=> window.print() );
+    btnPrint.addEventListener('click', ()=> window.print() );
   </script>
 </body>
 </html>
