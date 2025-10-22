@@ -19,18 +19,29 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- Active nav: Red only -->
   <style>
+    /* اجعل اللينك النشط أحمر فقط */
+    #mainNav > a.active,
+    #mainNav .dd > a.active { color:#ef4444!important; font-weight:800!important; }
+    #mainNav > a.active::after,
+    #mainNav .dd > a.active::after { content:none!important; }
+    #mainNav > a, #mainNav .dd > a {
+      background:none!important; -webkit-text-fill-color:initial!important;
+    }
+    #mainNav > a:hover, #mainNav .dd > a:hover { color:#fca5a5!important; }
+
     .read-only .for-edit{display:none!important;}
     @media print{ header,.no-print{display:none!important} table{width:100%} }
     .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem}
     .field{padding:.6rem .8rem;border:1px solid #cbd5e1;border-radius:1rem}
     #mapPicker{height:280px;border:1px solid #cbd5e1;border-radius:1rem}
-    /* ⚠️ مفيش أي ستايل يمس عناصر الدروب-داون الداخلية علشان يفضل شكلها موحّد */
+    /* ⚠️ بدون ستايلات داخلية للقوائم المسدلة للحفاظ على التوحيد */
   </style>
 </head>
 
 <body class="bg-slate-50 min-h-screen">
-  <!-- ✅ الهيدر فقط (زي الداشبورد) -->
+  <!-- Header -->
   <header data-include="/PPM-Tabuk/partials/header.html?v=2" class="w-full max-w-none"></header>
 
   <main class="w-full max-w-none mx-auto p-3 md:p-6 space-y-6">
@@ -165,7 +176,7 @@
     </div>
   </div>
 
-  <!-- Page script (بدون header-init.js؛ نفس أسلوب الداشبورد) -->
+  <!-- Page script -->
   <script type="module">
     import { auth, db } from "/PPM-Tabuk/js/firebase.js";
     import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -179,14 +190,14 @@
 
     const storage = getStorage();
 
-    /* بعد ما الهيدر يتحمّل: فعل Logout + اكتب اسم المستخدم + فعّل Active Link لِـ Sites */
+    /* بعد تحميل الهيدر: Logout + تفعيل Active للـ Sites */
     document.addEventListener("partials:loaded", async () => {
       const btnLogout = document.getElementById("btnLogout");
-      if (btnLogout) btnLogout.addEventListener("click", async () => {
-        try { await signOut(auth); } finally { location.replace("../../login.html"); }
+      if (btnLogout) btnLogout.addEventListener("click", async (e) => {
+        e.preventDefault();
+        try { await signOut(auth); } finally { location.replace("/PPM-Tabuk/login.html"); }
       });
 
-      // تمييز Sites كـ Active (بدون ستايلات إضافية عشان الدروب داون يفضل موحّد)
       const aSites = document.querySelector('#mainNav .dd[data-dd="sites"] > a[data-to="sites"]');
       if (aSites) aSites.classList.add('active');
     });
@@ -234,7 +245,7 @@
 
     /* ===== Auth ===== */
     onAuthStateChanged(auth, async (user)=>{
-      if(!user){ location.replace("../../login.html"); return; }
+      if(!user){ location.replace("/PPM-Tabuk/login.html"); return; }
       try{
         const snap=await getDoc(doc(db,'users',user.uid));
         STATE.profile = snap.exists()? snap.data() : null;
@@ -352,27 +363,8 @@
     prevBtn.addEventListener('click', ()=>{ STATE.page=Math.max(1,STATE.page-1); renderTable(); });
     nextBtn.addEventListener('click', ()=>{ const tp=Math.ceil(STATE.filtered.length/PAGE_SIZE); STATE.page=Math.min(tp,STATE.page+1); renderTable(); });
 
-    /* ===== Drawer ===== */
-    function openDrawer(){
-      drawer.classList.remove('hidden');
-      drawerTitle.textContent = editCode ? `Edit site (${editCode})` : 'New site';
-      if(!editCode){
-        siteForm.reset();
-        logoPreview.removeAttribute('src');
-        logoInput.value = '';
-        delete logoInput.dataset.url;
-        setTimeout(initOrResetMap, 50);
-      } else {
-        setTimeout(initOrResetMap, 50);
-      }
-    }
-    function closeDrawer(){ editCode=null; drawer.classList.add('hidden'); }
-    document.addEventListener('click', e=>{
-      if(e.target?.dataset?.close !== undefined || e.target.closest('[data-close]')) closeDrawer();
-    });
-    btnAdd.addEventListener('click', ()=>{ if(!canEdit(STATE.profile)) return; openDrawer(); });
-
     /* ===== Map picker ===== */
+    let map, marker;
     function initOrResetMap(){
       const latInput = siteForm.lat, lngInput = siteForm.lng;
       const def = [28.383, 36.566]; // Tabuk approx
@@ -416,7 +408,7 @@
       return null;
     }
     ['lat','lng','locPaste'].forEach(k=>{
-      const input = k==='locPaste' ? $('locPaste') : siteForm[k];
+      const input = k==='locPaste' ? document.getElementById('locPaste') : siteForm[k];
       if(input){
         input.addEventListener('change', ()=>{
           const lat = parseFloat(siteForm.lat.value);
@@ -431,7 +423,26 @@
       }
     });
 
-    /* ===== CRUD ===== */
+    /* ===== Drawer / CRUD ===== */
+    function openDrawer(){
+      drawer.classList.remove('hidden');
+      drawerTitle.textContent = editCode ? `Edit site (${editCode})` : 'New site';
+      if(!editCode){
+        siteForm.reset();
+        logoPreview.removeAttribute('src');
+        logoInput.value = '';
+        delete logoInput.dataset.url;
+        setTimeout(initOrResetMap, 50);
+      } else {
+        setTimeout(initOrResetMap, 50);
+      }
+    }
+    function closeDrawer(){ editCode=null; drawer.classList.add('hidden'); }
+    document.addEventListener('click', e=>{
+      if(e.target?.dataset?.close !== undefined || e.target.closest('[data-close]')) closeDrawer();
+    });
+    btnAdd.addEventListener('click', ()=>{ if(!canEdit(STATE.profile)) return; openDrawer(); });
+
     async function openEdit(code){
       const snap = await getDoc(doc(db,'sites',code));
       if(!snap.exists()) return alert('Site not found');
