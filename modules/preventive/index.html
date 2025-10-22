@@ -5,78 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PPM TABUK • Preventive Maintenance</title>
 
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Theme + Partials -->
   <link rel="stylesheet" href="/PPM-Tabuk/css/theme-light.css?v=4">
   <script src="/PPM-Tabuk/js/theme.js" defer></script>
   <script src="/PPM-Tabuk/js/include.js?v=4" defer></script>
+
+  <!-- Active nav: Red only -->
+  <style>
+    #mainNav > a.active,
+    #mainNav .dd > a.active { color:#ef4444!important; font-weight:800!important; }
+    #mainNav > a.active::after,
+    #mainNav .dd > a.active::after { content:none!important; }
+    #mainNav > a, #mainNav .dd > a {
+      background:none!important; -webkit-text-fill-color:initial!important;
+    }
+    #mainNav > a:hover, #mainNav .dd > a:hover { color:#fca5a5!important; }
+  </style>
 </head>
 
-<style>
-  /* Active nav link styling */
-  #mainNav a.active{
-    position:relative;color:#93c5fd!important;font-weight:900!important;letter-spacing:.3px;transition:.25s;
-  }
-  #mainNav a.active::after{
-    content:"";position:absolute;left:0;right:0;bottom:-4px;height:2px;background:#60a5fa;border-radius:2px;
-    transform:scaleX(0);transition:transform .25s;
-  }
-  #mainNav a.active:hover::after{transform:scaleX(1)}
-  #mainNav a:hover{color:#bfdbfe!important}
-</style>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-
-  const cfg = {
-    apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
-    authDomain:"pmqrtabuk.firebaseapp.com",
-    projectId:"pmqrtabuk",
-    storageBucket:"pmqrtabuk.firebasestorage.app",
-    messagingSenderId:"305570616285",
-    appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
-  };
-  const app = initializeApp(cfg);
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
-
-  // ✅ Works even if header loads later (event delegation) + absolute login path
-  document.addEventListener('click', async (e)=>{
-    if (e.target && e.target.id === 'btnLogout') {
-      e.preventDefault();
-      try { await signOut(auth); } finally { location.replace('/PPM-Tabuk/login.html'); }
-    }
-  });
-
-  // Mark active link after partials load
-  document.addEventListener("partials:loaded", () => {
-    const path = location.pathname.toLowerCase();
-    document.querySelectorAll("#mainNav a").forEach(a=>{
-      const href=(a.getAttribute("href")||"").toLowerCase();
-      if (path.endsWith("/dashboard/index.html") && href.includes("/dashboard/")) a.classList.add("active");
-      if (path.endsWith("/assets/index.html")     && href.includes("/assets/"))    a.classList.add("active");
-      if (path.endsWith("/preventive/index.html") && href.includes("/preventive/"))a.classList.add("active");
-      if (path.endsWith("/corrective/index.html") && href.includes("/corrective/"))a.classList.add("active");
-      if (path.endsWith("/sites/index.html")      && href.includes("/sites/"))     a.classList.add("active");
-      if (path.endsWith("/users/index.html")      && href.includes("/users/"))     a.classList.add("active");
-    });
-  });
-
-  // Auth guard + show user name
-  onAuthStateChanged(auth, async (user)=>{
-    if(!user){ location.replace('/PPM-Tabuk/login.html'); return; }
-    try{
-      const snap = await getDoc(doc(db,'users',user.uid));
-      const name = (snap.exists() && snap.data().name) ? snap.data().name : (user.displayName||user.email);
-      const el   = document.getElementById('userName');
-      if(el) el.textContent = name || '';
-    }catch{}
-  });
-</script>
-
 <body>
-  <!-- ✅ Unified header -->
+  <!-- Header -->
   <header data-include="/PPM-Tabuk/partials/header.html?v=4"></header>
 
   <main class="w-full max-w-none mx-auto p-3 md:p-6 space-y-6">
@@ -138,26 +89,38 @@
     </section>
   </main>
 
-  <!-- ===== Logic (unchanged) ===== -->
+  <!-- ===== Logic: uses /js/firebase.js ===== -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import { auth, db } from "/PPM-Tabuk/js/firebase.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      collection, getDocs, getDoc, doc, query, orderBy
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-    const cfg = {
-      apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
-      authDomain:"pmqrtabuk.firebaseapp.com",
-      projectId:"pmqrtabuk",
-      storageBucket:"pmqrtabuk.firebasestorage.app",
-      messagingSenderId:"305570616285",
-      appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
-    };
-    const app = initializeApp(cfg);
-    const auth = getAuth(app);
-    const db   = getFirestore(app);
+    // بعد تحميل الهيدر: Logout + تمييز Preventive
+    document.addEventListener("partials:loaded", () => {
+      const btnLogout = document.getElementById("btnLogout");
+      if (btnLogout) {
+        btnLogout.addEventListener("click", async (e) => {
+          e.preventDefault();
+          try { await signOut(auth); } finally { location.replace('/PPM-Tabuk/login.html'); }
+        });
+      }
+      markActive("preventive");
+    });
 
+    function markActive(key){
+      const sel = [
+        `#mainNav > a[data-to="${key}"]`,
+        `#mainNav .dd[data-dd="${key}"] > a[data-to="${key}"]`
+      ].join(",");
+      const a = document.querySelector(sel);
+      if (a) a.classList.add("active");
+    }
+
+    // ====== Page Logic ======
     const tbody = document.getElementById('tbody');
-    let ALL=[], VIEW=[], userSites=[], userDepts=[], page=1;
+    let ALL=[], VIEW=[], page=1;
 
     const filters={
       control:document.getElementById('f_control'),
@@ -173,20 +136,10 @@
     const prevBtn=document.getElementById('prevPage');
     const nextBtn=document.getElementById('nextPage');
 
-    const toISO = d => d ? new Date(d).toISOString().slice(0,10) : '';
     const parseDate = (v) => {
       if(!v) return null;
       if(/^\d{4}-\d{2}-\d{2}$/.test(String(v))) return new Date(String(v)+'T00:00:00');
       const t = new Date(v); return isNaN(t)? null : t;
-    };
-    const addMonths = (date, months=6) => {
-      if(!date) return null;
-      const d = new Date(date.getTime());
-      const day = d.getDate();
-      d.setMonth(d.getMonth()+months);
-      if(d.getDate() < day) d.setDate(0);
-      d.setHours(0,0,0,0);
-      return d;
     };
     const isInThisMonth = (v) => {
       const d = parseDate(v); if(!d) return false;
@@ -200,6 +153,15 @@
 
     onAuthStateChanged(auth, async (user)=>{
       if(!user){ location.replace('/PPM-Tabuk/login.html'); return; }
+
+      // اسم المستخدم بالهيدر (اختياري)
+      try{
+        const snap = await getDoc(doc(db,'users',user.uid));
+        const name = (snap.exists() && (snap.data().nameEn || snap.data().name)) ? (snap.data().nameEn || snap.data().name) : (user.displayName||user.email);
+        const el   = document.getElementById('userName');
+        if(el) el.textContent = name || '';
+      }catch{}
+
       await fillFilters();
       await loadAssets();
     });
@@ -253,7 +215,6 @@
         const s=normalize(x.site||'');
         const d=normalize(x.department||'');
 
-        const last = x.pm_date || '';
         const next = x.next_date || '';
 
         if(q.control && !c.includes(q.control)) return false;
@@ -294,7 +255,7 @@
         const dept=a.department||'';
 
         const last=a.pm_date||'';
-        const next=a.next_date||'';
+        const next=a.next_date||''; /* eslint-disable-line no-unused-vars */
 
         const tr=document.createElement('tr');
         tr.className='border-b border-slate-200';
@@ -305,7 +266,7 @@
           <td class="p-2">${site||'—'}</td>
           <td class="p-2">${dept||'—'}</td>
           <td class="p-2">${last||'—'}</td>
-          <td class="p-2">${next||'—'}</td>
+          <td class="p-2">${a.next_date||'—'}</td>
           <td class="p-2">
             <div class="flex gap-2">
               <button data-edit="${a.id}" class="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded">Edit</button>
