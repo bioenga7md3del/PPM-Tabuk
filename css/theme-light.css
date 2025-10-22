@@ -309,4 +309,26 @@ html.dark .dd .dd-btn:hover{ background: rgba(255,255,255,.15); }
   color: #fca5a5 !important;     /* أحمر فاتح عند المرور */
 }
 
+/* ✅ فعّل الأحمر فقط على الرابط العلوي لِـ Sites */
+#mainNav > a.active,
+#mainNav .dd > a.active{
+  color:#ef4444 !important;
+  font-weight:800;
+}
+
+/* ✅ عناصر القائمة المنسدلة تظل محايدة */
+#mainNav .dd .dd-panel { color:inherit; }
+#mainNav .dd .dd-panel .dd-item{
+  display:flex; align-items:center; gap:.5rem;
+  padding:.4rem .6rem; border-radius:.5rem;
+  color:inherit !important; font-weight:600; /* ثابت */
+}
+#mainNav .dd .dd-panel .dd-item:hover{
+  background:#f1f5f9; color:inherit !important;
+}
+
+/* أيقونات SVG جوّا الدروب داون: حجم/وضوح ثابت */
+#mainNav .dd .dd-panel .dd-item svg{
+  width:16px; height:16px; opacity:.8; flex:0 0 16px;
+}
 
