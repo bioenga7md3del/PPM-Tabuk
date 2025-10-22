@@ -22,46 +22,8 @@
   
 
   <script type="module">
-    /* ===== Firebase ===== */
-    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import {
-      getFirestore, collection, doc, getDoc, getDocs,
-      setDoc, deleteDoc, query, where, orderBy, serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-    import {
-      getStorage, ref as sref, uploadBytes, getDownloadURL
-    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
-    import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
-
-    const cfg = {
-      apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
-      authDomain:"pmqrtabuk.firebaseapp.com",
-      projectId:"pmqrtabuk",
-      storageBucket:"pmqrtabuk.appspot.com", // keep for metadata
-      messagingSenderId:"305570616285",
-      appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
-    };
-    const app = getApps().length ? getApps()[0] : initializeApp(cfg);
-
-    const auth = getAuth(app);
-    const db   = getFirestore(app);
-    // ✅ explicitly bind to the correct storage bucket
-    const storage = getStorage(app, "gs://pmqrtabuk.appspot.com");
-
-    /* ===== mark Sites as active after header loads ===== */
-    document.addEventListener("partials:loaded", () => {
-      const btnLogout = document.getElementById("btnLogout");
-      if (btnLogout) btnLogout.addEventListener("click", async () => {
-        try { await signOut(auth); } finally { location.replace("../../login.html"); }
-      });
-
-      const path = location.pathname.toLowerCase();
-      if (path.endsWith("sites/index.html")) {
-        const topSites = document.querySelector('#mainNav .dd[data-dd="sites"] > a[data-to="sites"]');
-        if (topSites) topSites.classList.add('active');
-      }
-    });
+    
+   import { auth, db } from "/PPM-Tabuk/js/firebase.js";
 
     /* ===== Elements ===== */
     const $ = (id)=>document.getElementById(id);
