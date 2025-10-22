@@ -1,32 +1,12 @@
 <!-- partials/header.html -->
 <header class="px-3 md:px-6 mt-3">
-  <style>
-    /* ===== Active page marker: ONLY top-level link becomes red ===== */
-    #mainNav > a.active,
-    #mainNav .dd > a.active{
-      color:#ef4444 !important;            /* red */
-      font-weight:800;
-    }
-    /* Keep dropdown look neutral + consistent */
-    #mainNav .dd .dd-panel{ color:inherit; }
-    #mainNav .dd .dd-panel .dd-item{
-      display:flex; align-items:center; gap:.5rem;
-      padding:.45rem .65rem; border-radius:.6rem;
-      color:inherit !important; font-weight:600;
-      transition:background .15s ease;
-    }
-    #mainNav .dd .dd-panel .dd-item:hover{ background:#f1f5f9; }
-    #mainNav .dd .dd-panel .dd-item svg{
-      width:16px; height:16px; flex:0 0 16px; opacity:.85;
-    }
-  </style>
+  <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 shadow">
+    <!-- LEFT: Nav -->
+    <nav id="mainNav" class="relative flex items-center gap-2 md:gap-3 text-white text-[15px] md:text-[16px] font-medium">
 
-  <div class="topbar px-3 md:px-4 py-2 flex items-center justify-between rounded-xl">
-    <!-- LEFT: main nav -->
-    <nav id="mainNav" class="flex items-center gap-2 md:gap-3 text-white text-[15px] md:text-[16px] font-medium">
       <!-- Dashboard -->
       <a href="/PPM-Tabuk/modules/dashboard/index.html" data-to="dashboard"
-         class="inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
+         class="toplink inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -37,7 +17,7 @@
 
       <!-- Assets -->
       <a href="/PPM-Tabuk/modules/assets/index.html" data-to="assets"
-         class="inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
+         class="toplink inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M21 7v8l-9 4-9-4V7"/>
@@ -47,7 +27,7 @@
 
       <!-- Preventive -->
       <a href="/PPM-Tabuk/modules/preventive/index.html" data-to="preventive"
-         class="inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
+         class="toplink inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 2l7 4v5c0 5-3 9-7 11-4-2-7-6-7-11V6l7-4z"/><path d="M9 12l2 2 4-4"/>
@@ -55,9 +35,9 @@
         <span>Preventive</span>
       </a>
 
-      <!-- Corrective (click dropdown) -->
+      <!-- Corrective (dropdown) -->
       <div class="dd relative" data-dd="corrective">
-        <button type="button" class="dd-btn inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
+        <button type="button" class="toplink dd-btn inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14.7 6.3a4 4 0 1 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4z"/>
@@ -67,27 +47,22 @@
             <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </button>
-        <div class="dd-panel card" role="menu" aria-hidden="true">
+        <div class="dd-panel" role="menu" aria-hidden="true">
           <a class="dd-item" href="/PPM-Tabuk/modules/corrective/index.html?tab=ticket" data-to="corrective">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h18M3 16h18M7 8v8"/></svg>
-            <span>Ticket</span>
+            <span>📝</span><span>Ticket</span>
           </a>
           <a class="dd-item" href="/PPM-Tabuk/modules/spares/index.html" data-to="spares">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82l.03.08a2 2 0 1 1-3.4 0l.03-.08A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82l.06.06A2 2 0 1 1 4.9 19l.06.06A1.65 1.65 0 0 0 6.6 15a1.65 1.65 0 0 0-1-.6A1.65 1.65 0 0 0 3.78 13l-.08-.03a2 2 0 1 1 0-3.94l.08-.03A1.65 1.65 0 0 0 5.6 9a1.65 1.65 0 0 0-1-.6A1.65 1.65 0 0 0 3 6.6l-.06-.06A2 2 0 1 1 5.77 3.7l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-1.82-.33l-.08.03a2 2 0 1 1 3.4 0l-.03.08A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1-.6l.06-.06A2 2 0 1 1 19.1 6.6l-.06.06A1.65 1.65 0 0 0 19.4 9c.36.16.78.16 1.14 0l.08-.03a2 2 0 1 1 0 3.94l-.08-.03c-.36-.16-.78-.16-1.14 0Z"/></svg>
-            <span>SparePart</span>
+            <span>⚙️</span><span>SparePart</span>
           </a>
           <a class="dd-item" href="/PPM-Tabuk/modules/corrective/index.html?tab=wo" data-to="corrective">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
-            <span>WorkOrder</span>
+            <span>📄</span><span>WorkOrder</span>
           </a>
         </div>
       </div>
 
-      <!-- Sites (hover dropdown; click navigates) -->
+      <!-- Sites (dropdown + link) -->
       <div class="dd relative" data-dd="sites">
-        <a href="/PPM-Tabuk/modules/sites/index.html"
-           class="inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15"
-           data-to="sites">
+        <a href="/PPM-Tabuk/modules/sites/index.html" class="toplink inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15" data-to="sites">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="3"/>
@@ -97,27 +72,19 @@
             <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </a>
-        <div class="dd-panel card" role="menu" aria-hidden="true">
+        <div class="dd-panel" role="menu" aria-hidden="true">
           <a class="dd-item" href="/PPM-Tabuk/modules/sites/departments.html" data-to="sites">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20.59 13.41 11 4H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.82Z"/>
-              <path d="M7 7h.01"/>
-            </svg>
-            <span>Department</span>
+            <span>🏷️</span><span>Department</span>
           </a>
           <a class="dd-item" href="/PPM-Tabuk/modules/sites/rooms.html" data-to="sites">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <path d="M3 9h18M9 21V9"/>
-            </svg>
-            <span>Rooms</span>
+            <span>🏠</span><span>Rooms</span>
           </a>
         </div>
       </div>
 
       <!-- Users -->
       <a href="/PPM-Tabuk/modules/users/index.html" data-to="users"
-         class="inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
+         class="toplink inline-flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/15">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/>
@@ -129,7 +96,7 @@
       </a>
     </nav>
 
-    <!-- RIGHT: user, theme, logout -->
+    <!-- RIGHT: user + theme + logout -->
     <div class="flex items-center gap-2 md:gap-3 flex-row-reverse">
       <button id="btnLogout" class="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white">Logout</button>
       <button id="themeBtn" onclick="toggleTheme()" title="Toggle Theme"
@@ -139,4 +106,51 @@
       <span class="text-white/60">|</span>
     </div>
   </div>
+
+  <style>
+    /* Active top-level link = أحمر فقط للنص */
+    #mainNav .toplink.is-active span { color:#fecaca !important; } /* red-200 */
+    #mainNav .toplink.is-active { background-color: transparent !important; }
+
+    /* Dropdown panel — ثابت ومقروء */
+    #mainNav .dd { position: relative; }
+    #mainNav .dd .dd-panel{
+      position:absolute; top:100%; left:0; z-index:50;
+      display:none; min-width:220px;
+      background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+      box-shadow:0 10px 30px rgba(0,0,0,.08);
+      padding:.5rem; color:#1f2937; /* text-slate-800 */
+    }
+    #mainNav .dd.open .dd-panel{ display:block; }
+    #mainNav .dd .dd-item{
+      display:flex; align-items:center; gap:.6rem;
+      padding:.6rem .75rem; border-radius:.6rem;
+      color:#1f2937; text-decoration:none; font-weight:600;
+      white-space:nowrap;
+    }
+    #mainNav .dd .dd-item:hover{ background:#f1f5f9; color:#1d4ed8; }
+  </style>
+
+  <script>
+    // Dropdown logic (click to toggle; click outside or Esc to close)
+    (function(){
+      const nav = document.getElementById('mainNav');
+      function closeAll(){ nav.querySelectorAll('.dd.open').forEach(x=>x.classList.remove('open')); }
+      nav.addEventListener('click', (e)=>{
+        const btn = e.target.closest('.dd-btn');
+        if(!btn) return;
+        const dd = btn.closest('.dd');
+        if(!dd) return;
+        const open = dd.classList.contains('open');
+        closeAll();
+        if(!open) dd.classList.add('open');
+      });
+      document.addEventListener('click', (e)=>{
+        if(!e.target.closest('#mainNav .dd')) closeAll();
+      });
+      document.addEventListener('keydown', (e)=>{
+        if(e.key==='Escape') closeAll();
+      });
+    })();
+  </script>
 </header>
