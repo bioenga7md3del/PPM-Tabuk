@@ -20,7 +20,6 @@
     .hint{font-size:.8rem;color:#64748b}
     .grid-form{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:.75rem}
     @media (min-width:768px){.grid-form{grid-template-columns:repeat(3,minmax(0,1fr))}}
-    .chip{display:inline-flex;align-items:center;gap:.4rem;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:.25rem .6rem;font-size:.8rem}
     #aiModal.hidden{display:none}
     .dropzone{border:2px dashed #cbd5e1;border-radius:.75rem;padding:1rem}
     .dropzone.drag{background:#f8fafc}
@@ -45,23 +44,23 @@
     <h2 class="font-semibold text-slate-800">General</h2>
     <div class="grid-form">
 
-      <!-- 1) ECRI Name + AI Assist -->
+      <!-- ECRI -->
       <div>
         <label class="block mb-1">ECRI Name</label>
         <div class="flex gap-2">
           <select id="ecriName" class="field flex-1"></select>
           <button id="btnEcriAI" type="button" class="btn">🤖 AI Assist</button>
         </div>
-        <p class="hint">Loaded from <b>ecri_catalog</b> (name + code). Use AI Assist to find the proper ECRI by description.</p>
+        <p class="hint">Loaded from <b>ecri_catalog</b> (name/code/search).</p>
       </div>
 
-      <!-- 2) ECRI Code -->
       <div>
         <label class="block mb-1">ECRI Code</label>
-        <input id="ecriCode" class="field mono" readonly placeholder="auto from catalog">
+        <!-- قابل للكتابة: لو كتبت كود، هيجيب الاسم تلقائي -->
+        <input id="ecriCode" class="field mono" placeholder="type code or auto from name">
       </div>
 
-      <!-- 3) Manufacturer -->
+      <!-- Manufacturer / Model -->
       <div>
         <label class="block mb-1">Manufacturer</label>
         <div class="flex gap-2">
@@ -70,7 +69,6 @@
         </div>
       </div>
 
-      <!-- 4) Model -->
       <div>
         <label class="block mb-1">Model</label>
         <div class="flex gap-2">
@@ -79,13 +77,11 @@
         </div>
       </div>
 
-      <!-- 5) Serial -->
       <div>
         <label class="block mb-1">Serial Number</label>
         <input id="serial" class="field" placeholder="unique with manufacturer+model">
       </div>
 
-      <!-- 13) Class -->
       <div>
         <label class="block mb-1">Device Class</label>
         <select id="devClass" class="field">
@@ -96,7 +92,6 @@
         </select>
       </div>
 
-      <!-- 14) Risk -->
       <div>
         <label class="block mb-1">Risk Level</label>
         <select id="risk" class="field">
@@ -108,13 +103,11 @@
         </select>
       </div>
 
-      <!-- 15) Price -->
       <div>
         <label class="block mb-1">Price (SAR)</label>
         <input id="price" type="number" step="0.01" class="field" placeholder="e.g. 12500">
       </div>
 
-      <!-- 16) Supplier -->
       <div>
         <label class="block mb-1">Supplier</label>
         <div class="flex gap-2">
@@ -123,7 +116,6 @@
         </div>
       </div>
 
-      <!-- 17) Contract No. -->
       <div id="contractWrap" class="hidden">
         <label class="block mb-1">Maintenance Contract No.</label>
         <input id="contractNo" class="field" placeholder="only for Class A or B">
@@ -136,27 +128,23 @@
   <section class="card p-4 space-y-3">
     <h2 class="font-semibold text-slate-800">Location & Control</h2>
     <div class="grid-form">
-      <!-- 6) Site -->
       <div>
         <label class="block mb-1">Site</label>
         <select id="site" class="field"></select>
         <div class="hint">Site Code: <span id="siteCode" class="mono">—</span></div>
       </div>
 
-      <!-- 7) Department (searchable) -->
       <div>
         <label class="block mb-1">Department</label>
         <div id="deptBox" class="relative"></div>
         <div class="hint">Dept Code: <span id="deptCode" class="mono">—</span></div>
       </div>
 
-      <!-- 8) Room (searchable) -->
       <div>
         <label class="block mb-1">Room</label>
         <div id="roomBox" class="relative"></div>
       </div>
 
-      <!-- 9) Control (auto) -->
       <div>
         <label class="block mb-1">Control Number</label>
         <input id="control" class="field mono" readonly placeholder="SITE/DEPT/###">
@@ -167,9 +155,8 @@
 
   <!-- Warranty & PM -->
   <section class="card p-4 space-y-3">
-    <h2 class="font-semibold text-slate-800">Warranty & Preventive Maintenance</h2>
+    <h2 class="font-semibold text-slate-800">Warranty & PM</h2>
     <div class="grid-form">
-      <!-- 10) Warranty -->
       <div>
         <label class="block mb-1">Warranty</label>
         <select id="warranty" class="field">
@@ -178,13 +165,11 @@
         </select>
       </div>
 
-      <!-- Commissioning -->
       <div id="commissionWrap" class="hidden">
         <label class="block mb-1">Commissioning Date</label>
         <input id="commissionDate" type="date" class="field">
       </div>
 
-      <!-- 11) PM Period -->
       <div>
         <label class="block mb-1">PM Period</label>
         <select id="pmPeriod" class="field">
@@ -197,7 +182,6 @@
         </select>
       </div>
 
-      <!-- 12) Last / Next PM -->
       <div>
         <label class="block mb-1">Last PM Date</label>
         <input id="lastPm" type="date" class="field">
@@ -210,23 +194,15 @@
     <p class="hint">Next PM is auto-calculated from period + last PM.</p>
   </section>
 
-  <!-- Documentation (repeater like your screenshot) -->
+  <!-- Docs & Photos -->
   <section class="card p-4 space-y-3">
     <h2 class="font-semibold text-slate-800">Documentation</h2>
     <div id="docRepeater" class="space-y-3"></div>
-    <div class="flex justify-between items-center">
-      <button id="addDocRow" type="button" class="btn">➕ Add Another</button>
-      <div class="hint">Drag & drop files into each row.</div>
-    </div>
-  </section>
+    <button id="addDocRow" type="button" class="btn">➕ Add Document</button>
 
-  <!-- Photos (repeater) -->
-  <section class="card p-4 space-y-3">
-    <h2 class="font-semibold text-slate-800">Photos</h2>
+    <h2 class="font-semibold text-slate-800 mt-6">Photos</h2>
     <div id="imgRepeater" class="space-y-3"></div>
-    <div class="flex justify-between items-center">
-      <button id="addImgRow" type="button" class="btn">➕ Add Another</button>
-    </div>
+    <button id="addImgRow" type="button" class="btn">➕ Add Photo</button>
   </section>
 
 </main>
@@ -253,17 +229,14 @@
 </div>
 
 <script type="module">
-  /* ===== project firebase ===== */
+  /* ===== firebase boot ===== */
   import { auth, db } from "/PPM-Tabuk/js/firebase.js";
-
-  /* extra SDKs */
   import { getStorage, ref as sref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
   import {
-    doc, setDoc, collection, getDocs, query, where, orderBy,
+    doc, getDoc, setDoc, collection, getDocs, addDoc, query, where, orderBy,
     runTransaction, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-
+  import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
   const st = getStorage();
 
   /* ===== elements ===== */
@@ -275,40 +248,43 @@
   const price = $('#price'), supplier = $('#supplier'), addSupplier = $('#addSupplier');
   const contractWrap = $('#contractWrap'), contractNo = $('#contractNo');
 
-  const siteSel = $('#site');
-  const siteCodeEl = $('#siteCode'), deptCodeEl = $('#deptCode'), control = $('#control');
+  const siteSel = $('#site'); const siteCodeEl = $('#siteCode');
+  const deptBox = document.getElementById('deptBox');
+  const roomBox = document.getElementById('roomBox');
+  const deptCodeEl = $('#deptCode'); const control = $('#control');
 
   const warranty = $('#warranty'), commissionWrap = $('#commissionWrap'), commissionDate = $('#commissionDate');
   const pmPeriod = $('#pmPeriod'), lastPm = $('#lastPm'), nextPm = $('#nextPm');
 
   const btnSave  = $('#btnSave');
 
-  /* Searchable boxes containers */
-  const deptBox = document.getElementById('deptBox');
-  const roomBox = document.getElementById('roomBox');
-
-  /* AI modal elems */
-  const aiModal   = $('#aiModal'), aiClose = $('#aiClose');
-  const aiDesc    = $('#aiDesc'), aiSuggest = $('#aiSuggest');
-  const aiResults = $('#aiResults'); const aiStatus = $('#aiStatus');
-  const btnEcriAI = $('#btnEcriAI');
-
-  /* Repeaters */
   const docRepeater = document.getElementById('docRepeater');
   const addDocRow   = document.getElementById('addDocRow');
   const imgRepeater = document.getElementById('imgRepeater');
   const addImgRow   = document.getElementById('addImgRow');
 
-  /* ===== caches ===== */
-  let ECRI_CACHE = []; // {name, code}
-  let DEPT_CACHE = []; // {id (code), name, siteCode, siteName}
-  let ROOM_CACHE = []; // {id, name, departmentCode}
-  let deptSelValue = ''; // department code (doc id)
-  let roomSelValue = ''; // room doc id
+  /* caches */
+  let ECRI_CACHE = [];   // {id, code, name, search}
+  let DEPT_CACHE = [];   // {id(code), name, siteName}
+  let ROOM_CACHE = [];   // {id, name, departmentCode}
+  let deptSelValue = ''; let roomSelValue = '';
 
-  /* ===== init ===== */
+  /* header hooks after include */
+  document.addEventListener("partials:loaded", () => {
+    document.getElementById("btnLogout")?.addEventListener("click", async () => {
+      try { await signOut(auth); } finally { location.replace("../../login.html"); }
+    });
+  });
+
   onAuthStateChanged(auth, async (user)=>{
     if(!user){ location.replace("../../login.html"); return; }
+
+    // user name in header
+    try{
+      const us = await getDoc(doc(db,'users', user.uid));
+      const name = us.exists() ? (us.data().name || us.data().nameEn || user.email) : user.email;
+      const el = document.getElementById('userName'); if(el) el.textContent = name;
+    }catch{}
 
     await Promise.all([
       loadEcriCatalog(),
@@ -320,87 +296,44 @@
     bindUI();
   });
 
-  function bindUI(){
-    ecriName.addEventListener('change', ()=>{
-      ecriCode.value = ecriName.selectedOptions[0]?.dataset.code || '';
-    });
-
-    devClass.addEventListener('change', ()=>{
-      const v = devClass.value;
-      contractWrap.classList.toggle('hidden', !(v==='A'||v==='B'));
-    });
-
-    warranty.addEventListener('change', ()=> commissionWrap.classList.toggle('hidden', warranty.value!=='yes'));
-    [pmPeriod, lastPm].forEach(el=> el.addEventListener('change', calcNextPM));
-
-    siteSel.addEventListener('change', async ()=>{
-      await loadDepartmentsForSite(siteSel.value);
-      await loadRoomsForDept(deptSelValue);
-      updateCodesPreview();
-      control.value = '';
-    });
-
-    // Control field hard lock
-    lockControlField();
-
-    // Add refs
-    addMaker.addEventListener('click', ()=> promptAddToRef('manufacturers', manufacturer));
-    addModel.addEventListener('click', ()=> promptAddModel());
-    addSupplier.addEventListener('click', ()=> promptAddToRef('suppliers', supplier));
-
-    // Save
-    btnSave.addEventListener('click', onSave);
-
-    // AI modal
-    btnEcriAI?.addEventListener('click', ()=>{
-      aiDesc.value = ''; aiResults.innerHTML = ''; aiStatus.textContent = '';
-      aiModal.classList.remove('hidden'); aiModal.classList.add('flex');
-      aiDesc.focus();
-    });
-    aiClose?.addEventListener('click', ()=> aiModal.classList.add('hidden'));
-    aiModal?.addEventListener('click', e=>{ if(e.target===aiModal) aiModal.classList.add('hidden'); });
-
-    aiSuggest?.addEventListener('click', onAISuggest);
-
-    // Build default rows for repeaters
-    addDocRow.addEventListener('click', addDocRepeaterRow);
-    addImgRow.addEventListener('click', addImgRepeaterRow);
-    addDocRepeaterRow();
-    addImgRepeaterRow();
-  }
-
   function escapeHtml(s){return String(s??'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));}
 
-  function lockControlField(){
-    control.setAttribute('readonly','readonly');
-    control.setAttribute('tabindex','-1');
-    ['keydown','beforeinput','paste','drop'].forEach(ev=> control.addEventListener(ev, e=> e.preventDefault()));
-  }
-
-  function calcNextPM(){
-    const m = parseInt(pmPeriod.value||'-1',10);
-    const lp = lastPm.value;
-    if(!lp || isNaN(m)){ nextPm.value=''; return; }
-    const d = new Date(lp);
-    if(m===0) d.setDate(d.getDate()+1); else d.setMonth(d.getMonth()+m);
-    nextPm.value = d.toISOString().slice(0,10);
-  }
-
-  /* ===== reference data ===== */
+  /* ===== ECRI catalog ===== */
   async function loadEcriCatalog(){
     const qs = await getDocs(collection(db,'ecri_catalog'));
-    ECRI_CACHE = qs.docs.map(d=> d.data());
+    ECRI_CACHE = qs.docs.map(d=> ({ id:d.id, ...d.data() }));
     const items = ECRI_CACHE.slice().sort((a,b)=> (a.name||'').localeCompare(b.name||''));
     ecriName.innerHTML = '<option value="">Select device…</option>' +
       items.map(x=> `<option value="${escapeHtml(x.name)}" data-code="${escapeHtml(x.code||'')}">${escapeHtml(x.name)}</option>`).join('');
   }
 
+  // اختر اسم → عبّي الكود
+  ecriName.addEventListener('change', ()=>{
+    ecriCode.value = ecriName.selectedOptions[0]?.dataset.code || '';
+  });
+  // كتبت الكود → اختار الاسم تلقائي
+  ecriCode.addEventListener('input', ()=>{
+    const code = (ecriCode.value||'').trim();
+    if(!code) return;
+    const m = ECRI_CACHE.find(x=> String(x.code) === code);
+    if(m){
+      // set option (أو أضف لو مش موجود)
+      let opt = [...ecriName.options].find(o=> (o.value||'').toLowerCase() === String(m.name||'').toLowerCase());
+      if(!opt){
+        opt = document.createElement('option');
+        opt.value = m.name; opt.textContent = m.name; opt.dataset.code = m.code;
+        ecriName.appendChild(opt);
+      }
+      ecriName.value = m.name;
+    }
+  });
+
+  /* ===== refdata: manufacturers/models/suppliers ===== */
   async function loadManufacturers(){
     const qs = await getDocs(collection(db,'refdata','lists','manufacturers'));
     const items = qs.docs.map(d=> d.id).sort();
     manufacturer.innerHTML = '<option value="">Select…</option>' + items.map(n=>`<option>${escapeHtml(n)}</option>`).join('');
   }
-
   async function loadModelsForMaker(maker){
     model.innerHTML = '<option value="">Select…</option>';
     if(!maker) return;
@@ -416,6 +349,33 @@
     supplier.innerHTML = '<option value="">Select…</option>' + items.map(n=>`<option>${escapeHtml(n)}</option>`).join('');
   }
 
+  async function promptAddToRef(kind, selectEl){
+    const val = prompt(`Add new ${kind.slice(0,-1)} name:`)?.trim();
+    if(!val) return;
+    const ref = doc(db,'refdata','lists', kind, val);
+    await setDoc(ref, { createdAt: serverTimestamp() }, { merge:true });
+    // reload
+    if(kind==='manufacturers') await loadManufacturers();
+    if(kind==='suppliers') await loadSuppliers();
+    // select it
+    const opt = [...selectEl.options].find(o=>o.value===val);
+    if(opt) selectEl.value = val;
+  }
+  async function promptAddModel(){
+    const maker = manufacturer.value;
+    if(!maker){ alert('Choose a manufacturer first.'); return; }
+    const val = prompt('Add new model for '+maker+':')?.trim();
+    if(!val) return;
+    const ref = doc(db,'refdata','lists','manufacturers', maker, 'models', val);
+    await setDoc(ref, { createdAt: serverTimestamp() }, { merge:true });
+    await loadModelsForMaker(maker);
+    const opt = [...model.options].find(o=>o.value===val); if(opt) model.value = val;
+  }
+  addMaker.addEventListener('click', ()=> promptAddToRef('manufacturers', manufacturer));
+  addSupplier.addEventListener('click', ()=> promptAddToRef('suppliers', supplier));
+  addModel.addEventListener('click', promptAddModel);
+
+  /* ===== Sites / Departments / Rooms ===== */
   async function loadSites(){
     const qs = await getDocs(query(collection(db,'sites'), orderBy('name')));
     const items = qs.docs.map(d=> ({ id:d.id, ...d.data() }));
@@ -423,7 +383,7 @@
       items.map(s=>`<option value="${escapeHtml(s.id)}" data-code="${escapeHtml(s.code||'')}">${escapeHtml(s.name||s.id)}</option>`).join('');
   }
 
-  /* ===== searchable selects (vanilla) ===== */
+  // lightweight searchable select
   function createSearchSelect({container, placeholder='Type to search', data=[], getLabel, getValue, onChange}){
     container.innerHTML = `
       <div class="field flex items-center justify-between gap-2 cursor-text">
@@ -435,25 +395,19 @@
     const input = container.querySelector('input');
     const panel = container.querySelector('.card');
     let cur = null;
-
     function render(list){
       panel.innerHTML = '';
       list.forEach(item=>{
         const a = document.createElement('button');
-        a.type='button';
-        a.className='w-full text-left px-3 py-2 rounded hover:bg-slate-100';
+        a.type='button'; a.className='w-full text-left px-3 py-2 rounded hover:bg-slate-100';
         a.textContent = getLabel(item);
         a.addEventListener('click', ()=>{
-          cur = getValue(item);
-          input.value = getLabel(item);
-          panel.classList.add('hidden');
-          onChange?.(cur, item);
+          cur = getValue(item); input.value = getLabel(item);
+          panel.classList.add('hidden'); onChange?.(cur,item);
         });
         panel.appendChild(a);
       });
-      if(list.length===0){
-        panel.innerHTML = '<div class="px-3 py-2 text-slate-500 text-sm">No results</div>';
-      }
+      if(list.length===0) panel.innerHTML = '<div class="px-3 py-2 text-slate-500 text-sm">No results</div>';
     }
     function open(){ panel.classList.remove('hidden'); }
     function close(){ panel.classList.add('hidden'); }
@@ -462,120 +416,82 @@
       if(!q) return data.slice(0,200);
       return data.filter(x=> getLabel(x).toLowerCase().includes(q));
     }
-
     input.addEventListener('focus', ()=>{ open(); render(filtered()); });
     input.addEventListener('input', ()=>{ open(); render(filtered()); });
-    document.addEventListener('click', (e)=>{ if(!container.contains(e.target)) close(); });
+    document.addEventListener('click', e=>{ if(!container.contains(e.target)) close(); });
 
     return {
-      setData(newData){ data = newData||[]; render(filtered()); },
-      setValue(val){
-        cur = val;
-        const item = data.find(d=> getValue(d)===val);
-        input.value = item? getLabel(item): '';
-      },
+      setData(newData){ data=newData||[]; render(filtered()); },
+      setValue(v){ cur=v; const it=data.find(d=>getValue(d)===v); input.value=it?getLabel(it):''; },
       getValue(){ return cur; }
     };
   }
 
-  /* ===== Departments & Rooms based on your schema (by siteName) ===== */
-let deptSS = null;
-let roomSS = null;
+  let deptSS=null, roomSS=null;
 
-async function loadDepartmentsForSite(siteId /*unused*/){
-  // إنشاء الـSearchSelect مرّة واحدة
-  if(!deptSS){
-    deptSS = createSearchSelect({
-      container: deptBox,
-      placeholder: 'Type to search departments…',
-      data: [],
-      getLabel: d => d.name || d.id,
-      getValue: d => d.id,
-      onChange: (val, item)=>{
-        deptSelValue = val;                         // departmentCode (doc id)
-        deptCodeEl.textContent = item?.code || val; // عرض الكود
-        loadRoomsForDept(val);                      // حمّل الغرف
-      }
-    });
-  }
-  if(!roomSS){
-    roomSS = createSearchSelect({
-      container: roomBox,
-      placeholder: 'Type to search rooms…',
-      data: [],
-      getLabel: r => r.name || r.id,
-      getValue: r => r.id,
-      onChange: (val)=>{ roomSelValue = val; }
-    });
-  }
-
-  // تهيئة الواجهة
-  deptSS.setData([]); deptSS.setValue(null);
-  roomSS.setData([]); roomSS.setValue(null);
-  deptSelValue = ''; roomSelValue = '';
-  deptCodeEl.textContent = '—';
-
-  // جِب اسم الموقع من نص الـoption (لازم يطابق المخزون في Firestore)
-  const siteName = siteSel.selectedOptions[0]?.textContent?.trim() || '';
-  if(!siteName) return;
-
-  // الاستعلام الأساسي بالاسم
-  let qs = await getDocs(
-    query(collection(db,'department'), where('siteName','==', siteName))
-  );
-
-  // لو الاسم مش مطابق لأي سبب، جرّب بالكود كنسخة احتياطية
-  if(qs.empty){
-    const siteCode = siteSel.selectedOptions[0]?.dataset.code || '';
-    if(siteCode){
-      qs = await getDocs(
-        query(collection(db,'department'), where('siteCode','==', siteCode))
-      );
+  async function loadDepartmentsForSite(){
+    if(!deptSS){
+      deptSS = createSearchSelect({
+        container: deptBox,
+        placeholder: 'Type to search departments…',
+        data: [],
+        getLabel: d => d.name || d.id,
+        getValue: d => d.id,
+        onChange: (val, item)=>{
+          deptSelValue = val; deptCodeEl.textContent = item?.code || val;
+          loadRoomsForDept(val);
+        }
+      });
     }
+    if(!roomSS){
+      roomSS = createSearchSelect({
+        container: roomBox,
+        placeholder: 'Type to search rooms…',
+        data: [],
+        getLabel: r => r.name || r.id,
+        getValue: r => r.id,
+        onChange: (val)=>{ roomSelValue = val; }
+      });
+    }
+
+    deptSS.setData([]); deptSS.setValue(null);
+    roomSS.setData([]); roomSS.setValue(null);
+    deptSelValue=''; roomSelValue=''; deptCodeEl.textContent='—';
+
+    const siteName = siteSel.selectedOptions[0]?.textContent?.trim() || '';
+    siteCodeEl.textContent = siteSel.selectedOptions[0]?.dataset.code || '—';
+    if(!siteName) return;
+
+    let qs = await getDocs(query(collection(db,'department'), where('siteName','==', siteName)));
+    if(qs.empty){
+      const siteCode = siteSel.selectedOptions[0]?.dataset.code || '';
+      if(siteCode){
+        qs = await getDocs(query(collection(db,'department'), where('siteCode','==', siteCode)));
+      }
+    }
+    DEPT_CACHE = qs.docs.map(d=> ({
+      id: d.id, name: d.data().name || d.id, code: d.id, siteName
+    })).sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+
+    deptSS.setData(DEPT_CACHE);
   }
 
-  DEPT_CACHE = qs.docs.map(d=> ({
-    id: d.id,                        // departmentCode (MSF/RWDA/…)
-    name: d.data().name || d.id,     // الاسم العربي المخزون
-    code: d.id,                      // نفس الـID
-    siteName
-  })).sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+  async function loadRoomsForDept(deptCode){
+    roomSS.setData([]); roomSS.setValue(null); roomSelValue='';
+    if(!deptCode) return;
+    const qs = await getDocs(query(collection(db,'room'), where('departmentCode','==', deptCode)));
+    ROOM_CACHE = qs.docs.map(d=> ({ id:d.id, name:d.data().name||d.id, departmentCode:deptCode }))
+      .sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+    roomSS.setData(ROOM_CACHE);
+  }
 
-  deptSS.setData(DEPT_CACHE);
-}
+  siteSel.addEventListener('change', async ()=>{
+    await loadDepartmentsForSite();
+    control.value='';
+  });
 
-async function loadRoomsForDept(departmentCode){
-  roomSS.setData([]); roomSS.setValue(null);
-  roomSelValue = '';
-  if(!departmentCode) return;
-
-  // الغرف من كولكشن room بفلترة departmentCode
-  const qs = await getDocs(
-    query(collection(db,'room'), where('departmentCode','==', departmentCode))
-  );
-
-  ROOM_CACHE = qs.docs.map(d=> ({
-    id: d.id,
-    name: d.data().name || d.id,
-    departmentCode
-  })).sort((a,b)=> (a.name||'').localeCompare(b.name||''));
-
-  roomSS.setData(ROOM_CACHE);
-}
-
-function updateCodesPreview(){
-  siteCodeEl.textContent = siteSel.selectedOptions[0]?.dataset.code || '—';
-  const dep = DEPT_CACHE.find(d=> d.id === deptSelValue);
-  deptCodeEl.textContent = dep?.code || '—';
-}
-
-
-  /* ===== repeaters (documentation + photos) ===== */
-  const DOC_GROUPS = [
-    'PM Report','Calibration Certificate','User Manual','Service Manual',
-    'Acceptance Report','Warranty Card','Other',
-    'أمر الشراء','الحساب البنكي','السجل التجاري'
-  ];
+  /* ===== Docs/Photos Repeaters ===== */
+  const DOC_GROUPS = ['PM Report','Calibration Certificate','User Manual','Service Manual','Acceptance Report','Warranty Card','Other','أمر الشراء','الحساب البنكي','السجل التجاري'];
 
   function makeDropZone(){
     const el = document.createElement('div');
@@ -591,12 +507,10 @@ function updateCodesPreview(){
     `;
     const input = el.querySelector('input[type=file]');
     const list  = el.querySelector('[data-list]');
-
     function addFiles(files){
       [...files].forEach(f=>{
         const row = document.createElement('div');
         row.textContent = `${f.name} — ${(f.size/1024).toFixed(1)} KB`;
-        row.dataset.name = f.name;
         list.appendChild(row);
       });
     }
@@ -610,112 +524,101 @@ function updateCodesPreview(){
       input.files = dt.files;
     });
     input.addEventListener('change', ()=> addFiles(input.files));
-    return { root: el, input, list };
+    return { root: el, input };
+  }
+
+  function createSearchBox(list){
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `<div class="relative"></div>`;
+    const ss = createSearchSelect({
+      container: wrap.firstElementChild,
+      placeholder: 'Type to search',
+      data: list.map(x=>({label:x, val:x})),
+      getLabel: x=>x.label, getValue:x=>x.val
+    });
+    return {wrap, ss, input: wrap.querySelector('input')};
   }
 
   function addDocRepeaterRow(){
     const row = document.createElement('div');
     row.className = 'grid grid-cols-1 md:grid-cols-3 gap-3 items-start';
+    const groupCol = document.createElement('div');
+    groupCol.innerHTML = `<label class="block mb-1">Document Group</label>`;
+    const sb = createSearchBox(DOC_GROUPS);
+    groupCol.appendChild(sb.wrap); row.appendChild(groupCol);
 
-    // group searchable
-    const groupBox = document.createElement('div');
-    groupBox.innerHTML = `<label class="block mb-1">Document Group</label><div class="relative" data-ss></div>`;
-    row.appendChild(groupBox);
+    const dzCol = document.createElement('div');
+    dzCol.innerHTML = `<label class="block mb-1">Documentation</label>`;
+    const dz = makeDropZone(); dzCol.appendChild(dz.root); row.appendChild(dzCol);
 
-    // dropzone
-    const dzWrap = document.createElement('div');
-    dzWrap.innerHTML = `<label class="block mb-1">Documentation</label>`;
-    const dz = makeDropZone();
-    dzWrap.appendChild(dz.root);
-    row.appendChild(dzWrap);
+    const delCol = document.createElement('div');
+    delCol.className='flex items-start justify-end';
+    delCol.innerHTML=`<button type="button" class="btn">🗑️</button>`;
+    delCol.firstElementChild.addEventListener('click', ()=> row.remove());
+    row.appendChild(delCol);
 
-    // delete
-    const actions = document.createElement('div');
-    actions.className='flex items-start justify-end';
-    actions.innerHTML = `<button type="button" class="btn">🗑️</button>`;
-    actions.querySelector('button').addEventListener('click', ()=> row.remove());
-    row.appendChild(actions);
-
+    row.__dzInput = dz.input; row.__groupInput = sb.input;
     docRepeater.appendChild(row);
-
-    // SearchSelect for group
-    const ss = createSearchSelect({
-      container: groupBox.querySelector('[data-ss]'),
-      placeholder: 'Type to search',
-      data: DOC_GROUPS.map(g=>({label:g, val:g})),
-      getLabel: x=> x.label,
-      getValue: x=> x.val
-    });
-
-    // expose helpers
-    row.__dzInput = dz.input;
-    row.__groupInput = groupBox.querySelector('input');
   }
-
   function addImgRepeaterRow(){
     const row = document.createElement('div');
     row.className = 'grid grid-cols-1 md:grid-cols-3 gap-3 items-start';
+    const titleCol = document.createElement('div');
+    titleCol.innerHTML = `<label class="block mb-1">Title</label><input class="field" placeholder="Image title (optional)">`;
+    const titleInput = titleCol.querySelector('input'); row.appendChild(titleCol);
 
-    // title
-    const titleDiv = document.createElement('div');
-    titleDiv.innerHTML = `<label class="block mb-1">Title</label><input class="field" placeholder="Image title (optional)" />`;
-    row.appendChild(titleDiv);
+    const dzCol = document.createElement('div');
+    dzCol.innerHTML = `<label class="block mb-1">Image Files</label>`;
+    const dz = makeDropZone(); dzCol.appendChild(dz.root); row.appendChild(dzCol);
 
-    // dropzone
-    const dzWrap = document.createElement('div');
-    dzWrap.innerHTML = `<label class="block mb-1">Image Files</label>`;
-    const dz = makeDropZone();
-    dzWrap.appendChild(dz.root);
-    row.appendChild(dzWrap);
+    const delCol = document.createElement('div');
+    delCol.className='flex items-start justify-end';
+    delCol.innerHTML=`<button type="button" class="btn">🗑️</button>`;
+    delCol.firstElementChild.addEventListener('click', ()=> row.remove());
+    row.appendChild(delCol);
 
-    // delete
-    const actions = document.createElement('div');
-    actions.className='flex items-start justify-end';
-    actions.innerHTML = `<button type="button" class="btn">🗑️</button>`;
-    actions.querySelector('button').addEventListener('click', ()=> row.remove());
-    row.appendChild(actions);
-
+    row.__dzInput = dz.input; row.__titleInput = titleInput;
     imgRepeater.appendChild(row);
-
-    row.__dzInput = dz.input;
-    row.__titleInput = titleDiv.querySelector('input');
   }
+  addDocRow.addEventListener('click', addDocRepeaterRow);
+  addImgRow.addEventListener('click', addImgRepeaterRow);
+  addDocRepeaterRow(); addImgRepeaterRow();
 
-  /* ===== upload based on repeaters ===== */
   async function uploadFiles(controlNo){
-    const images = [];
-    const documents = [];
-
-    // docs
+    const images = []; const documents = [];
     for(const r of [...docRepeater.children]){
-      const input = r.__dzInput;
-      const groupValue = r.__groupInput?.value?.trim() || 'Other';
+      const input = r.__dzInput; const group = r.__groupInput?.value?.trim() || 'Other';
       if(input?.files?.length){
         for(const f of input.files){
           const ref = sref(st, `equipment/${controlNo}/docs/${f.name}`);
-          await uploadBytes(ref, f);
-          const url = await getDownloadURL(ref);
-          documents.push({ group: groupValue, name: f.name, size: f.size, url, type: f.type || 'file' });
+          await uploadBytes(ref, f); const url = await getDownloadURL(ref);
+          documents.push({ group, name:f.name, size:f.size, url, type:f.type||'file' });
         }
       }
     }
-
-    // images
     for(const r of [...imgRepeater.children]){
-      const input = r.__dzInput;
-      const title = r.__titleInput?.value?.trim() || '';
+      const input = r.__dzInput; const title = r.__titleInput?.value?.trim() || '';
       if(input?.files?.length){
         for(const f of input.files){
           const ref = sref(st, `equipment/${controlNo}/images/${f.name}`);
-          await uploadBytes(ref, f);
-          const url = await getDownloadURL(ref);
-          images.push({ title, name: f.name, size: f.size, url, type: f.type || 'image' });
+          await uploadBytes(ref, f); const url = await getDownloadURL(ref);
+          images.push({ title, name:f.name, size:f.size, url, type:f.type||'image' });
         }
       }
     }
-
     return { images, documents };
   }
+
+  /* ===== PM / Warranty ===== */
+  function calcNextPM(){
+    const m = parseInt(pmPeriod.value||'-1',10);
+    const lp = lastPm.value; if(!lp || isNaN(m)){ nextPm.value=''; return; }
+    const d = new Date(lp); if(m===0) d.setDate(d.getDate()+1); else d.setMonth(d.getMonth()+m);
+    nextPm.value = d.toISOString().slice(0,10);
+  }
+  warranty.addEventListener('change', ()=> commissionWrap.classList.toggle('hidden', warranty.value!=='yes'));
+  [pmPeriod, lastPm].forEach(el=> el.addEventListener('change', calcNextPM));
+  devClass.addEventListener('change', ()=> contractWrap.classList.toggle('hidden', !(devClass.value==='A'||devClass.value==='B')));
 
   /* ===== uniqueness + control generation ===== */
   async function reserveUnique(p){
@@ -728,10 +631,25 @@ function updateCodesPreview(){
     });
   }
 
+  async function getMaxSeqForSite(siteCode){
+    let max = 0;
+    const qs = await getDocs(query(collection(db,'Equipment'), where('siteCode','==', siteCode)));
+    qs.forEach(d=>{
+      const parts = String(d.data().control||'').split('/');
+      const n = parseInt(parts[2]||'0', 10);
+      if(!isNaN(n) && n>max) max=n;
+    });
+    return max;
+  }
+
   async function generateControl(siteCode, deptCode){
     if(!siteCode || !deptCode) throw new Error('Missing site/department code.');
-    // counter per siteCode (ثابت حتى لو تغيّر id)
     const cRef = doc(db,'counters','site', siteCode);
+    const snap = await getDoc(cRef);
+    if(!snap.exists()){
+      const max = await getMaxSeqForSite(siteCode);
+      await setDoc(cRef, { next: max+1 }, { merge:true });
+    }
     let seq = 1;
     await runTransaction(db, async (tx)=>{
       const s = await tx.get(cRef);
@@ -742,11 +660,11 @@ function updateCodesPreview(){
     return `${siteCode}/${deptCode}/${String(seq).padStart(3,'0')}`;
   }
 
-  /* ===== collect + validate + save ===== */
+  /* ===== collect / validate / save ===== */
   function collectPayload(){
     const siteCode = siteSel.selectedOptions[0]?.dataset.code || '';
     const siteName = siteSel.selectedOptions[0]?.textContent || '';
-    const dep = DEPT_CACHE.find(d=> d.id === deptSelValue);
+    const dep = DEPT_CACHE.find(d=> d.id === deptSelValue) || null;
 
     return {
       ecriName: ecriName.value || '',
@@ -756,13 +674,12 @@ function updateCodesPreview(){
       serial: serial.value || '',
       devClass: devClass.value || '',
       risk: risk.value || '',
-      price: price.value ? Number(price.value) : null,
+      price: price.value? Number(price.value): null,
       supplier: supplier.value || '',
       contractNo: (devClass.value==='A'||devClass.value==='B') ? (contractNo.value||'') : '',
       siteId: siteSel.value || '',
-      siteCode,
-      siteName,
-      departmentId: deptSelValue || '',        // بنخزن الكود كـ ID
+      siteCode, siteName,
+      departmentId: deptSelValue || '',
       deptCode: dep?.code || deptSelValue || '',
       departmentName: dep?.name || '',
       roomId: roomSelValue || '',
@@ -775,7 +692,11 @@ function updateCodesPreview(){
   }
 
   function validate(p){
-    if(!p.ecriName || !p.ecriCode) throw new Error('Select ECRI name/code.');
+    if(!p.ecriName && !p.ecriCode) throw new Error('Select ECRI or type its code.');
+    if(p.ecriCode && !p.ecriName){
+      const m = ECRI_CACHE.find(x=> String(x.code)===String(p.ecriCode));
+      if(m) p.ecriName = m.name; // توفيق الاسم من الكود
+    }
     if(!p.manufacturer) throw new Error('Select manufacturer.');
     if(!p.model) throw new Error('Select model.');
     if(!p.serial) throw new Error('Serial is required.');
@@ -783,18 +704,18 @@ function updateCodesPreview(){
     if(!p.departmentId || !p.deptCode) throw new Error('Select department.');
     if(!p.devClass) throw new Error('Select class.');
     if((p.devClass==='A'||p.devClass==='B') && !p.contractNo) throw new Error('Enter contract number.');
-    if(p.warranty==='yes' && !p.commissioningDate) throw new Error('Enter commissioning date.');
     if(p.pmPeriodMonths!==null && !p.lastPm) throw new Error('Enter last PM date.');
+    return p;
   }
 
   async function onSave(){
     try{
-      const siteCode = siteSel.selectedOptions[0]?.dataset.code || '';
-      const p = collectPayload();
-      validate(p);
+      // deps / site
+      await loadDepartmentsForSite(); // in case user forgot to reselect
+      const p0 = collectPayload(); const p = validate(p0);
       await reserveUnique(p);
 
-      const controlNo = await generateControl(siteCode, p.deptCode);
+      const controlNo = await generateControl(p.siteCode, p.deptCode);
       control.value = controlNo;
 
       const { images, documents } = await uploadFiles(controlNo);
@@ -802,8 +723,7 @@ function updateCodesPreview(){
       await setDoc(doc(db,'Equipment', controlNo), {
         ...p,
         control: controlNo,
-        images,
-        documents,
+        images, documents,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       }, { merge:true });
@@ -812,73 +732,62 @@ function updateCodesPreview(){
       location.href = 'index.html';
     }catch(e){
       console.error(e);
-      alert('Error: '+(e.message||e));
+      alert('Error: ' + (e.message||e));
     }
   }
+  btnSave.addEventListener('click', onSave);
 
-  /* ===== AI Assist (local now) ===== */
-  function localSuggest(description, limit=5){
-    const q = (description||'').toLowerCase().trim();
-    if(!q) return [];
+  /* AI Assist (local on ECRI_CACHE.search/name) */
+  const aiModal = document.getElementById('aiModal');
+  const aiClose = document.getElementById('aiClose');
+  const aiDesc  = document.getElementById('aiDesc');
+  const aiSuggest = document.getElementById('aiSuggest');
+  const aiStatus = document.getElementById('aiStatus');
+  const aiResults= document.getElementById('aiResults');
+  document.getElementById('btnEcriAI')?.addEventListener('click', ()=>{
+    aiDesc.value=''; aiResults.innerHTML=''; aiStatus.textContent='';
+    aiModal.classList.remove('hidden'); aiModal.classList.add('flex');
+  });
+  aiClose?.addEventListener('click', ()=> aiModal.classList.add('hidden'));
+  aiModal?.addEventListener('click', e=>{ if(e.target===aiModal) aiModal.classList.add('hidden'); });
+
+  function localSuggest(q, limit=6){
+    const s = (q||'').toLowerCase().trim(); if(!s) return [];
     const scored = ECRI_CACHE.map(x=>{
-      const name = (x.name||'').toLowerCase();
-      let score = 0;
-      if(name.includes(q)) score += 3;
-      const parts = q.split(/\s+/).filter(Boolean);
-      let hits = 0; parts.forEach(p=>{ if(name.includes(p)) hits++; });
-      score += hits;
-      if(name.startsWith(q)) score += 2;
-      return {item:x, score};
-    }).filter(s=> s.score>0)
-      .sort((a,b)=> b.score - a.score)
-      .slice(0, limit)
-      .map(s=> s.item);
+      const hay = ((x.search||'')+' '+(x.name||'')+' '+(x.code||'')).toLowerCase();
+      let score = 0; if(hay.includes(s)) score += 3;
+      s.split(/\s+/).forEach(t=>{ if(hay.includes(t)) score += 1; });
+      if(String(x.code)===s) score += 4;
+      return { item:x, score };
+    }).filter(z=> z.score>0).sort((a,b)=> b.score-a.score).slice(0,limit).map(z=> z.item);
     return scored;
   }
 
-  async function getEcriSuggestions(description){
-    return localSuggest(description, 5);
-  }
-
-  function selectEcriByName(name, code){
-    const opt = [...ecriName.options].find(o => (o.value||'').toLowerCase() === String(name||'').toLowerCase());
-    if(opt) ecriName.value = opt.value;
-    else {
-      const o = document.createElement('option');
-      o.value = name; o.textContent = name; o.dataset.code = code||'';
-      ecriName.appendChild(o);
-      ecriName.value = name;
-    }
-    ecriCode.value = code || '';
-  }
-
-  async function onAISuggest(){
-    aiStatus.textContent = 'Thinking…';
-    aiResults.innerHTML = '';
-    try{
-      const items = await getEcriSuggestions(aiDesc.value);
-      aiStatus.textContent = items.length ? '' : 'No suggestions. Try another description.';
-      items.forEach(x=>{
-        const row = document.createElement('div');
-        row.className = 'flex items-center justify-between border rounded-lg p-2';
-        row.innerHTML = `
-          <div>
-            <div class="font-semibold">${escapeHtml(x.name||'Unknown')}</div>
-            <div class="text-xs text-slate-500">ECRI Code: <span class="mono">${escapeHtml(x.code||'-')}</span></div>
-          </div>
-          <button class="btn btn-brand">Use</button>
-        `;
-        row.querySelector('button').addEventListener('click', ()=>{
-          selectEcriByName(x.name, x.code);
-          aiModal.classList.add('hidden');
-        });
-        aiResults.appendChild(row);
+  aiSuggest?.addEventListener('click', ()=>{
+    aiResults.innerHTML=''; aiStatus.textContent='Thinking…';
+    const items = localSuggest(aiDesc.value, 8);
+    aiStatus.textContent = items.length? '' : 'No suggestions.';
+    items.forEach(x=>{
+      const row = document.createElement('div');
+      row.className = 'flex items-center justify-between border rounded-lg p-2';
+      row.innerHTML = `
+        <div>
+          <div class="font-semibold">${escapeHtml(x.name||'-')}</div>
+          <div class="text-xs text-slate-500">ECRI Code: <span class="mono">${escapeHtml(x.code||'-')}</span></div>
+        </div>
+        <button class="btn btn-brand">Use</button>
+      `;
+      row.querySelector('button').addEventListener('click', ()=>{
+        // apply
+        let opt = [...ecriName.options].find(o=> (o.value||'').toLowerCase()===String(x.name||'').toLowerCase());
+        if(!opt){ opt=document.createElement('option'); opt.value=x.name; opt.textContent=x.name; opt.dataset.code=x.code; ecriName.appendChild(opt); }
+        ecriName.value = x.name; ecriCode.value = x.code || '';
+        aiModal.classList.add('hidden');
       });
-    }catch(e){
-      console.error(e);
-      aiStatus.textContent = 'Error.';
-    }
-  }
+      aiResults.appendChild(row);
+    });
+  });
+
 </script>
 </body>
 </html>
