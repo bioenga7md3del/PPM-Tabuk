@@ -16,13 +16,14 @@
     .btn{padding:.55rem .9rem;border-radius:.8rem;border:1px solid #cbd5e1;font-weight:600}
     .btn-brand{background:#2563eb;color:#fff;border-color:#2563eb}
     .btn-brand:hover{background:#1d4ed8}
-    .btn-ghost{background:transparent}
     .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
     .hint{font-size:.8rem;color:#64748b}
     .grid-form{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:.75rem}
     @media (min-width:768px){.grid-form{grid-template-columns:repeat(3,minmax(0,1fr))}}
     .chip{display:inline-flex;align-items:center;gap:.4rem;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:.25rem .6rem;font-size:.8rem}
     #aiModal.hidden{display:none}
+    .dropzone{border:2px dashed #cbd5e1;border-radius:.75rem;padding:1rem}
+    .dropzone.drag{background:#f8fafc}
   </style>
 </head>
 <body>
@@ -142,19 +143,17 @@
         <div class="hint">Site Code: <span id="siteCode" class="mono">—</span></div>
       </div>
 
-      <!-- 7) Department (+ search) -->
+      <!-- 7) Department (searchable) -->
       <div>
         <label class="block mb-1">Department</label>
-        <select id="department" class="field"></select>
-        <input id="departmentSearch" class="field mt-2" placeholder="Search departments...">
+        <div id="deptBox" class="relative"></div>
         <div class="hint">Dept Code: <span id="deptCode" class="mono">—</span></div>
       </div>
 
-      <!-- 8) Room (+ search) -->
+      <!-- 8) Room (searchable) -->
       <div>
         <label class="block mb-1">Room</label>
-        <select id="room" class="field"></select>
-        <input id="roomSearch" class="field mt-2" placeholder="Search rooms...">
+        <div id="roomBox" class="relative"></div>
       </div>
 
       <!-- 9) Control (auto) -->
@@ -211,23 +210,22 @@
     <p class="hint">Next PM is auto-calculated from period + last PM.</p>
   </section>
 
-  <!-- Files -->
+  <!-- Documentation (repeater like your screenshot) -->
   <section class="card p-4 space-y-3">
-    <h2 class="font-semibold text-slate-800">Files</h2>
-    <div class="grid-form">
-      <!-- Images (multiple) -->
-      <div>
-        <label class="block mb-1">Device Images</label>
-        <input id="imgFiles" type="file" accept="image/*" class="field" multiple>
-        <div id="imgList" class="mt-2 space-y-2"></div>
-      </div>
+    <h2 class="font-semibold text-slate-800">Documentation</h2>
+    <div id="docRepeater" class="space-y-3"></div>
+    <div class="flex justify-between items-center">
+      <button id="addDocRow" type="button" class="btn">➕ Add Another</button>
+      <div class="hint">Drag & drop files into each row.</div>
+    </div>
+  </section>
 
-      <!-- Documents (multiple) -->
-      <div>
-        <label class="block mb-1">Documents</label>
-        <input id="docFiles" type="file" multiple class="field" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg">
-        <div id="docList" class="mt-2 space-y-2"></div>
-      </div>
+  <!-- Photos (repeater) -->
+  <section class="card p-4 space-y-3">
+    <h2 class="font-semibold text-slate-800">Photos</h2>
+    <div id="imgRepeater" class="space-y-3"></div>
+    <div class="flex justify-between items-center">
+      <button id="addImgRow" type="button" class="btn">➕ Add Another</button>
     </div>
   </section>
 
@@ -255,13 +253,13 @@
 </div>
 
 <script type="module">
-  /* ===== project firebase (من ملفك) ===== */
+  /* ===== project firebase ===== */
   import { auth, db } from "/PPM-Tabuk/js/firebase.js";
 
   /* extra SDKs */
   import { getStorage, ref as sref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
   import {
-    doc, getDoc, setDoc, collection, getDocs, query, where, orderBy,
+    doc, setDoc, collection, getDocs, query, where, orderBy,
     runTransaction, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
   import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -277,27 +275,36 @@
   const price = $('#price'), supplier = $('#supplier'), addSupplier = $('#addSupplier');
   const contractWrap = $('#contractWrap'), contractNo = $('#contractNo');
 
-  const siteSel = $('#site'), deptSel = $('#department'), roomSel = $('#room');
+  const siteSel = $('#site');
   const siteCodeEl = $('#siteCode'), deptCodeEl = $('#deptCode'), control = $('#control');
-  const depSearch = $('#departmentSearch'), roomSearch = $('#roomSearch');
 
   const warranty = $('#warranty'), commissionWrap = $('#commissionWrap'), commissionDate = $('#commissionDate');
   const pmPeriod = $('#pmPeriod'), lastPm = $('#lastPm'), nextPm = $('#nextPm');
 
-  const imgFiles = $('#imgFiles'), docFiles = $('#docFiles');
-  const imgList  = $('#imgList'),  docList  = $('#docList');
   const btnSave  = $('#btnSave');
 
-  /* ===== AI modal elems ===== */
+  /* Searchable boxes containers */
+  const deptBox = document.getElementById('deptBox');
+  const roomBox = document.getElementById('roomBox');
+
+  /* AI modal elems */
   const aiModal   = $('#aiModal'), aiClose = $('#aiClose');
   const aiDesc    = $('#aiDesc'), aiSuggest = $('#aiSuggest');
   const aiResults = $('#aiResults'); const aiStatus = $('#aiStatus');
   const btnEcriAI = $('#btnEcriAI');
 
+  /* Repeaters */
+  const docRepeater = document.getElementById('docRepeater');
+  const addDocRow   = document.getElementById('addDocRow');
+  const imgRepeater = document.getElementById('imgRepeater');
+  const addImgRow   = document.getElementById('addImgRow');
+
   /* ===== caches ===== */
   let ECRI_CACHE = []; // {name, code}
-  let DEPT_CACHE = []; // {id,name,code,siteId}
-  let ROOM_CACHE = []; // {id,name,departmentId}
+  let DEPT_CACHE = []; // {id (code), name, siteCode, siteName}
+  let ROOM_CACHE = []; // {id, name, departmentCode}
+  let deptSelValue = ''; // department code (doc id)
+  let roomSelValue = ''; // room doc id
 
   /* ===== init ===== */
   onAuthStateChanged(auth, async (user)=>{
@@ -314,51 +321,32 @@
   });
 
   function bindUI(){
-    // ECRI mapping
     ecriName.addEventListener('change', ()=>{
       ecriCode.value = ecriName.selectedOptions[0]?.dataset.code || '';
     });
 
-    // Contract show/hide
     devClass.addEventListener('change', ()=>{
       const v = devClass.value;
       contractWrap.classList.toggle('hidden', !(v==='A'||v==='B'));
     });
 
-    // Warranty commissioning
     warranty.addEventListener('change', ()=> commissionWrap.classList.toggle('hidden', warranty.value!=='yes'));
-
-    // PM calc
     [pmPeriod, lastPm].forEach(el=> el.addEventListener('change', calcNextPM));
 
-    // Location flows
     siteSel.addEventListener('change', async ()=>{
       await loadDepartmentsForSite(siteSel.value);
-      await loadRoomsForDept(deptSel.value);
-      updateCodesPreview();
-      control.value = '';
-    });
-    deptSel.addEventListener('change', async ()=>{
-      await loadRoomsForDept(deptSel.value);
+      await loadRoomsForDept(deptSelValue);
       updateCodesPreview();
       control.value = '';
     });
 
-    // Searchable selects
-    attachSearchableSelect(deptSel, depSearch);
-    attachSearchableSelect(roomSel, roomSearch);
+    // Control field hard lock
+    lockControlField();
 
     // Add refs
     addMaker.addEventListener('click', ()=> promptAddToRef('manufacturers', manufacturer));
     addModel.addEventListener('click', ()=> promptAddModel());
     addSupplier.addEventListener('click', ()=> promptAddToRef('suppliers', supplier));
-
-    // Control field hard lock
-    lockControlField();
-
-    // Files UI (titles per file)
-    imgFiles.addEventListener('change', renderFileTitles.bind(null, 'img'));
-    docFiles.addEventListener('change', renderFileTitles.bind(null, 'doc'));
 
     // Save
     btnSave.addEventListener('click', onSave);
@@ -371,23 +359,17 @@
     });
     aiClose?.addEventListener('click', ()=> aiModal.classList.add('hidden'));
     aiModal?.addEventListener('click', e=>{ if(e.target===aiModal) aiModal.classList.add('hidden'); });
+
     aiSuggest?.addEventListener('click', onAISuggest);
+
+    // Build default rows for repeaters
+    addDocRow.addEventListener('click', addDocRepeaterRow);
+    addImgRow.addEventListener('click', addImgRepeaterRow);
+    addDocRepeaterRow();
+    addImgRepeaterRow();
   }
 
-  /* ===== helpers ===== */
   function escapeHtml(s){return String(s??'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));}
-
-  function attachSearchableSelect(selectEl, inputEl){
-    if(!selectEl || !inputEl) return;
-    inputEl.addEventListener('input', ()=>{
-      const q = inputEl.value.toLowerCase().trim();
-      [...selectEl.options].forEach((o, idx)=>{
-        if(idx===0) return; // placeholder
-        const txt = (o.textContent||'').toLowerCase();
-        o.hidden = q && !txt.includes(q);
-      });
-    });
-  }
 
   function lockControlField(){
     control.setAttribute('readonly','readonly');
@@ -414,7 +396,6 @@
   }
 
   async function loadManufacturers(){
-    // list path: refdata/lists/manufacturers/{name}
     const qs = await getDocs(collection(db,'refdata','lists','manufacturers'));
     const items = qs.docs.map(d=> d.id).sort();
     manufacturer.innerHTML = '<option value="">Select…</option>' + items.map(n=>`<option>${escapeHtml(n)}</option>`).join('');
@@ -423,7 +404,6 @@
   async function loadModelsForMaker(maker){
     model.innerHTML = '<option value="">Select…</option>';
     if(!maker) return;
-    // models under the same list namespace
     const qs = await getDocs(collection(db,'refdata','lists','manufacturers', maker, 'models'));
     const items = qs.docs.map(d=> d.id).sort();
     model.innerHTML += items.map(m=>`<option>${escapeHtml(m)}</option>`).join('');
@@ -443,154 +423,279 @@
       items.map(s=>`<option value="${escapeHtml(s.id)}" data-code="${escapeHtml(s.code||'')}">${escapeHtml(s.name||s.id)}</option>`).join('');
   }
 
-  async function loadDepartmentsForSite(siteId){
-    deptSel.innerHTML = '<option value="">Select department…</option>';
-    roomSel.innerHTML = '<option value="">Select room…</option>';
-    DEPT_CACHE = [];
-    if(!siteId) return;
+  /* ===== searchable selects (vanilla) ===== */
+  function createSearchSelect({container, placeholder='Type to search', data=[], getLabel, getValue, onChange}){
+    container.innerHTML = `
+      <div class="field flex items-center justify-between gap-2 cursor-text">
+        <input class="flex-1 bg-transparent outline-none" placeholder="${placeholder}" />
+        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="absolute z-50 mt-1 w-full card p-1 max-h-64 overflow-auto hidden"></div>
+    `;
+    const input = container.querySelector('input');
+    const panel = container.querySelector('.card');
+    let cur = null;
 
-    const selectedSiteCode = siteSel.selectedOptions[0]?.dataset.code || '';
-
-    // try top-level collection by siteId
-    let qs = await getDocs(query(collection(db,'departments'), where('siteId','==', siteId)));
-    if(qs.empty && selectedSiteCode){
-      // or by siteCode
-      qs = await getDocs(query(collection(db,'departments'), where('siteCode','==', selectedSiteCode)));
+    function render(list){
+      panel.innerHTML = '';
+      list.forEach(item=>{
+        const a = document.createElement('button');
+        a.type='button';
+        a.className='w-full text-left px-3 py-2 rounded hover:bg-slate-100';
+        a.textContent = getLabel(item);
+        a.addEventListener('click', ()=>{
+          cur = getValue(item);
+          input.value = getLabel(item);
+          panel.classList.add('hidden');
+          onChange?.(cur, item);
+        });
+        panel.appendChild(a);
+      });
+      if(list.length===0){
+        panel.innerHTML = '<div class="px-3 py-2 text-slate-500 text-sm">No results</div>';
+      }
     }
-    if(!qs.empty){
-      DEPT_CACHE = qs.docs.map(d=> ({ id:d.id, ...d.data() }));
-    }else{
-      // fallback: subcollection under site
-      const sub = await getDocs(collection(db,'sites', siteId, 'departments'));
-      DEPT_CACHE = sub.docs.map(d=> ({ id:d.id, ...d.data() }));
+    function open(){ panel.classList.remove('hidden'); }
+    function close(){ panel.classList.add('hidden'); }
+    function filtered(){
+      const q = input.value.trim().toLowerCase();
+      if(!q) return data.slice(0,200);
+      return data.filter(x=> getLabel(x).toLowerCase().includes(q));
     }
 
-    DEPT_CACHE.sort((a,b)=> (a.name||'').localeCompare(b.name||''));
-    DEPT_CACHE.forEach(x=>{
-      const opt = document.createElement('option');
-      opt.value = x.id;
-      opt.textContent = x.name || x.id;
-      opt.dataset.code = x.code || '';
-      deptSel.appendChild(opt);
-    });
+    input.addEventListener('focus', ()=>{ open(); render(filtered()); });
+    input.addEventListener('input', ()=>{ open(); render(filtered()); });
+    document.addEventListener('click', (e)=>{ if(!container.contains(e.target)) close(); });
+
+    return {
+      setData(newData){ data = newData||[]; render(filtered()); },
+      setValue(val){
+        cur = val;
+        const item = data.find(d=> getValue(d)===val);
+        input.value = item? getLabel(item): '';
+      },
+      getValue(){ return cur; }
+    };
   }
 
-  async function loadRoomsForDept(deptId){
-    roomSel.innerHTML = '<option value="">Select room…</option>';
-    ROOM_CACHE = [];
-    if(!deptId) return;
+  /* ===== Departments & Rooms based on your schema ===== */
+  let deptSS = null;
+  let roomSS = null;
 
-    // try top-level collection
-    let qs = await getDocs(query(collection(db,'rooms'), where('departmentId','==', deptId)));
-    if(qs.empty){
-      // fallback: subcollection under dept
-      const sub = await getDocs(collection(db,'departments', deptId, 'rooms'));
-      ROOM_CACHE = sub.docs.map(d=> ({ id:d.id, ...d.data() }));
-    }else{
-      ROOM_CACHE = qs.docs.map(d=> ({ id:d.id, ...d.data() }));
+  async function loadDepartmentsForSite(siteId){
+    // تهيئة الـ UI
+    if(!deptSS){
+      deptSS = createSearchSelect({
+        container: deptBox,
+        placeholder: 'Type to search departments…',
+        data: [],
+        getLabel: d => d.name || d.id,
+        getValue: d => d.id,
+        onChange: (val, item)=>{
+          deptSelValue = val; // val = departmentCode (doc id)
+          deptCodeEl.textContent = item?.code || val || '—';
+          loadRoomsForDept(val);
+        }
+      });
+    }
+    if(!roomSS){
+      roomSS = createSearchSelect({
+        container: roomBox,
+        placeholder: 'Type to search rooms…',
+        data: [],
+        getLabel: r => r.name || r.id,
+        getValue: r => r.id,
+        onChange: (val)=>{ roomSelValue = val; }
+      });
     }
 
-    ROOM_CACHE.sort((a,b)=> (a.name||'').localeCompare(b.name||''));
-    ROOM_CACHE.forEach(x=>{
-      const opt = document.createElement('option');
-      opt.value = x.id;
-      opt.textContent = x.name || x.id;
-      roomSel.appendChild(opt);
-    });
+    deptSS.setData([]); deptSS.setValue(null);
+    roomSS.setData([]); roomSS.setValue(null);
+    deptSelValue = ''; roomSelValue = '';
+    deptCodeEl.textContent = '—';
+
+    if(!siteId) return;
+
+    const siteCode = siteSel.selectedOptions[0]?.dataset.code || '';
+    // الكولكشن اسمه 'department' والفلترة على siteCode
+    let qs = await getDocs(query(collection(db,'department'), where('siteCode','==', siteCode)));
+    DEPT_CACHE = qs.docs.map(d=> ({
+      id: d.id,                // departmentCode
+      name: d.data().name || d.id,
+      code: d.id,
+      siteCode
+    })).sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+
+    deptSS.setData(DEPT_CACHE);
+  }
+
+  async function loadRoomsForDept(departmentCode){
+    roomSS.setData([]); roomSS.setValue(null);
+    roomSelValue = '';
+    if(!departmentCode) return;
+
+    // الكولكشن اسمه 'room' والفلترة على departmentCode
+    let qs = await getDocs(query(collection(db,'room'), where('departmentCode','==', departmentCode)));
+    ROOM_CACHE = qs.docs.map(d=> ({
+      id: d.id,
+      name: d.data().name || d.id,
+      departmentCode
+    })).sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+
+    roomSS.setData(ROOM_CACHE);
   }
 
   function updateCodesPreview(){
     siteCodeEl.textContent = siteSel.selectedOptions[0]?.dataset.code || '—';
-    deptCodeEl.textContent = deptSel.selectedOptions[0]?.dataset.code || '—';
+    const dep = DEPT_CACHE.find(d=> d.id === deptSelValue);
+    deptCodeEl.textContent = dep?.code || '—';
   }
 
-  /* ===== add to ref lists ===== */
-  async function promptAddToRef(listName, targetSelect){
-    const v = prompt(`Add new ${listName.slice(0,-1)}:`); // "manufacturer" or "supplier"
-    const name = (v||'').trim(); if(!name) return;
-    await setDoc(doc(db,'refdata','lists', listName, name), { createdAt: serverTimestamp() }, { merge:true });
-    if(listName==='manufacturers') await loadManufacturers();
-    if(listName==='suppliers') await loadSuppliers();
-    targetSelect.value = name;
-  }
+  /* ===== repeaters (documentation + photos) ===== */
+  const DOC_GROUPS = [
+    'PM Report','Calibration Certificate','User Manual','Service Manual',
+    'Acceptance Report','Warranty Card','Other',
+    'أمر الشراء','الحساب البنكي','السجل التجاري','تصميم ميانير'
+  ];
 
-  async function promptAddModel(){
-    const maker = (manufacturer.value||'').trim();
-    if(!maker){ alert('Select manufacturer first'); return; }
+  function makeDropZone(){
+    const el = document.createElement('div');
+    el.className = 'dropzone';
+    el.innerHTML = `
+      <div class="text-sm">
+        Drop files to attach, or
+        <label class="text-blue-600 underline cursor-pointer">browse
+          <input type="file" multiple class="hidden">
+        </label>
+      </div>
+      <div class="mt-2 space-y-1 text-sm" data-list></div>
+    `;
+    const input = el.querySelector('input[type=file]');
+    const list  = el.querySelector('[data-list]');
 
-    const v = prompt('Add new model:');
-    const m = (v||'').trim(); if(!m) return;
-
-    try{
-      await setDoc(
-        // ✅ path with even segments (valid doc ref)
-        doc(db,'refdata','lists','manufacturers', maker, 'models', m),
-        { createdAt: serverTimestamp() },
-        { merge: true }
-      );
-      await loadModelsForMaker(maker);
-      model.value = m;
-      alert('Model added.');
-    }catch(e){
-      console.error(e);
-      alert('Cannot add model: ' + (e.message||e));
-    }
-  }
-
-  /* ===== files UI ===== */
-  function renderFileTitles(kind){
-    if(kind==='img'){
-      imgList.innerHTML = '';
-      [...imgFiles.files].forEach((f, idx)=>{
+    function addFiles(files){
+      [...files].forEach(f=>{
         const row = document.createElement('div');
-        row.className = 'flex items-center gap-2';
-        row.innerHTML = `
-          <span class="chip">${escapeHtml(f.name)}</span>
-          <input class="field flex-1" data-type="img" data-idx="${idx}" placeholder="Image title (optional)">
-        `;
-        imgList.appendChild(row);
-      });
-    }else{
-      docList.innerHTML = '';
-      [...docFiles.files].forEach((f, idx)=>{
-        const row = document.createElement('div');
-        row.className = 'flex items-center gap-2';
-        row.innerHTML = `
-          <span class="chip">${escapeHtml(f.name)}</span>
-          <input class="field flex-1" data-type="doc" data-idx="${idx}" placeholder="Document title (optional)">
-        `;
-        docList.appendChild(row);
+        row.textContent = `${f.name} — ${(f.size/1024).toFixed(1)} KB`;
+        row.dataset.name = f.name;
+        list.appendChild(row);
       });
     }
+    el.addEventListener('dragover', e=>{ e.preventDefault(); el.classList.add('drag'); });
+    el.addEventListener('dragleave', ()=> el.classList.remove('drag'));
+    el.addEventListener('drop', e=>{
+      e.preventDefault(); el.classList.remove('drag');
+      addFiles(e.dataTransfer.files);
+      const dt = new DataTransfer();
+      [...input.files, ...e.dataTransfer.files].forEach(f=> dt.items.add(f));
+      input.files = dt.files;
+    });
+    input.addEventListener('change', ()=> addFiles(input.files));
+    return { root: el, input, list };
   }
 
+  function addDocRepeaterRow(){
+    const row = document.createElement('div');
+    row.className = 'grid grid-cols-1 md:grid-cols-3 gap-3 items-start';
+
+    // group searchable
+    const groupBox = document.createElement('div');
+    groupBox.innerHTML = `<label class="block mb-1">Document Group</label><div class="relative" data-ss></div>`;
+    row.appendChild(groupBox);
+
+    // dropzone
+    const dzWrap = document.createElement('div');
+    dzWrap.innerHTML = `<label class="block mb-1">Documentation</label>`;
+    const dz = makeDropZone();
+    dzWrap.appendChild(dz.root);
+    row.appendChild(dzWrap);
+
+    // delete
+    const actions = document.createElement('div');
+    actions.className='flex items-start justify-end';
+    actions.innerHTML = `<button type="button" class="btn">🗑️</button>`;
+    actions.querySelector('button').addEventListener('click', ()=> row.remove());
+    row.appendChild(actions);
+
+    docRepeater.appendChild(row);
+
+    // SearchSelect for group
+    const ss = createSearchSelect({
+      container: groupBox.querySelector('[data-ss]'),
+      placeholder: 'Type to search',
+      data: DOC_GROUPS.map(g=>({label:g, val:g})),
+      getLabel: x=> x.label,
+      getValue: x=> x.val
+    });
+
+    // expose helpers
+    row.__dzInput = dz.input;
+    row.__groupInput = groupBox.querySelector('input');
+  }
+
+  function addImgRepeaterRow(){
+    const row = document.createElement('div');
+    row.className = 'grid grid-cols-1 md:grid-cols-3 gap-3 items-start';
+
+    // title
+    const titleDiv = document.createElement('div');
+    titleDiv.innerHTML = `<label class="block mb-1">Title</label><input class="field" placeholder="Image title (optional)" />`;
+    row.appendChild(titleDiv);
+
+    // dropzone
+    const dzWrap = document.createElement('div');
+    dzWrap.innerHTML = `<label class="block mb-1">Image Files</label>`;
+    const dz = makeDropZone();
+    dzWrap.appendChild(dz.root);
+    row.appendChild(dzWrap);
+
+    // delete
+    const actions = document.createElement('div');
+    actions.className='flex items-start justify-end';
+    actions.innerHTML = `<button type="button" class="btn">🗑️</button>`;
+    actions.querySelector('button').addEventListener('click', ()=> row.remove());
+    row.appendChild(actions);
+
+    imgRepeater.appendChild(row);
+
+    row.__dzInput = dz.input;
+    row.__titleInput = titleDiv.querySelector('input');
+  }
+
+  /* ===== upload based on repeaters ===== */
   async function uploadFiles(controlNo){
     const images = [];
-    const docs   = [];
+    const documents = [];
 
-    if(imgFiles.files.length){
-      for(const [idx, f] of [...imgFiles.files].entries()){
-        const titleInput = imgList.querySelector(`input[data-type="img"][data-idx="${idx}"]`);
-        const title = titleInput?.value?.trim() || '';
-        const r = sref(st, `equipment/${controlNo}/images/${f.name}`);
-        await uploadBytes(r, f);
-        const url = await getDownloadURL(r);
-        images.push({ title, name: f.name, url, type: f.type || 'image' });
+    // docs
+    for(const r of [...docRepeater.children]){
+      const input = r.__dzInput;
+      const groupValue = r.__groupInput?.value?.trim() || 'Other';
+      if(input?.files?.length){
+        for(const f of input.files){
+          const ref = sref(st, `equipment/${controlNo}/docs/${f.name}`);
+          await uploadBytes(ref, f);
+          const url = await getDownloadURL(ref);
+          documents.push({ group: groupValue, name: f.name, size: f.size, url, type: f.type || 'file' });
+        }
       }
     }
 
-    if(docFiles.files.length){
-      for(const [idx, f] of [...docFiles.files].entries()){
-        const titleInput = docList.querySelector(`input[data-type="doc"][data-idx="${idx}"]`);
-        const title = titleInput?.value?.trim() || '';
-        const r = sref(st, `equipment/${controlNo}/docs/${f.name}`);
-        await uploadBytes(r, f);
-        const url = await getDownloadURL(r);
-        docs.push({ title, name: f.name, url, type: f.type || 'file' });
+    // images
+    for(const r of [...imgRepeater.children]){
+      const input = r.__dzInput;
+      const title = r.__titleInput?.value?.trim() || '';
+      if(input?.files?.length){
+        for(const f of input.files){
+          const ref = sref(st, `equipment/${controlNo}/images/${f.name}`);
+          await uploadBytes(ref, f);
+          const url = await getDownloadURL(ref);
+          images.push({ title, name: f.name, size: f.size, url, type: f.type || 'image' });
+        }
       }
     }
 
-    return { images, docs };
+    return { images, documents };
   }
 
   /* ===== uniqueness + control generation ===== */
@@ -604,9 +709,10 @@
     });
   }
 
-  async function generateControl(siteId, siteCode, deptCode){
-    if(!siteId || !siteCode || !deptCode) throw new Error('Missing site/department code.');
-    const cRef = doc(db,'counters','site', siteId); // counters/site/{siteId}
+  async function generateControl(siteCode, deptCode){
+    if(!siteCode || !deptCode) throw new Error('Missing site/department code.');
+    // counter per siteCode (ثابت حتى لو تغيّر id)
+    const cRef = doc(db,'counters','site', siteCode);
     let seq = 1;
     await runTransaction(db, async (tx)=>{
       const s = await tx.get(cRef);
@@ -619,7 +725,10 @@
 
   /* ===== collect + validate + save ===== */
   function collectPayload(){
-    const so = siteSel.selectedOptions[0], doo = deptSel.selectedOptions[0];
+    const siteCode = siteSel.selectedOptions[0]?.dataset.code || '';
+    const siteName = siteSel.selectedOptions[0]?.textContent || '';
+    const dep = DEPT_CACHE.find(d=> d.id === deptSelValue);
+
     return {
       ecriName: ecriName.value || '',
       ecriCode: ecriCode.value || '',
@@ -632,12 +741,12 @@
       supplier: supplier.value || '',
       contractNo: (devClass.value==='A'||devClass.value==='B') ? (contractNo.value||'') : '',
       siteId: siteSel.value || '',
-      siteCode: so?.dataset.code || '',
-      siteName: so?.textContent || '',
-      departmentId: deptSel.value || '',
-      deptCode: doo?.dataset.code || '',
-      departmentName: doo?.textContent || '',
-      roomId: roomSel.value || '',
+      siteCode,
+      siteName,
+      departmentId: deptSelValue || '',        // بنخزن الكود كـ ID
+      deptCode: dep?.code || deptSelValue || '',
+      departmentName: dep?.name || '',
+      roomId: roomSelValue || '',
       warranty: warranty.value || 'no',
       commissioningDate: (warranty.value==='yes' ? (commissionDate.value||'') : ''),
       pmPeriodMonths: pmPeriod.value===''? null : Number(pmPeriod.value),
@@ -661,20 +770,21 @@
 
   async function onSave(){
     try{
+      const siteCode = siteSel.selectedOptions[0]?.dataset.code || '';
       const p = collectPayload();
       validate(p);
       await reserveUnique(p);
 
-      const controlNo = await generateControl(p.siteId, p.siteCode, p.deptCode);
+      const controlNo = await generateControl(siteCode, p.deptCode);
       control.value = controlNo;
 
-      const { images, docs } = await uploadFiles(controlNo);
+      const { images, documents } = await uploadFiles(controlNo);
 
       await setDoc(doc(db,'Equipment', controlNo), {
         ...p,
         control: controlNo,
         images,
-        documents: docs,
+        documents,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       }, { merge:true });
@@ -687,7 +797,7 @@
     }
   }
 
-  /* ===== AI Assist logic (local now, ready for Cloud Function) ===== */
+  /* ===== AI Assist (local now) ===== */
   function localSuggest(description, limit=5){
     const q = (description||'').toLowerCase().trim();
     if(!q) return [];
@@ -708,18 +818,7 @@
   }
 
   async function getEcriSuggestions(description){
-    // Local (now)
     return localSuggest(description, 5);
-
-    // Cloud Function (later):
-    /*
-    const res = await fetch('https://<cloud-function-url>/assistEcri', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ description })
-    });
-    const data = await res.json(); // [{name, code, reason?}]
-    return data;
-    */
   }
 
   function selectEcriByName(name, code){
@@ -738,7 +837,6 @@
     aiStatus.textContent = 'Thinking…';
     aiResults.innerHTML = '';
     try{
-      if(!ECRI_CACHE.length) await loadEcriCatalog();
       const items = await getEcriSuggestions(aiDesc.value);
       aiStatus.textContent = items.length ? '' : 'No suggestions. Try another description.';
       items.forEach(x=>{
