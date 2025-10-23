@@ -3,126 +3,26 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>ECRI Catalog • Import</title>
+  <title>PPM TABUK • Dashboard</title>
+
+  <!-- Tailwind فقط لستايل بسيط للنص -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body{background:#f6f7fb}
-    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 10px 30px rgba(2,6,23,.08)}
-  </style>
+
+  <!-- الثيم الموحد (مطلوب للهيدر) -->
+  <link rel="stylesheet" href="../../css/theme-light.css">
+  <script src="../../js/theme.js" defer></script>
+
+  <!-- Loader للـ partials (مطلوب للهيدر) -->
+  <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
 </head>
-<body class="min-h-screen flex items-center justify-center p-6">
-  <div class="card w-full max-w-2xl p-6">
-    <h1 class="text-2xl font-bold mb-4">Import ECRI Catalog → Firestore</h1>
-    <ol class="list-decimal pl-6 text-slate-700 mb-4">
-      <li class="mb-2">اختر ملف <b>CSV</b> أو <b>JSON</b> بصيغة: <code>{code, name}</code> (حمّله من الروابط عندك).</li>
-      <li class="mb-2">اضغط “Start Import”.</li>
-    </ol>
 
-    <input id="file" type="file" accept=".csv,.json" class="mb-3 block w-full text-sm"/>
-    <div class="flex gap-2">
-      <button id="btnStart" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-semibold">Start Import</button>
-      <button id="btnStop" class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold">Stop</button>
-    </div>
+<body class="bg-slate-50 min-h-screen">
+  <!-- ✅ الهيدر فقط -->
+  <header data-include="/PPM-Tabuk/partials/header.html?v=2" class="w-full max-w-none"></header>
 
-    <pre id="log" class="mt-4 p-3 bg-slate-50 border rounded text-xs h-72 overflow-auto"></pre>
-  </div>
-
-  <!-- Firebase -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getFirestore, writeBatch, doc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-
-    // مشروعك (نفس الموجود في الصفحات)
-    const firebaseConfig = {
-      apiKey:"AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
-      authDomain:"pmqrtabuk.firebaseapp.com",
-      projectId:"pmqrtabuk",
-      storageBucket:"pmqrtabuk.firebasestorage.app",
-      messagingSenderId:"305570616285",
-      appId:"1:305570616285:web:4f6839fd08b8b5aa131c34"
-    };
-    const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
-
-    const $ = s=>document.querySelector(s);
-    const log = (m)=>{ const el=$("#log"); el.textContent += m + "\\n"; el.scrollTop = el.scrollHeight; };
-
-    let STOP = false;
-    $("#btnStop").onclick = ()=>{ STOP = true; log("⛔️ Stopping after current batch..."); };
-
-    function safeId(s){
-      return String(s||"")
-        .trim()
-        .replace(/[./#$\\[\\]]/g,'-')  // ممنوعات Firestore
-        .replace(/\\s+/g,'-')          // مسافات
-        .toUpperCase();
-    }
-
-    // قراءة CSV بسيطة (يفضل CSV من الرابط اللي جهزته لك)
-    function parseCSV(text){
-      const lines = text.split(/\\r?\\n/).filter(Boolean);
-      if(lines.length===0) return [];
-      const head = lines[0].split(',').map(h=>h.trim().toLowerCase());
-      const iCode = head.indexOf('code');
-      const iName = head.indexOf('name');
-      if(iCode===-1 || iName===-1) throw new Error("CSV must have 'code' and 'name' headers");
-      const out = [];
-      for(let i=1;i<lines.length;i++){
-        const cols = lines[i].split(',');
-        out.push({ code: (cols[iCode]||'').trim(), name: (cols[iName]||'').trim() });
-      }
-      return out.filter(x=>x.code && x.name);
-    }
-
-    async function importRecords(rows){
-      // يكتب على كوليكشن ecri_catalog
-      const CHUNK = 400;
-      let done = 0;
-      for(let i=0; i<rows.length; i+=CHUNK){
-        if(STOP) break;
-        const batch = writeBatch(db);
-        const slice = rows.slice(i, i+CHUNK);
-        slice.forEach(r=>{
-          const id = safeId(r.code || r.name);
-          const ref = doc(db, 'ecri_catalog', id);
-          batch.set(ref, {
-            code: r.code || '',
-            name: r.name || '',
-            // حقول إضافية اختيارية للبحث السريع:
-            search: ((r.code||'') + ' ' + (r.name||'')).toLowerCase()
-          });
-        });
-        await batch.commit();
-        done += slice.length;
-        log(`✅ Committed ${done}/${rows.length}`);
-      }
-      if(!STOP) log("🎉 Finished!");
-    }
-
-    $("#btnStart").onclick = async ()=>{
-      STOP = false;
-      $("#log").textContent = "";
-      const f = $("#file").files[0];
-      if(!f){ log("❌ Choose a file first."); return; }
-
-      try{
-        const text = await f.text();
-        let rows = [];
-        if(f.name.toLowerCase().endsWith('.csv')){
-          rows = parseCSV(text);
-        }else if(f.name.toLowerCase().endsWith('.json')){
-          rows = JSON.parse(text);
-          if(!Array.isArray(rows)) throw new Error("JSON must be an array of {code,name}");
-        }else{
-          throw new Error("Unsupported file type. Use CSV or JSON.");
-        }
-        log(`📦 Parsed ${rows.length} rows`);
-        await importRecords(rows);
-      }catch(err){
-        log("❌ " + err.message);
-        console.error(err);
-      }
-    };
-  </script>
+  <!-- رسالة مؤقتة في منتصف الصفحة -->
+  <main class="grid place-items-center py-24">
+    <div class="text-slate-600 text-xl font-semibold">Page setup coming soon</div>
+  </main>
 </body>
 </html>
