@@ -148,7 +148,7 @@
       <div>
         <label class="block mb-1">Control Number</label>
         <input id="control" class="field mono" readonly placeholder="SITE/DEPT/###">
-        <div class="hint">Generated per site as <b>SiteCode/DeptCode/seq</b>.</div>
+        <div class="hint">Generated per site as <b>SiteCode/DeptCode/seq</b>. (Preview updates on selection; final reserved on Save)</div>
       </div>
     </div>
   </section>
@@ -296,7 +296,7 @@
     bindUI();
   });
 
-  function escapeHtml(s){return String(s??'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));}
+  function escapeHtml(s){return String(s??'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[m]));}
 
   /* ===== ECRI catalog ===== */
   async function loadEcriCatalog(){
@@ -317,13 +317,8 @@
     if(!code) return;
     const m = ECRI_CACHE.find(x=> String(x.code) === code);
     if(m){
-      // set option (أو أضف لو مش موجود)
       let opt = [...ecriName.options].find(o=> (o.value||'').toLowerCase() === String(m.name||'').toLowerCase());
-      if(!opt){
-        opt = document.createElement('option');
-        opt.value = m.name; opt.textContent = m.name; opt.dataset.code = m.code;
-        ecriName.appendChild(opt);
-      }
+      if(!opt){ opt = document.createElement('option'); opt.value = m.name; opt.textContent = m.name; opt.dataset.code = m.code; ecriName.appendChild(opt); }
       ecriName.value = m.name;
     }
   });
@@ -354,10 +349,8 @@
     if(!val) return;
     const ref = doc(db,'refdata','lists', kind, val);
     await setDoc(ref, { createdAt: serverTimestamp() }, { merge:true });
-    // reload
     if(kind==='manufacturers') await loadManufacturers();
     if(kind==='suppliers') await loadSuppliers();
-    // select it
     const opt = [...selectEl.options].find(o=>o.value===val);
     if(opt) selectEl.value = val;
   }
@@ -437,9 +430,12 @@
         data: [],
         getLabel: d => d.name || d.id,
         getValue: d => d.id,
-        onChange: (val, item)=>{
+        onChange: async (val, item)=>{
           deptSelValue = val; deptCodeEl.textContent = item?.code || val;
-          loadRoomsForDept(val);
+          await loadRoomsForDept(val);
+          // ✅ Preview control number فورًا بعد اختيار القسم
+          const siteCode = siteSel.selectedOptions[0]?.dataset.code || '';
+          await peekNextControl(siteCode, val);
         }
       });
     }
@@ -460,7 +456,7 @@
 
     const siteName = siteSel.selectedOptions[0]?.textContent?.trim() || '';
     siteCodeEl.textContent = siteSel.selectedOptions[0]?.dataset.code || '—';
-    if(!siteName) return;
+    if(!siteName) { control.value=''; return; }
 
     let qs = await getDocs(query(collection(db,'department'), where('siteName','==', siteName)));
     if(qs.empty){
@@ -474,6 +470,8 @@
     })).sort((a,b)=> (a.name||'').localeCompare(b.name||''));
 
     deptSS.setData(DEPT_CACHE);
+    // عند تغيير الموقع فقط، امسح الـPreview لحد ما القسم يتحدد
+    control.value='';
   }
 
   async function loadRoomsForDept(deptCode){
@@ -487,7 +485,9 @@
 
   siteSel.addEventListener('change', async ()=>{
     await loadDepartmentsForSite();
-    control.value='';
+    // لو كان فيه قسم مختار قبل كده (نادرًا)، حدّث المعاينة
+    const siteCode = siteSel.selectedOptions[0]?.dataset.code || '';
+    if(deptSelValue) await peekNextControl(siteCode, deptSelValue);
   });
 
   /* ===== Docs/Photos Repeaters ===== */
@@ -642,6 +642,17 @@
     return max;
   }
 
+  // ✅ Preview: قراءة الرقم التالي المتوقع بدون حجز
+  async function peekNextControl(siteCode, deptCode){
+    if(!siteCode || !deptCode){ control.value=''; return; }
+    const cRef = doc(db, 'counters', 'site', siteCode);
+    let next = 1;
+    const snap = await getDoc(cRef);
+    if (snap.exists()) next = (snap.data().next || 1); else next = (await getMaxSeqForSite(siteCode)) + 1;
+    control.value = `${siteCode}/${deptCode}/${String(next).padStart(3, '0')}`;
+  }
+
+  // الحجز الفعلي عند الحفظ فقط
   async function generateControl(siteCode, deptCode){
     if(!siteCode || !deptCode) throw new Error('Missing site/department code.');
     const cRef = doc(db,'counters','site', siteCode);
@@ -710,8 +721,6 @@
 
   async function onSave(){
     try{
-      // deps / site
-      await loadDepartmentsForSite(); // in case user forgot to reselect
       const p0 = collectPayload(); const p = validate(p0);
       await reserveUnique(p);
 
@@ -735,7 +744,10 @@
       alert('Error: ' + (e.message||e));
     }
   }
-  btnSave.addEventListener('click', onSave);
+
+  function bindUI(){
+    btnSave.addEventListener('click', onSave);
+  }
 
   /* AI Assist (local on ECRI_CACHE.search/name) */
   const aiModal = document.getElementById('aiModal');
@@ -778,7 +790,6 @@
         <button class="btn btn-brand">Use</button>
       `;
       row.querySelector('button').addEventListener('click', ()=>{
-        // apply
         let opt = [...ecriName.options].find(o=> (o.value||'').toLowerCase()===String(x.name||'').toLowerCase());
         if(!opt){ opt=document.createElement('option'); opt.value=x.name; opt.textContent=x.name; opt.dataset.code=x.code; ecriName.appendChild(opt); }
         ecriName.value = x.name; ecriCode.value = x.code || '';
@@ -787,7 +798,6 @@
       aiResults.appendChild(row);
     });
   });
-
 </script>
 </body>
 </html>
