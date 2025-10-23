@@ -16,11 +16,13 @@
     .btn{padding:.55rem .9rem;border-radius:.8rem;border:1px solid #cbd5e1;font-weight:600}
     .btn-brand{background:#2563eb;color:#fff;border-color:#2563eb}
     .btn-brand:hover{background:#1d4ed8}
+    .btn-ghost{background:transparent}
     .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
     .hint{font-size:.8rem;color:#64748b}
     .grid-form{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:.75rem}
     @media (min-width:768px){.grid-form{grid-template-columns:repeat(3,minmax(0,1fr))}}
-    .hidden{display:none}
+    .chip{display:inline-flex;align-items:center;gap:.4rem;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:.25rem .6rem;font-size:.8rem}
+    #aiModal.hidden{display:none}
   </style>
 </head>
 <body>
@@ -43,11 +45,14 @@
     <h2 class="font-semibold text-slate-800">General</h2>
     <div class="grid-form">
 
-      <!-- 1) ECRI Name -->
+      <!-- 1) ECRI Name + AI Assist -->
       <div>
         <label class="block mb-1">ECRI Name</label>
-        <select id="ecriName" class="field"></select>
-        <p class="hint">Loaded from Excel to collection <b>ecri_catalog</b> as {name, code}.</p>
+        <div class="flex gap-2">
+          <select id="ecriName" class="field flex-1"></select>
+          <button id="btnEcriAI" type="button" class="btn">🤖 AI Assist</button>
+        </div>
+        <p class="hint">Loaded from <b>ecri_catalog</b> (name + code). Use AI Assist to find the proper ECRI by description.</p>
       </div>
 
       <!-- 2) ECRI Code -->
@@ -56,7 +61,7 @@
         <input id="ecriCode" class="field mono" readonly placeholder="auto from catalog">
       </div>
 
-      <!-- 3) Manufacturer (with add-new) -->
+      <!-- 3) Manufacturer -->
       <div>
         <label class="block mb-1">Manufacturer</label>
         <div class="flex gap-2">
@@ -65,7 +70,7 @@
         </div>
       </div>
 
-      <!-- 4) Model (with add-new) -->
+      <!-- 4) Model -->
       <div>
         <label class="block mb-1">Model</label>
         <div class="flex gap-2">
@@ -135,20 +140,22 @@
       <div>
         <label class="block mb-1">Site</label>
         <select id="site" class="field"></select>
-        <div class="hint">Site Code: <span id="siteCode" class="mono"></span></div>
+        <div class="hint">Site Code: <span id="siteCode" class="mono">—</span></div>
       </div>
 
-      <!-- 7) Department -->
+      <!-- 7) Department (+ search) -->
       <div>
         <label class="block mb-1">Department</label>
         <select id="department" class="field"></select>
-        <div class="hint">Dept Code: <span id="deptCode" class="mono"></span></div>
+        <input id="departmentSearch" class="field mt-2" placeholder="Search departments...">
+        <div class="hint">Dept Code: <span id="deptCode" class="mono">—</span></div>
       </div>
 
-      <!-- 8) Room -->
+      <!-- 8) Room (+ search) -->
       <div>
         <label class="block mb-1">Room</label>
         <select id="room" class="field"></select>
+        <input id="roomSearch" class="field mt-2" placeholder="Search rooms...">
       </div>
 
       <!-- 9) Control (auto) -->
@@ -173,7 +180,7 @@
         </select>
       </div>
 
-      <!-- 10b) Commissioning -->
+      <!-- Commissioning -->
       <div id="commissionWrap" class="hidden">
         <label class="block mb-1">Commissioning Date</label>
         <input id="commissionDate" type="date" class="field">
@@ -209,37 +216,61 @@
   <section class="card p-4 space-y-3">
     <h2 class="font-semibold text-slate-800">Files</h2>
     <div class="grid-form">
-      <!-- 12) Image -->
+      <!-- Images (multiple) -->
       <div>
-        <label class="block mb-1">Device Image</label>
-        <input id="imgFile" type="file" accept="image/*" class="field">
+        <label class="block mb-1">Device Images</label>
+        <input id="imgFiles" type="file" accept="image/*" class="field" multiple>
+        <div id="imgList" class="mt-2 space-y-2"></div>
       </div>
 
-      <!-- 18) Documents -->
+      <!-- Documents (multiple) -->
       <div>
         <label class="block mb-1">Documents</label>
         <input id="docFiles" type="file" multiple class="field" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg">
+        <div id="docList" class="mt-2 space-y-2"></div>
       </div>
     </div>
   </section>
 
 </main>
 
+<!-- ============ AI Assist Modal ============ -->
+<div id="aiModal" class="fixed inset-0 hidden items-center justify-center bg-black/40 z-50">
+  <div class="bg-white w-full max-w-2xl rounded-xl p-4 space-y-3">
+    <div class="flex items-center justify-between">
+      <h3 class="text-lg font-semibold">AI Assist — Pick ECRI</h3>
+      <button id="aiClose" class="btn">✕</button>
+    </div>
+
+    <label class="block mb-1">Describe the device</label>
+    <textarea id="aiDesc" class="field w-full" rows="4"
+      placeholder="Example: 2-channel ECG patient monitor with NIBP and SpO2..."></textarea>
+
+    <div class="flex gap-2 items-center">
+      <button id="aiSuggest" class="btn btn-brand">Get suggestions</button>
+      <span id="aiStatus" class="hint"></span>
+    </div>
+
+    <div id="aiResults" class="space-y-2"></div>
+  </div>
+</div>
+
 <script type="module">
-  // ✅ استخدم firebase.js الموجود عندك
+  /* ===== project firebase ===== */
   import { auth, db } from "/PPM-Tabuk/js/firebase.js";
 
-  // نستخدم Storage من CDN بدون تعديل firebase.js
+  /* extra SDKs */
   import { getStorage, ref as sref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
   import {
     doc, getDoc, setDoc, collection, getDocs, query, where, orderBy,
     runTransaction, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-  import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
   const st = getStorage();
 
-  // Elements
+  /* ===== elements ===== */
+  const $ = s => document.querySelector(s);
   const ecriName = $('#ecriName'), ecriCode = $('#ecriCode');
   const manufacturer = $('#manufacturer'), model = $('#model');
   const addMaker = $('#addMaker'), addModel = $('#addModel');
@@ -249,12 +280,27 @@
 
   const siteSel = $('#site'), deptSel = $('#department'), roomSel = $('#room');
   const siteCodeEl = $('#siteCode'), deptCodeEl = $('#deptCode'), control = $('#control');
+  const depSearch = $('#departmentSearch'), roomSearch = $('#roomSearch');
 
   const warranty = $('#warranty'), commissionWrap = $('#commissionWrap'), commissionDate = $('#commissionDate');
   const pmPeriod = $('#pmPeriod'), lastPm = $('#lastPm'), nextPm = $('#nextPm');
 
-  const imgFile = $('#imgFile'), docFiles = $('#docFiles'), btnSave = $('#btnSave');
+  const imgFiles = $('#imgFiles'), docFiles = $('#docFiles');
+  const imgList  = $('#imgList'),  docList  = $('#docList');
+  const btnSave  = $('#btnSave');
 
+  /* ===== AI modal elems ===== */
+  const aiModal   = $('#aiModal'), aiClose = $('#aiClose');
+  const aiDesc    = $('#aiDesc'), aiSuggest = $('#aiSuggest');
+  const aiResults = $('#aiResults'); const aiStatus = $('#aiStatus');
+  const btnEcriAI = $('#btnEcriAI');
+
+  /* ===== caches ===== */
+  let ECRI_CACHE = []; // {name, code}
+  let DEPT_CACHE = []; // {id,name,code,siteId}
+  let ROOM_CACHE = []; // {id,name,departmentId}
+
+  /* ===== init ===== */
   onAuthStateChanged(auth, async (user)=>{
     if(!user){ location.replace("../../login.html"); return; }
 
@@ -269,32 +315,86 @@
   });
 
   function bindUI(){
+    // ECRI mapping
     ecriName.addEventListener('change', ()=>{
       ecriCode.value = ecriName.selectedOptions[0]?.dataset.code || '';
     });
 
+    // Contract show/hide
     devClass.addEventListener('change', ()=>{
       const v = devClass.value;
       contractWrap.classList.toggle('hidden', !(v==='A'||v==='B'));
     });
 
+    // Warranty commissioning
     warranty.addEventListener('change', ()=> commissionWrap.classList.toggle('hidden', warranty.value!=='yes'));
+
+    // PM calc
     [pmPeriod, lastPm].forEach(el=> el.addEventListener('change', calcNextPM));
 
+    // Location flows
     siteSel.addEventListener('change', async ()=>{
       await loadDepartmentsForSite(siteSel.value);
       await loadRoomsForDept(deptSel.value);
       updateCodesPreview();
+      // reset control view (it will be re-created on save)
+      control.value = '';
     });
     deptSel.addEventListener('change', async ()=>{
       await loadRoomsForDept(deptSel.value);
       updateCodesPreview();
+      control.value = '';
     });
 
+    // Searchable selects
+    attachSearchableSelect(deptSel, depSearch);
+    attachSearchableSelect(roomSel, roomSearch);
+
+    // Add refs
     addMaker.addEventListener('click', ()=> promptAddToRef('manufacturers', manufacturer));
     addModel.addEventListener('click', ()=> promptAddModel());
     addSupplier.addEventListener('click', ()=> promptAddToRef('suppliers', supplier));
+
+    // Control field hard lock
+    lockControlField();
+
+    // Files UI (titles per file)
+    imgFiles.addEventListener('change', renderFileTitles.bind(null, 'img'));
+    docFiles.addEventListener('change', renderFileTitles.bind(null, 'doc'));
+
+    // Save
     btnSave.addEventListener('click', onSave);
+
+    // AI modal
+    btnEcriAI?.addEventListener('click', ()=>{
+      aiDesc.value = ''; aiResults.innerHTML = ''; aiStatus.textContent = '';
+      aiModal.classList.remove('hidden'); aiModal.classList.add('flex');
+      aiDesc.focus();
+    });
+    aiClose?.addEventListener('click', ()=> aiModal.classList.add('hidden'));
+    aiModal?.addEventListener('click', e=>{ if(e.target===aiModal) aiModal.classList.add('hidden'); });
+    aiSuggest?.addEventListener('click', onAISuggest);
+  }
+
+  /* ===== helpers ===== */
+  function escapeHtml(s){return String(s??'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));}
+
+  function attachSearchableSelect(selectEl, inputEl){
+    if(!selectEl || !inputEl) return;
+    inputEl.addEventListener('input', ()=>{
+      const q = inputEl.value.toLowerCase().trim();
+      [...selectEl.options].forEach((o, idx)=>{
+        if(idx===0) return; // placeholder
+        const txt = (o.textContent||'').toLowerCase();
+        o.hidden = q && !txt.includes(q);
+      });
+    });
+  }
+
+  function lockControlField(){
+    control.setAttribute('readonly','readonly');
+    control.setAttribute('tabindex','-1');
+    ['keydown','beforeinput','paste'].forEach(ev=> control.addEventListener(ev, e=> e.preventDefault()));
   }
 
   function calcNextPM(){
@@ -306,116 +406,189 @@
     nextPm.value = d.toISOString().slice(0,10);
   }
 
-  /* ====== Load Reference Data (من داتا المشروع) ====== */
-
+  /* ===== reference data ===== */
   async function loadEcriCatalog(){
-    // collection: ecri_catalog {name, code}
     const qs = await getDocs(collection(db,'ecri_catalog'));
-    const items = qs.docs.map(d=> d.data()).sort((a,b)=> a.name.localeCompare(b.name));
+    ECRI_CACHE = qs.docs.map(d=> d.data());
+    const items = ECRI_CACHE.slice().sort((a,b)=> (a.name||'').localeCompare(b.name||''));
     ecriName.innerHTML = '<option value="">Select device…</option>' +
-      items.map(x=> `<option value="${esc(x.name)}" data-code="${esc(x.code||'')}">${esc(x.name)}</option>`).join('');
+      items.map(x=> `<option value="${escapeHtml(x.name)}" data-code="${escapeHtml(x.code||'')}">${escapeHtml(x.name)}</option>`).join('');
   }
 
   async function loadManufacturers(){
-    // refdata/lists/manufacturers/{name}
     const qs = await getDocs(collection(db,'refdata','lists','manufacturers'));
     const items = qs.docs.map(d=> d.id).sort();
-    manufacturer.innerHTML = '<option value="">Select…</option>' + items.map(n=>`<option>${esc(n)}</option>`).join('');
+    manufacturer.innerHTML = '<option value="">Select…</option>' + items.map(n=>`<option>${escapeHtml(n)}</option>`).join('');
   }
   async function loadModelsForMaker(maker){
     model.innerHTML = '<option value="">Select…</option>';
     if(!maker) return;
     const qs = await getDocs(collection(db,'refdata','manufacturers', maker, 'models'));
     const items = qs.docs.map(d=> d.id).sort();
-    model.innerHTML += items.map(m=>`<option>${esc(m)}</option>`).join('');
+    model.innerHTML += items.map(m=>`<option>${escapeHtml(m)}</option>`).join('');
   }
   manufacturer.addEventListener('change', ()=> loadModelsForMaker(manufacturer.value));
 
   async function loadSuppliers(){
     const qs = await getDocs(collection(db,'refdata','lists','suppliers'));
     const items = qs.docs.map(d=> d.id).sort();
-    supplier.innerHTML = '<option value="">Select…</option>' + items.map(n=>`<option>${esc(n)}</option>`).join('');
+    supplier.innerHTML = '<option value="">Select…</option>' + items.map(n=>`<option>${escapeHtml(n)}</option>`).join('');
   }
 
   async function loadSites(){
     const qs = await getDocs(query(collection(db,'sites'), orderBy('name')));
     const items = qs.docs.map(d=> ({ id:d.id, ...d.data() }));
     siteSel.innerHTML = '<option value="">Select site…</option>' +
-      items.map(s=>`<option value="${esc(s.id)}" data-code="${esc(s.code||'')}">${esc(s.name||s.id)}</option>`).join('');
+      items.map(s=>`<option value="${escapeHtml(s.id)}" data-code="${escapeHtml(s.code||'')}">${escapeHtml(s.name||s.id)}</option>`).join('');
   }
+
   async function loadDepartmentsForSite(siteId){
     deptSel.innerHTML = '<option value="">Select department…</option>';
     roomSel.innerHTML = '<option value="">Select room…</option>';
-    if(!siteId) return;
+    if(!siteId){ DEPT_CACHE = []; return; }
+
     const qs = await getDocs(query(collection(db,'departments'), where('siteId','==', siteId)));
-    const items = qs.docs.map(d=> ({ id:d.id, ...d.data() }));
-    deptSel.innerHTML += items.map(x=>`<option value="${esc(x.id)}" data-code="${esc(x.code||'')}">${esc(x.name||x.id)}</option>`).join('');
+    DEPT_CACHE = qs.docs.map(d=> ({ id:d.id, ...d.data() }))
+                        .sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+    DEPT_CACHE.forEach(x=>{
+      const opt = document.createElement('option');
+      opt.value = x.id;
+      opt.textContent = x.name || x.id;
+      opt.dataset.code = x.code || '';
+      deptSel.appendChild(opt);
+    });
   }
+
   async function loadRoomsForDept(deptId){
     roomSel.innerHTML = '<option value="">Select room…</option>';
-    if(!deptId) return;
+    if(!deptId){ ROOM_CACHE = []; return; }
+
     const qs = await getDocs(query(collection(db,'rooms'), where('departmentId','==', deptId)));
-    const items = qs.docs.map(d=> ({ id:d.id, ...d.data() }));
-    roomSel.innerHTML += items.map(x=>`<option value="${esc(x.id)}">${esc(x.name||x.id)}</option>`).join('');
+    ROOM_CACHE = qs.docs.map(d=> ({ id:d.id, ...d.data() }))
+                        .sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+    ROOM_CACHE.forEach(x=>{
+      const opt = document.createElement('option');
+      opt.value = x.id;
+      opt.textContent = x.name || x.id;
+      roomSel.appendChild(opt);
+    });
   }
+
   function updateCodesPreview(){
     siteCodeEl.textContent = siteSel.selectedOptions[0]?.dataset.code || '—';
     deptCodeEl.textContent = deptSel.selectedOptions[0]?.dataset.code || '—';
   }
 
-  /* ====== Add new into reference lists ====== */
+  /* ===== add to ref lists ===== */
   async function promptAddToRef(listName, targetSelect){
-    const v = prompt(`Add new ${listName.slice(0,-1)}:`);
+    const v = prompt(`Add new ${listName.slice(0,-1)}:`); // "manufacturer" or "supplier"
     const name = (v||'').trim(); if(!name) return;
     await setDoc(doc(db,'refdata','lists', listName, name), { createdAt: serverTimestamp() }, { merge:true });
     if(listName==='manufacturers') await loadManufacturers();
     if(listName==='suppliers') await loadSuppliers();
     targetSelect.value = name;
   }
+
   async function promptAddModel(){
-    const maker = manufacturer.value;
+    const maker = manufacturer.value?.trim();
     if(!maker){ alert('Select manufacturer first'); return; }
+
     const v = prompt('Add new model:');
     const m = (v||'').trim(); if(!m) return;
-    await setDoc(doc(db,'refdata','manufacturers', maker, 'models', m), { createdAt: serverTimestamp() }, { merge:true });
-    await loadModelsForMaker(maker);
-    model.value = m;
-  }
 
-  /* ====== Save ====== */
-  async function onSave(){
     try{
-      const p = collectPayload();
-      validate(p);
-
-      // uniqueness on (ecriCode + manufacturer + model + serial)
-      await reserveUnique(p);
-
-      // control number by transaction: counters/site/{siteId}.next
-      const controlNo = await generateControl(p.siteId, p.siteCode, p.deptCode);
-      control.value = controlNo;
-
-      // upload files
-      const {imgUrl, docUrls} = await uploadFiles(controlNo);
-
-      // write document in Equipment
-      await setDoc(doc(db,'Equipment', controlNo), {
-        ...p,
-        control: controlNo,
-        imageUrl: imgUrl || null,
-        documents: docUrls,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      }, { merge:true });
-
-      alert('Saved successfully.');
-      location.href = 'index.html';
+      await setDoc(doc(db,'refdata','manufacturers', maker, 'models', m),
+                   { createdAt: serverTimestamp() }, { merge:true });
+      await loadModelsForMaker(maker);
+      model.value = m;
+      alert('Model added.');
     }catch(e){
       console.error(e);
-      alert('Error: '+(e.message||e));
+      alert('Cannot add model: ' + (e.message||e));
     }
   }
 
+  /* ===== files UI ===== */
+  function renderFileTitles(kind){
+    if(kind==='img'){
+      imgList.innerHTML = '';
+      [...imgFiles.files].forEach((f, idx)=>{
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+        row.innerHTML = `
+          <span class="chip">${escapeHtml(f.name)}</span>
+          <input class="field flex-1" data-type="img" data-idx="${idx}" placeholder="Image title (optional)">
+        `;
+        imgList.appendChild(row);
+      });
+    }else{
+      docList.innerHTML = '';
+      [...docFiles.files].forEach((f, idx)=>{
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+        row.innerHTML = `
+          <span class="chip">${escapeHtml(f.name)}</span>
+          <input class="field flex-1" data-type="doc" data-idx="${idx}" placeholder="Document title (optional)">
+        `;
+        docList.appendChild(row);
+      });
+    }
+  }
+
+  async function uploadFiles(controlNo){
+    const images = [];
+    const docs   = [];
+
+    if(imgFiles.files.length){
+      for(const [idx, f] of [...imgFiles.files].entries()){
+        const titleInput = imgList.querySelector(`input[data-type="img"][data-idx="${idx}"]`);
+        const title = titleInput?.value?.trim() || '';
+        const r = sref(st, `equipment/${controlNo}/images/${f.name}`);
+        await uploadBytes(r, f);
+        const url = await getDownloadURL(r);
+        images.push({ title, name: f.name, url, type: f.type || 'image' });
+      }
+    }
+
+    if(docFiles.files.length){
+      for(const [idx, f] of [...docFiles.files].entries()){
+        const titleInput = docList.querySelector(`input[data-type="doc"][data-idx="${idx}"]`);
+        const title = titleInput?.value?.trim() || '';
+        const r = sref(st, `equipment/${controlNo}/docs/${f.name}`);
+        await uploadBytes(r, f);
+        const url = await getDownloadURL(r);
+        docs.push({ title, name: f.name, url, type: f.type || 'file' });
+      }
+    }
+
+    return { images, docs };
+  }
+
+  /* ===== uniqueness + control generation ===== */
+  async function reserveUnique(p){
+    const key = `${p.ecriCode}|${p.manufacturer}|${p.model}|${p.serial}`.toUpperCase();
+    const uref = doc(db,'uniques','equipment', key);
+    await runTransaction(db, async (tx)=>{
+      const s = await tx.get(uref);
+      if(s.exists()) throw new Error('Duplicate serial for this device/manufacturer/model.');
+      tx.set(uref, { at: serverTimestamp() });
+    });
+  }
+
+  async function generateControl(siteId, siteCode, deptCode){
+    if(!siteId || !siteCode || !deptCode) throw new Error('Missing site/department code.');
+    const cRef = doc(db,'counters','site', siteId); // counters/site/{siteId}
+    let seq = 1;
+    await runTransaction(db, async (tx)=>{
+      const s = await tx.get(cRef);
+      const cur = s.exists()? (s.data().next||1) : 1;
+      seq = cur;
+      tx.set(cRef, { next: cur+1 }, { merge:true });
+    });
+    return `${siteCode}/${deptCode}/${String(seq).padStart(3,'0')}`;
+  }
+
+  /* ===== collect + validate + save ===== */
   function collectPayload(){
     const so = siteSel.selectedOptions[0], doo = deptSel.selectedOptions[0];
     return {
@@ -457,50 +630,109 @@
     if(p.pmPeriodMonths!==null && !p.lastPm) throw new Error('Enter last PM date.');
   }
 
-  async function reserveUnique(p){
-    // uniques/equipment/{UPPER KEY}
-    const key = `${p.ecriCode}|${p.manufacturer}|${p.model}|${p.serial}`.toUpperCase();
-    const uref = doc(db,'uniques','equipment', key);
-    await runTransaction(db, async (tx)=>{
-      const s = await tx.get(uref);
-      if(s.exists()) throw new Error('Duplicate serial for this device/manufacturer/model.');
-      tx.set(uref, {at: serverTimestamp()});
-    });
-  }
+  async function onSave(){
+    try{
+      const p = collectPayload();
+      validate(p);
+      await reserveUnique(p); // uniqueness key
 
-  async function generateControl(siteId, siteCode, deptCode){
-    if(!siteId || !siteCode || !deptCode) throw new Error('Missing site/department code.');
-    const cRef = doc(db,'counters','site', siteId); // counters/site/{siteId}
-    let seq = 1;
-    await runTransaction(db, async (tx)=>{
-      const s = await tx.get(cRef);
-      const cur = s.exists()? (s.data().next||1) : 1;
-      seq = cur;
-      tx.set(cRef, { next: cur+1 }, { merge:true });
-    });
-    return `${siteCode}/${deptCode}/${String(seq).padStart(3,'0')}`;
-  }
+      const controlNo = await generateControl(p.siteId, p.siteCode, p.deptCode);
+      control.value = controlNo;
 
-  async function uploadFiles(controlNo){
-    let imgUrl = null; const docUrls = [];
-    if(imgFile.files[0]){
-      const r = sref(st, `equipment/${controlNo}/image`);
-      await uploadBytes(r, imgFile.files[0]);
-      imgUrl = await getDownloadURL(r);
+      const { images, docs } = await uploadFiles(controlNo);
+
+      await setDoc(doc(db,'Equipment', controlNo), {
+        ...p,
+        control: controlNo,
+        images,
+        documents: docs,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }, { merge:true });
+
+      alert('Saved successfully.');
+      location.href = 'index.html';
+    }catch(e){
+      console.error(e);
+      alert('Error: '+(e.message||e));
     }
-    if(docFiles.files.length){
-      for(const f of docFiles.files){
-        const r = sref(st, `equipment/${controlNo}/docs/${f.name}`);
-        await uploadBytes(r, f);
-        const url = await getDownloadURL(r);
-        docUrls.push({name:f.name, url});
-      }
-    }
-    return {imgUrl, docUrls};
   }
 
-  function $(s){ return document.querySelector(s); }
-  function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+  /* ===== AI Assist logic (local now, ready for Cloud Function) ===== */
+  function localSuggest(description, limit=5){
+    const q = (description||'').toLowerCase().trim();
+    if(!q) return [];
+    const scored = ECRI_CACHE.map(x=>{
+      const name = (x.name||'').toLowerCase();
+      let score = 0;
+      if(name.includes(q)) score += 3;
+      const parts = q.split(/\s+/).filter(Boolean);
+      let hits = 0; parts.forEach(p=>{ if(name.includes(p)) hits++; });
+      score += hits;
+      if(name.startsWith(q)) score += 2;
+      return {item:x, score};
+    }).filter(s=> s.score>0)
+      .sort((a,b)=> b.score - a.score)
+      .slice(0, limit)
+      .map(s=> s.item);
+    return scored;
+  }
+
+  async function getEcriSuggestions(description){
+    // Local (now)
+    return localSuggest(description, 5);
+
+    // Cloud Function (later):
+    /*
+    const res = await fetch('https://<cloud-function-url>/assistEcri', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ description })
+    });
+    const data = await res.json(); // [{name, code, reason?}]
+    return data;
+    */
+  }
+
+  function selectEcriByName(name, code){
+    const opt = [...ecriName.options].find(o => (o.value||'').toLowerCase() === String(name||'').toLowerCase());
+    if(opt) ecriName.value = opt.value;
+    else {
+      const o = document.createElement('option');
+      o.value = name; o.textContent = name; o.dataset.code = code||'';
+      ecriName.appendChild(o);
+      ecriName.value = name;
+    }
+    ecriCode.value = code || '';
+  }
+
+  async function onAISuggest(){
+    aiStatus.textContent = 'Thinking…';
+    aiResults.innerHTML = '';
+    try{
+      if(!ECRI_CACHE.length) await loadEcriCatalog();
+      const items = await getEcriSuggestions(aiDesc.value);
+      aiStatus.textContent = items.length ? '' : 'No suggestions. Try another description.';
+      items.forEach(x=>{
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between border rounded-lg p-2';
+        row.innerHTML = `
+          <div>
+            <div class="font-semibold">${escapeHtml(x.name||'Unknown')}</div>
+            <div class="text-xs text-slate-500">ECRI Code: <span class="mono">${escapeHtml(x.code||'-')}</span></div>
+          </div>
+          <button class="btn btn-brand">Use</button>
+        `;
+        row.querySelector('button').addEventListener('click', ()=>{
+          selectEcriByName(x.name, x.code);
+          aiModal.classList.add('hidden');
+        });
+        aiResults.appendChild(row);
+      });
+    }catch(e){
+      console.error(e);
+      aiStatus.textContent = 'Error.';
+    }
+  }
 </script>
 </body>
 </html>
