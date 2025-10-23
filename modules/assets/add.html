@@ -478,84 +478,103 @@
     };
   }
 
-  /* ===== Departments & Rooms based on your schema ===== */
-  let deptSS = null;
-  let roomSS = null;
+  /* ===== Departments & Rooms based on your schema (by siteName) ===== */
+let deptSS = null;
+let roomSS = null;
 
-  async function loadDepartmentsForSite(siteId){
-    // تهيئة الـ UI
-    if(!deptSS){
-      deptSS = createSearchSelect({
-        container: deptBox,
-        placeholder: 'Type to search departments…',
-        data: [],
-        getLabel: d => d.name || d.id,
-        getValue: d => d.id,
-        onChange: (val, item)=>{
-          deptSelValue = val; // val = departmentCode (doc id)
-          deptCodeEl.textContent = item?.code || val || '—';
-          loadRoomsForDept(val);
-        }
-      });
-    }
-    if(!roomSS){
-      roomSS = createSearchSelect({
-        container: roomBox,
-        placeholder: 'Type to search rooms…',
-        data: [],
-        getLabel: r => r.name || r.id,
-        getValue: r => r.id,
-        onChange: (val)=>{ roomSelValue = val; }
-      });
-    }
+async function loadDepartmentsForSite(siteId /*unused*/){
+  // إنشاء الـSearchSelect مرّة واحدة
+  if(!deptSS){
+    deptSS = createSearchSelect({
+      container: deptBox,
+      placeholder: 'Type to search departments…',
+      data: [],
+      getLabel: d => d.name || d.id,
+      getValue: d => d.id,
+      onChange: (val, item)=>{
+        deptSelValue = val;                         // departmentCode (doc id)
+        deptCodeEl.textContent = item?.code || val; // عرض الكود
+        loadRoomsForDept(val);                      // حمّل الغرف
+      }
+    });
+  }
+  if(!roomSS){
+    roomSS = createSearchSelect({
+      container: roomBox,
+      placeholder: 'Type to search rooms…',
+      data: [],
+      getLabel: r => r.name || r.id,
+      getValue: r => r.id,
+      onChange: (val)=>{ roomSelValue = val; }
+    });
+  }
 
-    deptSS.setData([]); deptSS.setValue(null);
-    roomSS.setData([]); roomSS.setValue(null);
-    deptSelValue = ''; roomSelValue = '';
-    deptCodeEl.textContent = '—';
+  // تهيئة الواجهة
+  deptSS.setData([]); deptSS.setValue(null);
+  roomSS.setData([]); roomSS.setValue(null);
+  deptSelValue = ''; roomSelValue = '';
+  deptCodeEl.textContent = '—';
 
-    if(!siteId) return;
+  // جِب اسم الموقع من نص الـoption (لازم يطابق المخزون في Firestore)
+  const siteName = siteSel.selectedOptions[0]?.textContent?.trim() || '';
+  if(!siteName) return;
 
+  // الاستعلام الأساسي بالاسم
+  let qs = await getDocs(
+    query(collection(db,'department'), where('siteName','==', siteName))
+  );
+
+  // لو الاسم مش مطابق لأي سبب، جرّب بالكود كنسخة احتياطية
+  if(qs.empty){
     const siteCode = siteSel.selectedOptions[0]?.dataset.code || '';
-    // الكولكشن اسمه 'department' والفلترة على siteCode
-    let qs = await getDocs(query(collection(db,'department'), where('siteCode','==', siteCode)));
-    DEPT_CACHE = qs.docs.map(d=> ({
-      id: d.id,                // departmentCode
-      name: d.data().name || d.id,
-      code: d.id,
-      siteCode
-    })).sort((a,b)=> (a.name||'').localeCompare(b.name||''));
-
-    deptSS.setData(DEPT_CACHE);
+    if(siteCode){
+      qs = await getDocs(
+        query(collection(db,'department'), where('siteCode','==', siteCode))
+      );
+    }
   }
 
-  async function loadRoomsForDept(departmentCode){
-    roomSS.setData([]); roomSS.setValue(null);
-    roomSelValue = '';
-    if(!departmentCode) return;
+  DEPT_CACHE = qs.docs.map(d=> ({
+    id: d.id,                        // departmentCode (MSF/RWDA/…)
+    name: d.data().name || d.id,     // الاسم العربي المخزون
+    code: d.id,                      // نفس الـID
+    siteName
+  })).sort((a,b)=> (a.name||'').localeCompare(b.name||''));
 
-    // الكولكشن اسمه 'room' والفلترة على departmentCode
-    let qs = await getDocs(query(collection(db,'room'), where('departmentCode','==', departmentCode)));
-    ROOM_CACHE = qs.docs.map(d=> ({
-      id: d.id,
-      name: d.data().name || d.id,
-      departmentCode
-    })).sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+  deptSS.setData(DEPT_CACHE);
+}
 
-    roomSS.setData(ROOM_CACHE);
-  }
+async function loadRoomsForDept(departmentCode){
+  roomSS.setData([]); roomSS.setValue(null);
+  roomSelValue = '';
+  if(!departmentCode) return;
 
-  function updateCodesPreview(){
-    siteCodeEl.textContent = siteSel.selectedOptions[0]?.dataset.code || '—';
-    const dep = DEPT_CACHE.find(d=> d.id === deptSelValue);
-    deptCodeEl.textContent = dep?.code || '—';
-  }
+  // الغرف من كولكشن room بفلترة departmentCode
+  const qs = await getDocs(
+    query(collection(db,'room'), where('departmentCode','==', departmentCode))
+  );
+
+  ROOM_CACHE = qs.docs.map(d=> ({
+    id: d.id,
+    name: d.data().name || d.id,
+    departmentCode
+  })).sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+
+  roomSS.setData(ROOM_CACHE);
+}
+
+function updateCodesPreview(){
+  siteCodeEl.textContent = siteSel.selectedOptions[0]?.dataset.code || '—';
+  const dep = DEPT_CACHE.find(d=> d.id === deptSelValue);
+  deptCodeEl.textContent = dep?.code || '—';
+}
+
 
   /* ===== repeaters (documentation + photos) ===== */
   const DOC_GROUPS = [
     'PM Report','Calibration Certificate','User Manual','Service Manual',
     'Acceptance Report','Warranty Card','Other',
-    'أمر الشراء','الحساب البنكي','السجل التجاري','تصميم ميانير'
+    'أمر الشراء','الحساب البنكي','السجل التجاري'
   ];
 
   function makeDropZone(){
