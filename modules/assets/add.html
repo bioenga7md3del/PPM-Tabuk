@@ -1,18 +1,506 @@
-<section id="addPanel" class="card p-4 hidden">
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-    <input id="a_control" placeholder="Control Number" class="px-3 py-2 rounded bg-slate-900 border border-slate-700"/>
-    <input id="a_name" placeholder="Device Name" class="px-3 py-2 rounded bg-slate-900 border border-slate-700"/>
-    <input id="a_brand" placeholder="Brand" class="px-3 py-2 rounded bg-slate-900 border border-slate-700"/>
-    <input id="a_serial" placeholder="Serial Number" class="px-3 py-2 rounded bg-slate-900 border border-slate-700"/>
-    <select id="a_site" class="px-3 py-2 rounded bg-slate-900 border border-slate-700"><option value="">اختر الموقع…</option></select>
-    <select id="a_dept" class="px-3 py-2 rounded bg-slate-900 border border-slate-700"><option value="">اختر القسم…</option></select>
-    <input id="a_loc" placeholder="Location (اختياري)" class="px-3 py-2 rounded bg-slate-900 border border-slate-700"/>
-    <input id="a_tech" placeholder="Technician" class="px-3 py-2 rounded bg-slate-900 border border-slate-700"/>
-    <input id="a_pm" type="date" class="px-3 py-2 rounded bg-slate-900 border border-slate-700"/>
-  </div>
-  <div class="flex gap-2 mt-2">
-    <button id="btnSaveAsset" class="px-3 py-2 rounded bg-emerald-500 text-slate-900 font-bold">حفظ</button>
-    <button id="btnCancelAdd" class="px-3 py-2 rounded bg-slate-600 text-slate-100 font-bold">إغلاق</button>
-  </div>
-</section>
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>PPM TABUK • Add Equipment</title>
 
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../../css/theme-light.css"/>
+  <script src="../../js/theme.js" defer></script>
+  <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
+
+  <style>
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem}
+    .field{padding:.6rem .8rem;border:1px solid #cbd5e1;border-radius:.8rem}
+    .btn{padding:.55rem .9rem;border-radius:.8rem;border:1px solid #cbd5e1;font-weight:600}
+    .btn-brand{background:#2563eb;color:#fff;border-color:#2563eb}
+    .btn-brand:hover{background:#1d4ed8}
+    .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+    .hint{font-size:.8rem;color:#64748b}
+    .grid-form{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:.75rem}
+    @media (min-width:768px){.grid-form{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+
+<!-- Header include -->
+<header data-include="/PPM-Tabuk/partials/header.html?v=2"></header>
+
+<main class="w-full max-w-6xl mx-auto p-4 space-y-4">
+
+  <section class="flex items-center justify-between">
+    <h1 class="text-xl font-bold">Add Equipment</h1>
+    <div class="flex gap-2">
+      <a href="index.html" class="btn">← Back</a>
+      <button id="btnSave" class="btn btn-brand">💾 Save</button>
+    </div>
+  </section>
+
+  <!-- General -->
+  <section class="card p-4 space-y-3">
+    <h2 class="font-semibold text-slate-800">General</h2>
+    <div class="grid-form">
+
+      <!-- 1) ECRI Name -->
+      <div>
+        <label class="block mb-1">ECRI Name</label>
+        <select id="ecriName" class="field"></select>
+        <p class="hint">Loaded from Excel to collection <b>ecri_catalog</b> as {name, code}.</p>
+      </div>
+
+      <!-- 2) ECRI Code -->
+      <div>
+        <label class="block mb-1">ECRI Code</label>
+        <input id="ecriCode" class="field mono" readonly placeholder="auto from catalog">
+      </div>
+
+      <!-- 3) Manufacturer (with add-new) -->
+      <div>
+        <label class="block mb-1">Manufacturer</label>
+        <div class="flex gap-2">
+          <select id="manufacturer" class="field flex-1"></select>
+          <button id="addMaker" type="button" class="btn">+ New</button>
+        </div>
+      </div>
+
+      <!-- 4) Model (with add-new) -->
+      <div>
+        <label class="block mb-1">Model</label>
+        <div class="flex gap-2">
+          <select id="model" class="field flex-1"></select>
+          <button id="addModel" type="button" class="btn">+ New</button>
+        </div>
+      </div>
+
+      <!-- 5) Serial -->
+      <div>
+        <label class="block mb-1">Serial Number</label>
+        <input id="serial" class="field" placeholder="unique with manufacturer+model">
+      </div>
+
+      <!-- 13) Class -->
+      <div>
+        <label class="block mb-1">Device Class</label>
+        <select id="devClass" class="field">
+          <option value="">Select…</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+        </select>
+      </div>
+
+      <!-- 14) Risk -->
+      <div>
+        <label class="block mb-1">Risk Level</label>
+        <select id="risk" class="field">
+          <option value="">Select…</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Normal">Normal</option>
+          <option value="Critical">Critical</option>
+        </select>
+      </div>
+
+      <!-- 15) Price -->
+      <div>
+        <label class="block mb-1">Price (SAR)</label>
+        <input id="price" type="number" step="0.01" class="field" placeholder="e.g. 12500">
+      </div>
+
+      <!-- 16) Supplier -->
+      <div>
+        <label class="block mb-1">Supplier</label>
+        <div class="flex gap-2">
+          <select id="supplier" class="field flex-1"></select>
+          <button id="addSupplier" type="button" class="btn">+ New</button>
+        </div>
+      </div>
+
+      <!-- 17) Contract No. -->
+      <div id="contractWrap" class="hidden">
+        <label class="block mb-1">Maintenance Contract No.</label>
+        <input id="contractNo" class="field" placeholder="only for Class A or B">
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Location -->
+  <section class="card p-4 space-y-3">
+    <h2 class="font-semibold text-slate-800">Location & Control</h2>
+    <div class="grid-form">
+      <!-- 6) Site -->
+      <div>
+        <label class="block mb-1">Site</label>
+        <select id="site" class="field"></select>
+        <div class="hint">Site Code: <span id="siteCode" class="mono"></span></div>
+      </div>
+
+      <!-- 7) Department -->
+      <div>
+        <label class="block mb-1">Department</label>
+        <select id="department" class="field"></select>
+        <div class="hint">Dept Code: <span id="deptCode" class="mono"></span></div>
+      </div>
+
+      <!-- 8) Room -->
+      <div>
+        <label class="block mb-1">Room</label>
+        <select id="room" class="field"></select>
+      </div>
+
+      <!-- 9) Control (auto) -->
+      <div>
+        <label class="block mb-1">Control Number</label>
+        <input id="control" class="field mono" readonly placeholder="SITE/DEPT/###">
+        <div class="hint">Generated per site as <b>SiteCode/DeptCode/seq</b>.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Warranty & PM -->
+  <section class="card p-4 space-y-3">
+    <h2 class="font-semibold text-slate-800">Warranty & Preventive Maintenance</h2>
+    <div class="grid-form">
+      <!-- 10) Warranty -->
+      <div>
+        <label class="block mb-1">Warranty</label>
+        <select id="warranty" class="field">
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </select>
+      </div>
+
+      <!-- 10b) Commissioning -->
+      <div id="commissionWrap" class="hidden">
+        <label class="block mb-1">Commissioning Date</label>
+        <input id="commissionDate" type="date" class="field">
+      </div>
+
+      <!-- 11) PM Period -->
+      <div>
+        <label class="block mb-1">PM Period</label>
+        <select id="pmPeriod" class="field">
+          <option value="">Select…</option>
+          <option value="12">Yearly</option>
+          <option value="6">Semiannual</option>
+          <option value="3">Quarterly</option>
+          <option value="1">Monthly</option>
+          <option value="0">Daily</option>
+        </select>
+      </div>
+
+      <!-- 12) Last / Next PM -->
+      <div>
+        <label class="block mb-1">Last PM Date</label>
+        <input id="lastPm" type="date" class="field">
+      </div>
+      <div>
+        <label class="block mb-1">Next PM Date</label>
+        <input id="nextPm" type="date" class="field" readonly>
+      </div>
+    </div>
+    <p class="hint">Next PM is auto-calculated from period + last PM.</p>
+  </section>
+
+  <!-- Files -->
+  <section class="card p-4 space-y-3">
+    <h2 class="font-semibold text-slate-800">Files</h2>
+    <div class="grid-form">
+      <!-- 12) Image -->
+      <div>
+        <label class="block mb-1">Device Image</label>
+        <input id="imgFile" type="file" accept="image/*" class="field">
+      </div>
+
+      <!-- 18) Documents -->
+      <div>
+        <label class="block mb-1">Documents</label>
+        <input id="docFiles" type="file" multiple class="field" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg">
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script type="module">
+  // ✅ استخدم firebase.js الموجود عندك
+  import { auth, db } from "/PPM-Tabuk/js/firebase.js";
+
+  // نستخدم Storage من CDN بدون تعديل firebase.js
+  import { getStorage, ref as sref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+  import {
+    doc, getDoc, setDoc, collection, getDocs, query, where, orderBy,
+    runTransaction, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+
+  const st = getStorage();
+
+  // Elements
+  const ecriName = $('#ecriName'), ecriCode = $('#ecriCode');
+  const manufacturer = $('#manufacturer'), model = $('#model');
+  const addMaker = $('#addMaker'), addModel = $('#addModel');
+  const serial = $('#serial'), devClass = $('#devClass'), risk = $('#risk');
+  const price = $('#price'), supplier = $('#supplier'), addSupplier = $('#addSupplier');
+  const contractWrap = $('#contractWrap'), contractNo = $('#contractNo');
+
+  const siteSel = $('#site'), deptSel = $('#department'), roomSel = $('#room');
+  const siteCodeEl = $('#siteCode'), deptCodeEl = $('#deptCode'), control = $('#control');
+
+  const warranty = $('#warranty'), commissionWrap = $('#commissionWrap'), commissionDate = $('#commissionDate');
+  const pmPeriod = $('#pmPeriod'), lastPm = $('#lastPm'), nextPm = $('#nextPm');
+
+  const imgFile = $('#imgFile'), docFiles = $('#docFiles'), btnSave = $('#btnSave');
+
+  onAuthStateChanged(auth, async (user)=>{
+    if(!user){ location.replace("../../login.html"); return; }
+
+    await Promise.all([
+      loadEcriCatalog(),
+      loadManufacturers(),
+      loadSuppliers(),
+      loadSites()
+    ]);
+
+    bindUI();
+  });
+
+  function bindUI(){
+    ecriName.addEventListener('change', ()=>{
+      ecriCode.value = ecriName.selectedOptions[0]?.dataset.code || '';
+    });
+
+    devClass.addEventListener('change', ()=>{
+      const v = devClass.value;
+      contractWrap.classList.toggle('hidden', !(v==='A'||v==='B'));
+    });
+
+    warranty.addEventListener('change', ()=> commissionWrap.classList.toggle('hidden', warranty.value!=='yes'));
+    [pmPeriod, lastPm].forEach(el=> el.addEventListener('change', calcNextPM));
+
+    siteSel.addEventListener('change', async ()=>{
+      await loadDepartmentsForSite(siteSel.value);
+      await loadRoomsForDept(deptSel.value);
+      updateCodesPreview();
+    });
+    deptSel.addEventListener('change', async ()=>{
+      await loadRoomsForDept(deptSel.value);
+      updateCodesPreview();
+    });
+
+    addMaker.addEventListener('click', ()=> promptAddToRef('manufacturers', manufacturer));
+    addModel.addEventListener('click', ()=> promptAddModel());
+    addSupplier.addEventListener('click', ()=> promptAddToRef('suppliers', supplier));
+    btnSave.addEventListener('click', onSave);
+  }
+
+  function calcNextPM(){
+    const m = parseInt(pmPeriod.value||'-1',10);
+    const lp = lastPm.value;
+    if(!lp || isNaN(m)){ nextPm.value=''; return; }
+    const d = new Date(lp);
+    if(m===0) d.setDate(d.getDate()+1); else d.setMonth(d.getMonth()+m);
+    nextPm.value = d.toISOString().slice(0,10);
+  }
+
+  /* ====== Load Reference Data (من داتا المشروع) ====== */
+
+  async function loadEcriCatalog(){
+    // collection: ecri_catalog {name, code}
+    const qs = await getDocs(collection(db,'ecri_catalog'));
+    const items = qs.docs.map(d=> d.data()).sort((a,b)=> a.name.localeCompare(b.name));
+    ecriName.innerHTML = '<option value="">Select device…</option>' +
+      items.map(x=> `<option value="${esc(x.name)}" data-code="${esc(x.code||'')}">${esc(x.name)}</option>`).join('');
+  }
+
+  async function loadManufacturers(){
+    // refdata/lists/manufacturers/{name}
+    const qs = await getDocs(collection(db,'refdata','lists','manufacturers'));
+    const items = qs.docs.map(d=> d.id).sort();
+    manufacturer.innerHTML = '<option value="">Select…</option>' + items.map(n=>`<option>${esc(n)}</option>`).join('');
+  }
+  async function loadModelsForMaker(maker){
+    model.innerHTML = '<option value="">Select…</option>';
+    if(!maker) return;
+    const qs = await getDocs(collection(db,'refdata','manufacturers', maker, 'models'));
+    const items = qs.docs.map(d=> d.id).sort();
+    model.innerHTML += items.map(m=>`<option>${esc(m)}</option>`).join('');
+  }
+  manufacturer.addEventListener('change', ()=> loadModelsForMaker(manufacturer.value));
+
+  async function loadSuppliers(){
+    const qs = await getDocs(collection(db,'refdata','lists','suppliers'));
+    const items = qs.docs.map(d=> d.id).sort();
+    supplier.innerHTML = '<option value="">Select…</option>' + items.map(n=>`<option>${esc(n)}</option>`).join('');
+  }
+
+  async function loadSites(){
+    const qs = await getDocs(query(collection(db,'sites'), orderBy('name')));
+    const items = qs.docs.map(d=> ({ id:d.id, ...d.data() }));
+    siteSel.innerHTML = '<option value="">Select site…</option>' +
+      items.map(s=>`<option value="${esc(s.id)}" data-code="${esc(s.code||'')}">${esc(s.name||s.id)}</option>`).join('');
+  }
+  async function loadDepartmentsForSite(siteId){
+    deptSel.innerHTML = '<option value="">Select department…</option>';
+    roomSel.innerHTML = '<option value="">Select room…</option>';
+    if(!siteId) return;
+    const qs = await getDocs(query(collection(db,'departments'), where('siteId','==', siteId)));
+    const items = qs.docs.map(d=> ({ id:d.id, ...d.data() }));
+    deptSel.innerHTML += items.map(x=>`<option value="${esc(x.id)}" data-code="${esc(x.code||'')}">${esc(x.name||x.id)}</option>`).join('');
+  }
+  async function loadRoomsForDept(deptId){
+    roomSel.innerHTML = '<option value="">Select room…</option>';
+    if(!deptId) return;
+    const qs = await getDocs(query(collection(db,'rooms'), where('departmentId','==', deptId)));
+    const items = qs.docs.map(d=> ({ id:d.id, ...d.data() }));
+    roomSel.innerHTML += items.map(x=>`<option value="${esc(x.id)}">${esc(x.name||x.id)}</option>`).join('');
+  }
+  function updateCodesPreview(){
+    siteCodeEl.textContent = siteSel.selectedOptions[0]?.dataset.code || '—';
+    deptCodeEl.textContent = deptSel.selectedOptions[0]?.dataset.code || '—';
+  }
+
+  /* ====== Add new into reference lists ====== */
+  async function promptAddToRef(listName, targetSelect){
+    const v = prompt(`Add new ${listName.slice(0,-1)}:`);
+    const name = (v||'').trim(); if(!name) return;
+    await setDoc(doc(db,'refdata','lists', listName, name), { createdAt: serverTimestamp() }, { merge:true });
+    if(listName==='manufacturers') await loadManufacturers();
+    if(listName==='suppliers') await loadSuppliers();
+    targetSelect.value = name;
+  }
+  async function promptAddModel(){
+    const maker = manufacturer.value;
+    if(!maker){ alert('Select manufacturer first'); return; }
+    const v = prompt('Add new model:');
+    const m = (v||'').trim(); if(!m) return;
+    await setDoc(doc(db,'refdata','manufacturers', maker, 'models', m), { createdAt: serverTimestamp() }, { merge:true });
+    await loadModelsForMaker(maker);
+    model.value = m;
+  }
+
+  /* ====== Save ====== */
+  async function onSave(){
+    try{
+      const p = collectPayload();
+      validate(p);
+
+      // uniqueness on (ecriCode + manufacturer + model + serial)
+      await reserveUnique(p);
+
+      // control number by transaction: counters/site/{siteId}.next
+      const controlNo = await generateControl(p.siteId, p.siteCode, p.deptCode);
+      control.value = controlNo;
+
+      // upload files
+      const {imgUrl, docUrls} = await uploadFiles(controlNo);
+
+      // write document in Equipment
+      await setDoc(doc(db,'Equipment', controlNo), {
+        ...p,
+        control: controlNo,
+        imageUrl: imgUrl || null,
+        documents: docUrls,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }, { merge:true });
+
+      alert('Saved successfully.');
+      location.href = 'index.html';
+    }catch(e){
+      console.error(e);
+      alert('Error: '+(e.message||e));
+    }
+  }
+
+  function collectPayload(){
+    const so = siteSel.selectedOptions[0], doo = deptSel.selectedOptions[0];
+    return {
+      ecriName: ecriName.value || '',
+      ecriCode: ecriCode.value || '',
+      manufacturer: manufacturer.value || '',
+      model: model.value || '',
+      serial: serial.value || '',
+      devClass: devClass.value || '',
+      risk: risk.value || '',
+      price: price.value ? Number(price.value) : null,
+      supplier: supplier.value || '',
+      contractNo: (devClass.value==='A'||devClass.value==='B') ? (contractNo.value||'') : '',
+      siteId: siteSel.value || '',
+      siteCode: so?.dataset.code || '',
+      siteName: so?.textContent || '',
+      departmentId: deptSel.value || '',
+      deptCode: doo?.dataset.code || '',
+      departmentName: doo?.textContent || '',
+      roomId: roomSel.value || '',
+      warranty: warranty.value || 'no',
+      commissioningDate: (warranty.value==='yes' ? (commissionDate.value||'') : ''),
+      pmPeriodMonths: pmPeriod.value===''? null : Number(pmPeriod.value),
+      lastPm: lastPm.value || '',
+      nextPm: nextPm.value || ''
+    };
+  }
+
+  function validate(p){
+    if(!p.ecriName || !p.ecriCode) throw new Error('Select ECRI name/code.');
+    if(!p.manufacturer) throw new Error('Select manufacturer.');
+    if(!p.model) throw new Error('Select model.');
+    if(!p.serial) throw new Error('Serial is required.');
+    if(!p.siteId || !p.siteCode) throw new Error('Select site.');
+    if(!p.departmentId || !p.deptCode) throw new Error('Select department.');
+    if(!p.devClass) throw new Error('Select class.');
+    if((p.devClass==='A'||p.devClass==='B') && !p.contractNo) throw new Error('Enter contract number.');
+    if(p.warranty==='yes' && !p.commissioningDate) throw new Error('Enter commissioning date.');
+    if(p.pmPeriodMonths!==null && !p.lastPm) throw new Error('Enter last PM date.');
+  }
+
+  async function reserveUnique(p){
+    // uniques/equipment/{UPPER KEY}
+    const key = `${p.ecriCode}|${p.manufacturer}|${p.model}|${p.serial}`.toUpperCase();
+    const uref = doc(db,'uniques','equipment', key);
+    await runTransaction(db, async (tx)=>{
+      const s = await tx.get(uref);
+      if(s.exists()) throw new Error('Duplicate serial for this device/manufacturer/model.');
+      tx.set(uref, {at: serverTimestamp()});
+    });
+  }
+
+  async function generateControl(siteId, siteCode, deptCode){
+    if(!siteId || !siteCode || !deptCode) throw new Error('Missing site/department code.');
+    const cRef = doc(db,'counters','site', siteId); // counters/site/{siteId}
+    let seq = 1;
+    await runTransaction(db, async (tx)=>{
+      const s = await tx.get(cRef);
+      const cur = s.exists()? (s.data().next||1) : 1;
+      seq = cur;
+      tx.set(cRef, { next: cur+1 }, { merge:true });
+    });
+    return `${siteCode}/${deptCode}/${String(seq).padStart(3,'0')}`;
+  }
+
+  async function uploadFiles(controlNo){
+    let imgUrl = null; const docUrls = [];
+    if(imgFile.files[0]){
+      const r = sref(st, `equipment/${controlNo}/image`);
+      await uploadBytes(r, imgFile.files[0]);
+      imgUrl = await getDownloadURL(r);
+    }
+    if(docFiles.files.length){
+      for(const f of docFiles.files){
+        const r = sref(st, `equipment/${controlNo}/docs/${f.name}`);
+        await uploadBytes(r, f);
+        const url = await getDownloadURL(r);
+        docUrls.push({name:f.name, url});
+      }
+    }
+    return {imgUrl, docUrls};
+  }
+
+  function $(s){ return document.querySelector(s); }
+  function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+</script>
+</body>
+</html>
