@@ -421,12 +421,39 @@
     manufacturer.innerHTML = '<option value="">Select…</option>' + items.map(n=>`<option>${escapeHtml(n)}</option>`).join('');
   }
   async function loadModelsForMaker(maker){
-    model.innerHTML = '<option value="">Select…</option>';
-    if(!maker) return;
-    const qs = await getDocs(collection(db,'refdata','manufacturers', maker, 'models'));
-    const items = qs.docs.map(d=> d.id).sort();
-    model.innerHTML += items.map(m=>`<option>${escapeHtml(m)}</option>`).join('');
+  model.innerHTML = '<option value="">Select…</option>';
+  if(!maker) return;
+
+  // ✅ models under: refdata/lists/manufacturers/{maker}/models/{model}
+  const qs = await getDocs(
+    collection(db,'refdata','lists','manufacturers', maker, 'models')
+  );
+  const items = qs.docs.map(d=> d.id).sort();
+  model.innerHTML += items.map(m=>`<option>${escapeHtml(m)}</option>`).join('');
+}
+
+async function promptAddModel(){
+  const maker = (manufacturer.value||'').trim();
+  if(!maker){ alert('Select manufacturer first'); return; }
+
+  const v = prompt('Add new model:');
+  const m = (v||'').trim(); if(!m) return;
+
+  try{
+    await setDoc(
+      // ✅ even segments for doc()
+      doc(db,'refdata','lists','manufacturers', maker, 'models', m),
+      { createdAt: serverTimestamp() },
+      { merge: true }
+    );
+    await loadModelsForMaker(maker);
+    model.value = m;
+    alert('Model added.');
+  }catch(e){
+    console.error(e);
+    alert('Cannot add model: ' + (e.message||e));
   }
+}
   manufacturer.addEventListener('change', ()=> loadModelsForMaker(manufacturer.value));
 
   async function loadSuppliers(){
@@ -442,37 +469,66 @@
       items.map(s=>`<option value="${escapeHtml(s.id)}" data-code="${escapeHtml(s.code||'')}">${escapeHtml(s.name||s.id)}</option>`).join('');
   }
 
-  async function loadDepartmentsForSite(siteId){
-    deptSel.innerHTML = '<option value="">Select department…</option>';
-    roomSel.innerHTML = '<option value="">Select room…</option>';
-    if(!siteId){ DEPT_CACHE = []; return; }
+ let DEPT_CACHE = [];
+let ROOM_CACHE = [];
 
-    const qs = await getDocs(query(collection(db,'departments'), where('siteId','==', siteId)));
-    DEPT_CACHE = qs.docs.map(d=> ({ id:d.id, ...d.data() }))
-                        .sort((a,b)=> (a.name||'').localeCompare(b.name||''));
-    DEPT_CACHE.forEach(x=>{
-      const opt = document.createElement('option');
-      opt.value = x.id;
-      opt.textContent = x.name || x.id;
-      opt.dataset.code = x.code || '';
-      deptSel.appendChild(opt);
-    });
+async function loadDepartmentsForSite(siteId){
+  deptSel.innerHTML = '<option value="">Select department…</option>';
+  roomSel.innerHTML = '<option value="">Select room…</option>';
+  DEPT_CACHE = [];
+
+  if(!siteId) return;
+
+  const selectedSiteCode = siteSel.selectedOptions[0]?.dataset.code || '';
+
+  // محاولة 1: collection مستقلة
+  let qs = await getDocs(query(collection(db,'departments'), where('siteId','==', siteId)));
+  if(qs.empty && selectedSiteCode){
+    // محاولة 2: بالـsiteCode
+    qs = await getDocs(query(collection(db,'departments'), where('siteCode','==', selectedSiteCode)));
+  }
+  if(!qs.empty){
+    DEPT_CACHE = qs.docs.map(d=> ({ id:d.id, ...d.data() }));
+  }else{
+    // محاولة 3: subcollection تحت الموقع
+    const sub = await getDocs(collection(db,'sites', siteId, 'departments'));
+    DEPT_CACHE = sub.docs.map(d=> ({ id:d.id, ...d.data() }));
   }
 
-  async function loadRoomsForDept(deptId){
-    roomSel.innerHTML = '<option value="">Select room…</option>';
-    if(!deptId){ ROOM_CACHE = []; return; }
+  DEPT_CACHE.sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+  DEPT_CACHE.forEach(x=>{
+    const opt = document.createElement('option');
+    opt.value = x.id;
+    opt.textContent = x.name || x.id;
+    opt.dataset.code = x.code || '';
+    deptSel.appendChild(opt);
+  });
+}
 
-    const qs = await getDocs(query(collection(db,'rooms'), where('departmentId','==', deptId)));
-    ROOM_CACHE = qs.docs.map(d=> ({ id:d.id, ...d.data() }))
-                        .sort((a,b)=> (a.name||'').localeCompare(b.name||''));
-    ROOM_CACHE.forEach(x=>{
-      const opt = document.createElement('option');
-      opt.value = x.id;
-      opt.textContent = x.name || x.id;
-      roomSel.appendChild(opt);
-    });
+async function loadRoomsForDept(deptId){
+  roomSel.innerHTML = '<option value="">Select room…</option>';
+  ROOM_CACHE = [];
+  if(!deptId) return;
+
+  // محاولة 1: collection مستقلة
+  let qs = await getDocs(query(collection(db,'rooms'), where('departmentId','==', deptId)));
+  if(qs.empty){
+    // محاولة 2: subcollection rooms تحت department كـ doc
+    const sub = await getDocs(collection(db,'departments', deptId, 'rooms'));
+    ROOM_CACHE = sub.docs.map(d=> ({ id:d.id, ...d.data() }));
+  }else{
+    ROOM_CACHE = qs.docs.map(d=> ({ id:d.id, ...d.data() }));
   }
+
+  ROOM_CACHE.sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+  ROOM_CACHE.forEach(x=>{
+    const opt = document.createElement('option');
+    opt.value = x.id;
+    opt.textContent = x.name || x.id;
+    roomSel.appendChild(opt);
+  });
+}
+
 
   function updateCodesPreview(){
     siteCodeEl.textContent = siteSel.selectedOptions[0]?.dataset.code || '—';
