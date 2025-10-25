@@ -3,290 +3,437 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>PPM TABUK • Assets</title>
+  <title>PPM TABUK • Equipment</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="../../css/theme-light.css">
+  <link rel="stylesheet" href="../../css/theme-light.css"/>
   <script src="../../js/theme.js" defer></script>
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
 
-  <!-- Active nav: Red only (بسيط) -->
   <style>
-    #mainNav > a.active,
-    #mainNav .dd > a.active { color:#ef4444!important; font-weight:800!important; }
-    #mainNav > a.active::after,
-    #mainNav .dd > a.active::after { content:none!important; }
-    #mainNav > a, #mainNav .dd > a {
-      background:none!important; -webkit-text-fill-color:initial!important;
-    }
-    #mainNav > a:hover, #mainNav .dd > a:hover { color:#fca5a5!important; }
-
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
-    .btn{padding:.4rem .75rem;border-radius:.75rem;border:1px solid #cbd5e1;font-size:.875rem}
-    .btn-ghost{background:transparent}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem}
+    .field{padding:.6rem .8rem;border:1px solid #cbd5e1;border-radius:.8rem}
+    .btn{padding:.5rem .85rem;border-radius:.7rem;border:1px solid #cbd5e1;font-weight:600}
     .btn-brand{background:#2563eb;color:#fff;border-color:#2563eb}
     .btn-brand:hover{background:#1d4ed8}
-    .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem}
-    .field{padding:.6rem .8rem;border:1px solid #cbd5e1;border-radius:1rem}
+    .btn-danger{background:#dc2626;color:#fff;border-color:#dc2626}
+    .btn-danger:hover{background:#b91c1c}
+    .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+    th.sticky{position:sticky;top:0;background:#0f172a;color:#fff}
+    .hint{font-size:.8rem;color:#64748b}
+    .badge{display:inline-flex;align-items:center;padding:.1rem .5rem;border-radius:999px;font-size:.75rem;border:1px solid #e2e8f0;background:#f8fafc}
   </style>
 </head>
 <body>
 
-  <!-- Header include -->
-  <header data-include="/PPM-Tabuk/partials/header.html?v=2" class="w-full max-w-none"></header>
+<header data-include="/PPM-Tabuk/partials/header.html?v=2"></header>
 
-  <main class="w-full max-w-none mx-auto p-3 md:p-6 space-y-6">
+<main class="w-full max-w-7xl mx-auto p-4 space-y-4">
 
-    <!-- Title + actions -->
-    <section class="flex flex-wrap justify-between items-center gap-2">
-      <h1 class="text-xl font-bold text-slate-800">Assets Management</h1>
+  <!-- Title + actions -->
+  <section class="flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-xl font-bold">Equipment</h1>
+    <div class="flex gap-2">
+      <a href="../assets/add.html" class="btn btn-brand">➕ Add Equipment</a>
+      <button id="btnDeleteSelected" class="btn btn-danger" disabled>🗑️ Delete Selected (<span id="selCount">0</span>)</button>
+    </div>
+  </section>
+
+  <!-- Filters -->
+  <section class="card p-4 space-y-3">
+    <h2 class="font-semibold text-slate-800">Filters</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      <input id="f_ecriCode" class="field mono" placeholder="ECRI Code">
+      <input id="f_ecriName" class="field" placeholder="ECRI Name">
+      <select id="f_site" class="field"></select>
+      <select id="f_dept" class="field" disabled></select>
+
+      <select id="f_warranty" class="field">
+        <option value="">Warranty: All</option>
+        <option value="yes">Warranty: Yes</option>
+        <option value="no">Warranty: No</option>
+      </select>
+
+      <input id="f_maker" class="field" placeholder="Manufacturer">
+      <input id="f_model" class="field" placeholder="Model">
+      <input id="f_serial" class="field mono" placeholder="Serial">
+      <select id="f_class" class="field">
+        <option value="">Class: All</option>
+        <option value="A">Class A</option>
+        <option value="B">Class B</option>
+        <option value="C">Class C</option>
+      </select>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3 pt-2">
+      <button id="btnReset" class="btn">↺ Reset</button>
+
+      <div class="ml-auto flex items-center gap-2">
+        <label class="text-sm text-slate-600">Rows per page</label>
+        <select id="pageSize" class="field">
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+          <option value="1000">1000</option>
+          <option value="all">All</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <!-- Table -->
+  <section class="card p-0 overflow-hidden">
+    <div class="overflow-auto" dir="ltr">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-900 text-white">
+          <tr>
+            <th class="p-2 sticky"><input type="checkbox" id="chkAll"></th>
+            <th class="p-2 sticky">#</th>
+            <th class="p-2 sticky">Control</th>
+            <th class="p-2 sticky">ECRI Code</th>
+            <th class="p-2 sticky">ECRI Name</th>
+            <th class="p-2 sticky">Site</th>
+            <th class="p-2 sticky">Department</th>
+            <th class="p-2 sticky">Manufacturer</th>
+            <th class="p-2 sticky">Model</th>
+            <th class="p-2 sticky">Serial</th>
+            <th class="p-2 sticky">Warranty</th>
+            <th class="p-2 sticky">Class</th>
+            <th class="p-2 sticky">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="flex items-center justify-between p-3">
+      <div class="text-sm text-slate-600">
+        <span id="pageInfo"></span>
+      </div>
       <div class="flex gap-2">
-        <a href="import.html" class="btn btn-ghost">⬆️ Import Devices</a>
-        <a href="add.html" class="btn btn-brand">➕ Add New Device</a>
+        <button id="btnPrev" class="btn">← Prev</button>
+        <button id="btnNext" class="btn">Next →</button>
       </div>
-    </section>
+    </div>
+  </section>
+</main>
 
-    <!-- Filters -->
-    <section class="card p-4">
-      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        <input id="f_control" class="field" placeholder="Control number">
-        <input id="f_name" class="field" placeholder="Device name">
-        <select id="f_site" class="field"></select>
-        <select id="f_department" class="field"></select>
-      </div>
-    </section>
+<script type="module">
+  import { auth, db } from "/PPM-Tabuk/js/firebase.js";
+  import {
+    collection, getDocs, query, orderBy, deleteDoc, doc
+  } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
-    <!-- Table -->
-    <section class="card p-3">
-      <div class="overflow-auto">
-        <table class="min-w-full text-sm">
-          <thead class="bg-slate-800 text-white">
-            <tr>
-              <th class="p-2">#</th>
-              <th class="p-2">Control</th>
-              <th class="p-2">Name</th>
-              <th class="p-2">Site</th>
-              <th class="p-2">Department</th>
-              <th class="p-2">Brand</th>
-              <th class="p-2">Model</th>
-              <th class="p-2">Serial</th>
-              <th class="p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
+  /* Elements */
+  const $ = s => document.querySelector(s);
+  const tbody = $('#tbody');
+  const selCount = $('#selCount');
+  const btnDeleteSelected = $('#btnDeleteSelected');
+  const chkAll = $('#chkAll');
+  const pageInfo = $('#pageInfo');
+  const btnPrev = $('#btnPrev');
+  const btnNext = $('#btnNext');
+  const pageSizeSel = $('#pageSize');
 
-  <script type="module">
-    import { auth, db } from "/PPM-Tabuk/js/firebase.js";
-    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import { doc, getDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  const f_ecriCode = $('#f_ecriCode');
+  const f_ecriName = $('#f_ecriName');
+  const f_site     = $('#f_site');
+  const f_dept     = $('#f_dept');
+  const f_warranty = $('#f_warranty');
+  const f_maker    = $('#f_maker');
+  const f_model    = $('#f_model');
+  const f_serial   = $('#f_serial');
+  const f_class    = $('#f_class');
+  const btnReset   = $('#btnReset');
 
-    // Elements
-    const tbody    = document.getElementById("tbody");
-    const fControl = document.getElementById('f_control');
-    const fName    = document.getElementById('f_name');
-    const fSite    = document.getElementById('f_site');
-    const fDept    = document.getElementById('f_department');
+  /* Data */
+  let ALL = [];        // all equipment (from Firestore)
+  let FILTERED = [];   // filtered locally
+  let DEPT_BY_SITE = new Map(); // siteName -> Set(departmentName)
+  let SELECTED = new Set();     // selected control ids for bulk delete
 
-    let ALL = [];
-    let FILTERED = [];
+  /* Pagination state */
+  let pageSize = 20;
+  let page = 1;
 
-    // URL filters (department/room/site)
-    let URL_FILTERS = { site:'', deptName:'', deptCode:'', roomName:'', roomCode:'' };
-
-    // بعد تحميل الهيدر: Logout + تفعيل Active للـ Assets
-    document.addEventListener("partials:loaded", () => {
-      const btnLogout = document.getElementById("btnLogout");
-      if (btnLogout) {
-        btnLogout.addEventListener("click", async (e) => {
-          e.preventDefault();
-          try { await signOut(auth); } finally { location.replace("/PPM-Tabuk/login.html"); }
-        });
-      }
-      markActive("assets");
+  /* Header + auth */
+  document.addEventListener("partials:loaded", ()=>{
+    document.getElementById("btnLogout")?.addEventListener("click", async ()=>{
+      try{ await signOut(auth); } finally{ location.replace("../../login.html"); }
     });
+    // highlight nav
+    const link = document.querySelector('#mainNav a[href*="modules/assets/index.html"]') || document.querySelector('#mainNav a[href*="modules/equipment/index.html"]');
+    link?.classList?.add('active');
+  });
 
-    function markActive(key){
-      const sel = [
-        `#mainNav > a[data-to="${key}"]`,
-        `#mainNav .dd[data-dd="${key}"] > a[data-to="${key}"]`
-      ].join(",");
-      const a = document.querySelector(sel);
-      if (a) a.classList.add("active");
-    }
+  onAuthStateChanged(auth, async (user)=>{
+    if(!user){ location.replace("../../login.html"); return; }
+    try{
+      const el = document.getElementById('userName');
+      if(el) el.textContent = user.email;
+    }catch{}
 
-    // Auth + load
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) { location.replace("/PPM-Tabuk/login.html"); return; }
-      const snap = await getDoc(doc(db, "users", user.uid));
-      const name = snap.exists() ? (snap.data().name || snap.data().nameEn || user.email) : user.email;
-      const el = document.getElementById("userName"); if (el) el.textContent = name;
+    await loadEquipment();
+    buildFilterOptions();  // site + dependent depts
+    applyFilters();
+    bindUI();
+  });
 
-      await loadAssets();
-      await fillFilters();
-      readURLFiltersAndPrefill();
-      applyFilters();
-    });
-
-    async function loadAssets(){
-      const qs = await getDocs(query(collection(db,'assets'), orderBy('control')));
-      // طَبِّع الحقول لتسهيل الفلترة (site/department/room قد تكون بأسماء مختلفة)
-      ALL = qs.docs.map((d, i) => {
-        const a = d.data();
-        return {
-          id: d.id,
-          idx: i+1,
-          ...a,
-          __siteKey: (a.siteCode || a.site || a.siteName || ''),      // قيمة للمقارنة/الفلترة
-          __deptCode: (a.departmentCode || ''),                        // كود القسم
-          __deptName: (a.department || a.departmentName || ''),        // اسم القسم
-          __roomCode: (a.roomCode || ''),                              // كود الغرفة
-          __roomName: (a.room || a.roomName || '')                     // اسم الغرفة
-        };
-      });
-    }
-
-    async function fillFilters(){
-      // جهّز مجموعات القيم المميّزة
-      const siteSet = new Set();
-      const deptMap = new Map(); // key: deptCode OR deptName, val: display text
-
-      ALL.forEach(a => {
-        const siteKey = (a.__siteKey || '').toString().trim();
-        if (siteKey) siteSet.add(siteKey);
-
-        const dCode = (a.__deptCode || '').toString().trim();
-        const dName = (a.__deptName || '').toString().trim();
-        if (dCode) {
-          if (!deptMap.has(dCode)) deptMap.set(dCode, dName || dCode);
-        } else if (dName) {
-          if (!deptMap.has(dName)) deptMap.set(dName, dName);
-        }
-      });
-
-      // Site options (value = siteKey)
-      fSite.innerHTML = '<option value="">All sites</option>' +
-        [...siteSet].sort().map(s => `<option value="${s}">${s}</option>`).join('');
-
-      // Department options (value = deptCode إن وُجد، وإلا الاسم)
-      fDept.innerHTML = '<option value="">All departments</option>' +
-        [...deptMap.entries()]
-          .sort((a,b) => a[1].localeCompare(b[1]))
-          .map(([val, label]) => `<option value="${val}">${label}</option>`)
-          .join('');
-    }
-
-    function readURLFiltersAndPrefill(){
-      const usp = new URLSearchParams(location.search);
-      const siteParam  = usp.get('site');
-      const deptNameParam = usp.get('department');
-      const deptCodeParam = usp.get('departmentCode');
-      const roomNameParam = usp.get('room');
-      const roomCodeParam = usp.get('roomCode');
-
-      URL_FILTERS = {
-        site: (siteParam||'').trim(),
-        deptName: (deptNameParam||'').trim(),
-        deptCode: (deptCodeParam||'').trim(),
-        roomName: (roomNameParam||'').trim(),
-        roomCode: (roomCodeParam||'').trim()
+  /* Load Equipment from Firestore */
+  async function loadEquipment(){
+    const qs = await getDocs(query(collection(db,'Equipment'), orderBy('control')));
+    ALL = qs.docs.map(d => {
+      const x = d.data();
+      return {
+        id: d.id,                      // control number used as ID
+        control: x.control || d.id,
+        ecriCode: x.ecriCode || '',
+        ecriName: x.ecriName || '',
+        siteName: x.siteName || '',
+        deptName: x.departmentName || '',
+        siteCode: x.siteCode || '',
+        deptCode: x.deptCode || '',
+        manufacturer: x.manufacturer || '',
+        model: x.model || '',
+        serial: x.serial || '',
+        warranty: x.warranty || '',
+        devClass: x.devClass || ''
       };
+    });
 
-      // حاول تضبط السيلكتات على قد ما تقدر من URL
-      if (URL_FILTERS.site) {
-        const opt = [...fSite.options].find(o => (o.value||'').toLowerCase() === URL_FILTERS.site.toLowerCase());
-        if (opt) fSite.value = opt.value;
-      }
-      if (URL_FILTERS.deptCode) {
-        const optD = [...fDept.options].find(o => (o.value||'').toLowerCase() === URL_FILTERS.deptCode.toLowerCase());
-        if (optD) fDept.value = optD.value;
-      } else if (URL_FILTERS.deptName) {
-        // طابق بالاسم (label)
-        const optD = [...fDept.options].find(o => (o.textContent||'').toLowerCase() === URL_FILTERS.deptName.toLowerCase());
-        if (optD) fDept.value = optD.value;
-      }
+    // Build site -> departments map
+    DEPT_BY_SITE.clear();
+    ALL.forEach(a=>{
+      const s = a.siteName || '';
+      const d = a.deptName || '';
+      if(!s) return;
+      if(!DEPT_BY_SITE.has(s)) DEPT_BY_SITE.set(s, new Set());
+      if(d) DEPT_BY_SITE.get(s).add(d);
+    });
+  }
+
+  /* Build filter select options */
+  function buildFilterOptions(){
+    // Sites
+    const sites = [...new Set(ALL.map(a=> a.siteName).filter(Boolean))].sort();
+    f_site.innerHTML = '<option value="">Site: All</option>' + sites.map(s=> `<option>${escapeHtml(s)}</option>`).join('');
+    // Departments will be filled when a site is chosen
+    f_dept.innerHTML = '<option value="">Department: All</option>';
+    f_dept.disabled = true;
+  }
+
+  function fillDepartmentsForSelectedSite(){
+    const site = f_site.value.trim();
+    f_dept.innerHTML = '<option value="">Department: All</option>';
+    if(!site){
+      f_dept.disabled = true;
+      return;
     }
+    const depts = DEPT_BY_SITE.get(site);
+    if(!depts || depts.size===0){
+      f_dept.disabled = true;
+      return;
+    }
+    const arr = [...depts].sort();
+    f_dept.innerHTML += arr.map(d=> `<option>${escapeHtml(d)}</option>`).join('');
+    f_dept.disabled = false;
+  }
 
-    function applyFilters(){
-      const qControl = (fControl.value||'').trim().toLowerCase();
-      const qName    = (fName.value||'').trim().toLowerCase();
-      const qSiteSel = (fSite.value||'').trim().toLowerCase();       // من السيلكت
-      const qDeptSel = (fDept.value||'').trim().toLowerCase();       // من السيلكت
+  function escapeHtml(s){return String(s??'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));}
 
-      // URL params (site/department/room)
-      const qSiteURL  = (URL_FILTERS.site||'').toLowerCase();
-      const qDeptName = (URL_FILTERS.deptName||'').toLowerCase();
-      const qDeptCode = (URL_FILTERS.deptCode||'').toLowerCase();
-      const qRoomName = (URL_FILTERS.roomName||'').toLowerCase();
-      const qRoomCode = (URL_FILTERS.roomCode||'').toLowerCase();
+  /* Filtering */
+  function applyFilters(){
+    const qCode  = f_ecriCode.value.trim().toLowerCase();
+    const qName  = f_ecriName.value.trim().toLowerCase();
+    const qSite  = f_site.value.trim().toLowerCase();
+    const qDept  = f_dept.value.trim().toLowerCase();
+    const qWar   = f_warranty.value; // '', 'yes', 'no'
+    const qMaker = f_maker.value.trim().toLowerCase();
+    const qModel = f_model.value.trim().toLowerCase();
+    const qSerial= f_serial.value.trim().toLowerCase();
+    const qClass = f_class.value.trim().toUpperCase(); // A/B/C or ''
 
-      FILTERED = ALL.filter(a=>{
-        const control = (a.control||'').toString().toLowerCase();
-        const name    = (a.name||'').toString().toLowerCase();
+    FILTERED = ALL.filter(a=>{
+      const okCode  = !qCode  || (a.ecriCode||'').toLowerCase().includes(qCode);
+      const okName  = !qName  || (a.ecriName||'').toLowerCase().includes(qName);
+      const okSite  = !qSite  || (a.siteName||'').toLowerCase() === qSite;
+      const okDept  = !qDept  || (a.deptName||'').toLowerCase() === qDept;
+      const okWar   = !qWar   || (a.warranty||'') === qWar;
+      const okMaker = !qMaker || (a.manufacturer||'').toLowerCase().includes(qMaker);
+      const okModel = !qModel || (a.model||'').toLowerCase().includes(qModel);
+      const okSerial= !qSerial|| (a.serial||'').toLowerCase().includes(qSerial);
+      const okClass = !qClass || (a.devClass||'').toUpperCase() === qClass;
+      return okCode && okName && okSite && okDept && okWar && okMaker && okModel && okSerial && okClass;
+    });
 
-        const siteKey = (a.__siteKey||'').toString().toLowerCase();
+    page = 1; // reset to first page on filter
+    render();
+  }
 
-        const deptCodeField = (a.__deptCode||'').toString().toLowerCase();
-        const deptNameField = (a.__deptName||'').toString().toLowerCase();
+  /* Pagination helpers */
+  function getPageItems(){
+    if(pageSizeSel.value === 'all') return FILTERED;
+    pageSize = parseInt(pageSizeSel.value || '20', 10);
+    const start = (page-1)*pageSize;
+    return FILTERED.slice(start, start + pageSize);
+  }
+  function updatePager(){
+    const total = FILTERED.length;
+    if(pageSizeSel.value === 'all'){
+      pageInfo.textContent = `Showing ${total} of ${total}`;
+      btnPrev.disabled = true; btnNext.disabled = true;
+      return;
+    }
+    const size = parseInt(pageSizeSel.value||'20', 10);
+    const pages = Math.max(1, Math.ceil(total / size));
+    if(page > pages) page = pages;
+    const start = (page-1)*size + 1;
+    const end   = Math.min(total, page*size);
+    pageInfo.textContent = `Showing ${start}-${end} of ${total} (Page ${page}/${pages})`;
+    btnPrev.disabled = (page<=1);
+    btnNext.disabled = (page>=pages);
+  }
 
-        const roomCodeField = (a.__roomCode||'').toString().toLowerCase();
-        const roomNameField = (a.__roomName||'').toString().toLowerCase();
+  /* Render table */
+  function render(){
+    tbody.innerHTML = '';
+    const items = getPageItems();
+    if(items.length === 0){
+      tbody.innerHTML = `<tr><td colspan="13" class="p-4 text-center text-slate-500">No equipment found.</td></tr>`;
+      updatePager();
+      return;
+    }
+    // header checkbox reflect current page
+    chkAll.checked = items.every(x=> SELECTED.has(x.id));
 
-        // فلاتر من الواجهة
-        const okC  = !qControl || control.includes(qControl);
-        const okN  = !qName    || name.includes(qName);
-        const okS1 = !qSiteSel || siteKey === qSiteSel;
-        // القسم في الواجهة: القيمة قد تكون كود القسم أو الاسم (حسب المتاح)
-        const okD1 = !qDeptSel || deptCodeField === qDeptSel || deptNameField === qDeptSel;
+    items.forEach((a, idx)=>{
+      const tr = document.createElement('tr');
+      tr.className = 'border-b border-slate-200';
+      const rowNum = (pageSizeSel.value==='all') ? (idx+1) : ((page-1)*parseInt(pageSizeSel.value||'20',10) + idx + 1);
+      tr.innerHTML = `
+        <td class="p-2 text-center">
+          <input type="checkbox" data-id="${escapeHtml(a.id)}" ${SELECTED.has(a.id)?'checked':''}>
+        </td>
+        <td class="p-2 text-center">${rowNum}</td>
+        <td class="p-2 mono whitespace-nowrap">${escapeHtml(a.control)}</td>
+        <td class="p-2 mono">${escapeHtml(a.ecriCode||'')}</td>
+        <td class="p-2">${escapeHtml(a.ecriName||'')}</td>
+        <td class="p-2">${escapeHtml(a.siteName||'')}</td>
+        <td class="p-2">${escapeHtml(a.deptName||'')}</td>
+        <td class="p-2">${escapeHtml(a.manufacturer||'')}</td>
+        <td class="p-2">${escapeHtml(a.model||'')}</td>
+        <td class="p-2 mono">${escapeHtml(a.serial||'')}</td>
+        <td class="p-2">${a.warranty==='yes' ? '<span class="badge">Yes</span>' : (a.warranty==='no' ? '<span class="badge">No</span>' : '')}</td>
+        <td class="p-2">${escapeHtml(a.devClass||'')}</td>
+        <td class="p-2">
+          <div class="flex flex-wrap gap-2">
+            <a class="px-2 py-1 rounded bg-sky-600 hover:bg-sky-700 text-white text-xs" href="../assets/view.html?id=${encodeURIComponent(a.id)}">View</a>
+            <a class="px-2 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-xs" href="../assets/edit.html?id=${encodeURIComponent(a.id)}">Edit</a>
+            <button class="px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-xs" data-del="${escapeHtml(a.id)}">Delete</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
 
-        // فلاتر من URL
-        const okS2 = !qSiteURL  || siteKey.includes(qSiteURL);
-        const okD2 = !qDeptCode || deptCodeField === qDeptCode;
-        const okD3 = !qDeptName || deptNameField === qDeptName || deptNameField.includes(qDeptName);
-        const okR1 = !qRoomCode || roomCodeField === qRoomCode;
-        const okR2 = !qRoomName || roomNameField === qRoomName || roomNameField.includes(qRoomName);
-
-        return okC && okN && okS1 && okD1 && okS2 && okD2 && okD3 && okR1 && okR2;
+    // attach row events
+    tbody.querySelectorAll('input[type=checkbox][data-id]').forEach(cb=>{
+      cb.addEventListener('change', (e)=>{
+        const id = e.target.dataset.id;
+        if(e.target.checked) SELECTED.add(id); else SELECTED.delete(id);
+        updateSelectedUI();
       });
-
-      renderTable();
-    }
-
-    function renderTable(){
-      tbody.innerHTML = '';
-      if (FILTERED.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">No matching devices.</td></tr>`;
-        return;
-      }
-      FILTERED.forEach((a, i) => {
-        const siteDisp = a.site || a.siteName || a.siteCode || '—';
-        const deptDisp = a.department || a.departmentName || a.departmentCode || '—';
-        const tr = document.createElement('tr');
-        tr.className = 'border-b border-slate-200';
-        tr.innerHTML = `
-          <td class="p-2 text-center">${i+1}</td>
-          <td class="p-2 whitespace-nowrap mono">${a.control||'—'}</td>
-          <td class="p-2">${a.name||'—'}</td>
-          <td class="p-2">${siteDisp}</td>
-          <td class="p-2">${deptDisp}</td>
-          <td class="p-2">${a.brand||'—'}</td>
-          <td class="p-2">${a.model||'—'}</td>
-          <td class="p-2">${a.serial||'—'}</td>
-          <td class="p-2 flex gap-2">
-            <a href="edit.html?id=${encodeURIComponent(a.id)}" class="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded">Edit</a>
-            <a href="../preventive/sticker.html#view/${encodeURIComponent(a.control||'')}" target="_blank" class="px-2 py-1 bg-sky-600 hover:bg-sky-700 text-white text-xs rounded">Sticker</a>
-          </td>
-        `;
-        tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll('button[data-del]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.del;
+        if(!confirm(`Delete equipment ${id}?`)) return;
+        try{
+          await deleteDoc(doc(db,'Equipment', id));
+          SELECTED.delete(id);
+          // remove from ALL
+          ALL = ALL.filter(x=> x.id !== id);
+          applyFilters();
+        }catch(err){ alert('Delete error: '+(err.message||err)); }
       });
-    }
+    });
 
-    // UI listeners
-    [fControl, fName].forEach(inp => inp.addEventListener('input', ()=>applyFilters()));
-    [fSite, fDept].forEach(sel => sel.addEventListener('change', ()=>applyFilters()));
-  </script>
+    updatePager();
+  }
+
+  function updateSelectedUI(){
+    selCount.textContent = SELECTED.size;
+    btnDeleteSelected.disabled = (SELECTED.size===0);
+    // also update header checkbox state for current page
+    const items = getPageItems();
+    chkAll.checked = items.length>0 && items.every(x=> SELECTED.has(x.id));
+  }
+
+  /* Bulk delete */
+  btnDeleteSelected.addEventListener('click', async ()=>{
+    if(SELECTED.size===0) return;
+    if(!confirm(`Delete ${SELECTED.size} selected equipment?`)) return;
+    try{
+      const ids = [...SELECTED];
+      for(const id of ids){
+        await deleteDoc(doc(db,'Equipment', id));
+        ALL = ALL.filter(x=> x.id !== id);
+      }
+      SELECTED.clear();
+      applyFilters();
+      alert('Deleted successfully.');
+    }catch(e){
+      alert('Bulk delete error: '+(e.message||e));
+    }
+  });
+
+  /* Header checkbox (current page only) */
+  chkAll.addEventListener('change', ()=>{
+    const items = getPageItems();
+    if(chkAll.checked){
+      items.forEach(x=> SELECTED.add(x.id));
+    }else{
+      items.forEach(x=> SELECTED.delete(x.id));
+    }
+    render(); // refresh check states
+    updateSelectedUI();
+  });
+
+  /* Pager buttons */
+  pageSizeSel.addEventListener('change', ()=>{ page=1; render(); });
+  btnPrev.addEventListener('click', ()=>{ if(page>1){ page--; render(); }});
+  btnNext.addEventListener('click', ()=>{ page++; render(); });
+
+  /* Filters events */
+  [f_ecriCode, f_ecriName, f_maker, f_model, f_serial].forEach(inp=>{
+    inp.addEventListener('input', applyFilters);
+  });
+  [f_warranty, f_class].forEach(sel=>{
+    sel.addEventListener('change', applyFilters);
+  });
+  f_site.addEventListener('change', ()=>{
+    fillDepartmentsForSelectedSite();
+    applyFilters();
+  });
+  f_dept.addEventListener('change', applyFilters);
+
+  btnReset.addEventListener('click', ()=>{
+    f_ecriCode.value = '';
+    f_ecriName.value = '';
+    f_site.value = '';
+    f_dept.innerHTML = '<option value="">Department: All</option>';
+    f_dept.disabled = true;
+    f_warranty.value = '';
+    f_maker.value = '';
+    f_model.value = '';
+    f_serial.value = '';
+    f_class.value = '';
+    pageSizeSel.value = '20';
+    page = 1;
+    applyFilters();
+  });
+
+</script>
 </body>
 </html>
