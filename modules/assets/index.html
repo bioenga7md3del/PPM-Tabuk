@@ -4,12 +4,10 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PPM TABUK • Equipment</title>
-
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../../css/theme-light.css"/>
   <script src="../../js/theme.js" defer></script>
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
-
   <style>
     .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem}
     .field{padding:.6rem .8rem;border:1px solid #cbd5e1;border-radius:.8rem}
@@ -19,18 +17,13 @@
     .btn-danger{background:#dc2626;color:#fff;border-color:#dc2626}
     .btn-danger:hover{background:#b91c1c}
     .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
-    th.sticky{position:sticky;top:0;background:#0f172a;color:#fff}
     .hint{font-size:.8rem;color:#64748b}
     .badge{display:inline-flex;align-items:center;padding:.1rem .5rem;border-radius:999px;font-size:.75rem;border:1px solid #e2e8f0;background:#f8fafc}
   </style>
 </head>
 <body>
-
 <header data-include="/PPM-Tabuk/partials/header.html?v=2"></header>
-
 <main class="w-full max-w-7xl mx-auto p-4 space-y-4">
-
-  <!-- Title + actions -->
   <section class="flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-xl font-bold">Equipment</h1>
     <div class="flex gap-2">
@@ -38,8 +31,6 @@
       <button id="btnDeleteSelected" class="btn btn-danger" disabled>🗑️ Delete Selected (<span id="selCount">0</span>)</button>
     </div>
   </section>
-
-  <!-- Filters -->
   <section class="card p-4 space-y-3">
     <h2 class="font-semibold text-slate-800">Filters</h2>
     <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -47,13 +38,11 @@
       <input id="f_ecriName" class="field" placeholder="ECRI Name">
       <select id="f_site" class="field"></select>
       <select id="f_dept" class="field" disabled></select>
-
       <select id="f_warranty" class="field">
         <option value="">Warranty: All</option>
         <option value="yes">Warranty: Yes</option>
         <option value="no">Warranty: No</option>
       </select>
-
       <input id="f_maker" class="field" placeholder="Manufacturer">
       <input id="f_model" class="field" placeholder="Model">
       <input id="f_serial" class="field mono" placeholder="Serial">
@@ -64,10 +53,8 @@
         <option value="C">Class C</option>
       </select>
     </div>
-
     <div class="flex flex-wrap items-center gap-3 pt-2">
       <button id="btnReset" class="btn">↺ Reset</button>
-
       <div class="ml-auto flex items-center gap-2">
         <label class="text-sm text-slate-600">Rows per page</label>
         <select id="pageSize" class="field">
@@ -80,8 +67,6 @@
       </div>
     </div>
   </section>
-
-  <!-- Table -->
   <section class="card p-0 overflow-hidden">
     <div class="overflow-auto" dir="ltr">
       <table class="min-w-full text-sm">
@@ -105,11 +90,8 @@
         <tbody id="tbody"></tbody>
       </table>
     </div>
-
     <div class="flex items-center justify-between p-3">
-      <div class="text-sm text-slate-600">
-        <span id="pageInfo"></span>
-      </div>
+      <div class="text-sm text-slate-600"><span id="pageInfo"></span></div>
       <div class="flex gap-2">
         <button id="btnPrev" class="btn">← Prev</button>
         <button id="btnNext" class="btn">Next →</button>
@@ -117,323 +99,87 @@
     </div>
   </section>
 </main>
-
 <script type="module">
-  import { auth, db } from "/PPM-Tabuk/js/firebase.js";
-  import {
-    collection, getDocs, query, orderBy, deleteDoc, doc
-  } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-  import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+import { auth, db } from "/PPM-Tabuk/js/firebase.js";
+import { collection, getDocs, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
-  /* Elements */
-  const $ = s => document.querySelector(s);
-  const tbody = $('#tbody');
-  const selCount = $('#selCount');
-  const btnDeleteSelected = $('#btnDeleteSelected');
-  const chkAll = $('#chkAll');
-  const pageInfo = $('#pageInfo');
-  const btnPrev = $('#btnPrev');
-  const btnNext = $('#btnNext');
-  const pageSizeSel = $('#pageSize');
+const $ = s=>document.querySelector(s);
+const tbody=$('#tbody'); const f_site=$('#f_site'); const f_dept=$('#f_dept'); const f_ecriCode=$('#f_ecriCode'); const f_ecriName=$('#f_ecriName'); const f_warranty=$('#f_warranty'); const f_maker=$('#f_maker'); const f_model=$('#f_model'); const f_serial=$('#f_serial'); const f_class=$('#f_class'); const pageInfo=$('#pageInfo'); const btnPrev=$('#btnPrev'); const btnNext=$('#btnNext'); const pageSizeSel=$('#pageSize'); const chkAll=$('#chkAll'); const btnDeleteSelected=$('#btnDeleteSelected'); const selCount=$('#selCount'); const btnReset=$('#btnReset');
 
-  const f_ecriCode = $('#f_ecriCode');
-  const f_ecriName = $('#f_ecriName');
-  const f_site     = $('#f_site');
-  const f_dept     = $('#f_dept');
-  const f_warranty = $('#f_warranty');
-  const f_maker    = $('#f_maker');
-  const f_model    = $('#f_model');
-  const f_serial   = $('#f_serial');
-  const f_class    = $('#f_class');
-  const btnReset   = $('#btnReset');
+let ALL=[],FILTERED=[],DEPT_BY_SITE=new Map(),SELECTED=new Set(); let page=1;
 
-  /* Data */
-  let ALL = [];        // all equipment (from Firestore)
-  let FILTERED = [];   // filtered locally
-  let DEPT_BY_SITE = new Map(); // siteName -> Set(departmentName)
-  let SELECTED = new Set();     // selected control ids for bulk delete
+onAuthStateChanged(auth,async(user)=>{
+ if(!user){location.replace("../../login.html");return;}
+ document.getElementById('userName').textContent=user.email;
+ await loadEquipment(); buildFilterOptions(); applyFilters(); bindUI();
+});
 
-  /* Pagination state */
-  let pageSize = 20;
-  let page = 1;
+async function loadEquipment(){
+ const qs=await getDocs(query(collection(db,'Equipment'),orderBy('control')));
+ ALL=qs.docs.map(d=>({...d.data(),id:d.id}));
+ DEPT_BY_SITE.clear();
+ ALL.forEach(a=>{const s=a.siteName||'';const d=a.departmentName||'';if(!s)return;if(!DEPT_BY_SITE.has(s))DEPT_BY_SITE.set(s,new Set());if(d)DEPT_BY_SITE.get(s).add(d);});
+}
 
-  /* Header + auth */
-  document.addEventListener("partials:loaded", ()=>{
-    document.getElementById("btnLogout")?.addEventListener("click", async ()=>{
-      try{ await signOut(auth); } finally{ location.replace("../../login.html"); }
-    });
-    // highlight nav
-    const link = document.querySelector('#mainNav a[href*="modules/assets/index.html"]') || document.querySelector('#mainNav a[href*="modules/equipment/index.html"]');
-    link?.classList?.add('active');
-  });
+function buildFilterOptions(){
+ const sites=[...new Set(ALL.map(a=>a.siteName).filter(Boolean))].sort();
+ f_site.innerHTML='<option value="">Site: All</option>'+sites.map(s=>`<option>${s}</option>`).join(''); f_dept.innerHTML='<option value="">Department: All</option>'; f_dept.disabled=true;
+}
 
-  onAuthStateChanged(auth, async (user)=>{
-    if(!user){ location.replace("../../login.html"); return; }
-    try{
-      const el = document.getElementById('userName');
-      if(el) el.textContent = user.email;
-    }catch{}
+function fillDepartmentsForSelectedSite(){
+ const site=f_site.value.trim(); f_dept.innerHTML='<option value="">Department: All</option>';
+ if(!site){f_dept.disabled=true;return;}
+ const depts=DEPT_BY_SITE.get(site); if(!depts){f_dept.disabled=true;return;}
+ f_dept.innerHTML+=[...depts].sort().map(d=>`<option>${d}</option>`).join(''); f_dept.disabled=false;
+}
 
-    await loadEquipment();
-    buildFilterOptions();  // site + dependent depts
-    applyFilters();
-    bindUI();
-  });
+function applyFilters(){
+ const code=f_ecriCode.value.toLowerCase(); const name=f_ecriName.value.toLowerCase(); const site=f_site.value.toLowerCase(); const dept=f_dept.value.toLowerCase(); const war=f_warranty.value; const maker=f_maker.value.toLowerCase(); const model=f_model.value.toLowerCase(); const serial=f_serial.value.toLowerCase(); const cls=f_class.value.toUpperCase();
+ FILTERED=ALL.filter(a=>{
+   return (!code||(a.ecriCode||'').toLowerCase().includes(code))&&(!name||(a.ecriName||'').toLowerCase().includes(name))&&(!site||(a.siteName||'').toLowerCase()==site)&&(!dept||(a.departmentName||'').toLowerCase()==dept)&&(!war||(a.warranty||'')==war)&&(!maker||(a.manufacturer||'').toLowerCase().includes(maker))&&(!model||(a.model||'').toLowerCase().includes(model))&&(!serial||(a.serial||'').toLowerCase().includes(serial))&&(!cls||(a.devClass||'').toUpperCase()==cls);
+ });
+ page=1; render();
+}
 
-  /* Load Equipment from Firestore */
-  async function loadEquipment(){
-    const qs = await getDocs(query(collection(db,'Equipment'), orderBy('control')));
-    ALL = qs.docs.map(d => {
-      const x = d.data();
-      return {
-        id: d.id,                      // control number used as ID
-        control: x.control || d.id,
-        ecriCode: x.ecriCode || '',
-        ecriName: x.ecriName || '',
-        siteName: x.siteName || '',
-        deptName: x.departmentName || '',
-        siteCode: x.siteCode || '',
-        deptCode: x.deptCode || '',
-        manufacturer: x.manufacturer || '',
-        model: x.model || '',
-        serial: x.serial || '',
-        warranty: x.warranty || '',
-        devClass: x.devClass || ''
-      };
-    });
+function getPageItems(){
+ if(pageSizeSel.value==='all')return FILTERED; const s=parseInt(pageSizeSel.value); const start=(page-1)*s; return FILTERED.slice(start,start+s);
+}
 
-    // Build site -> departments map
-    DEPT_BY_SITE.clear();
-    ALL.forEach(a=>{
-      const s = a.siteName || '';
-      const d = a.deptName || '';
-      if(!s) return;
-      if(!DEPT_BY_SITE.has(s)) DEPT_BY_SITE.set(s, new Set());
-      if(d) DEPT_BY_SITE.get(s).add(d);
-    });
-  }
+function updatePager(){
+ const total=FILTERED.length; if(pageSizeSel.value==='all'){pageInfo.textContent=`Showing ${total}`;btnPrev.disabled=true;btnNext.disabled=true;return;} const s=parseInt(pageSizeSel.value); const pages=Math.max(1,Math.ceil(total/s)); if(page>pages)page=pages; const start=(page-1)*s+1; const end=Math.min(total,page*s); pageInfo.textContent=`Showing ${start}-${end} of ${total}`; btnPrev.disabled=page<=1; btnNext.disabled=page>=pages;
+}
 
-  /* Build filter select options */
-  function buildFilterOptions(){
-    // Sites
-    const sites = [...new Set(ALL.map(a=> a.siteName).filter(Boolean))].sort();
-    f_site.innerHTML = '<option value="">Site: All</option>' + sites.map(s=> `<option>${escapeHtml(s)}</option>`).join('');
-    // Departments will be filled when a site is chosen
-    f_dept.innerHTML = '<option value="">Department: All</option>';
-    f_dept.disabled = true;
-  }
+function render(){
+ tbody.innerHTML=''; const items=getPageItems(); if(items.length===0){tbody.innerHTML='<tr><td colspan="13" class="p-4 text-center text-slate-500">No equipment found.</td></tr>'; updatePager(); return;}
+ items.forEach((a,i)=>{
+  const tr=document.createElement('tr'); tr.className='border-b border-slate-200';
+  tr.innerHTML=`<td class='p-2 text-center'><input type='checkbox' data-id='${a.id}' ${SELECTED.has(a.id)?'checked':''}></td>
+  <td class='p-2 text-center'>${i+1}</td>
+  <td class='p-2 mono'>${a.control||''}</td>
+  <td class='p-2 mono'>${a.ecriCode||''}</td>
+  <td class='p-2'>${a.ecriName||''}</td>
+  <td class='p-2'>${a.siteName||''}</td>
+  <td class='p-2'>${a.departmentName||''}</td>
+  <td class='p-2'>${a.manufacturer||''}</td>
+  <td class='p-2'>${a.model||''}</td>
+  <td class='p-2 mono'>${a.serial||''}</td>
+  <td class='p-2'>${a.warranty==='yes'?'✅':'❌'}</td>
+  <td class='p-2'>${a.devClass||''}</td>
+  <td class='p-2 flex gap-2'>
+    <a href='../assets/view.html?id=${a.id}' class='px-2 py-1 text-xs bg-sky-600 hover:bg-sky-700 text-white rounded'>View</a>
+    <a href='../assets/edit.html?id=${a.id}' class='px-2 py-1 text-xs bg-amber-500 hover:bg-amber-600 text-white rounded'>Edit</a>
+    <button data-del='${a.id}' class='px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded'>Delete</button>
+  </td>`;
+  tbody.appendChild(tr);
+ });
+ tbody.querySelectorAll('button[data-del]').forEach(btn=>btn.addEventListener('click',async()=>{if(confirm('Delete this item?')){await deleteDoc(doc(db,'Equipment',btn.dataset.del));ALL=ALL.filter(x=>x.id!==btn.dataset.del);applyFilters();}}));
+ updatePager();
+}
 
-  function fillDepartmentsForSelectedSite(){
-    const site = f_site.value.trim();
-    f_dept.innerHTML = '<option value="">Department: All</option>';
-    if(!site){
-      f_dept.disabled = true;
-      return;
-    }
-    const depts = DEPT_BY_SITE.get(site);
-    if(!depts || depts.size===0){
-      f_dept.disabled = true;
-      return;
-    }
-    const arr = [...depts].sort();
-    f_dept.innerHTML += arr.map(d=> `<option>${escapeHtml(d)}</option>`).join('');
-    f_dept.disabled = false;
-  }
-
-  function escapeHtml(s){return String(s??'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));}
-
-  /* Filtering */
-  function applyFilters(){
-    const qCode  = f_ecriCode.value.trim().toLowerCase();
-    const qName  = f_ecriName.value.trim().toLowerCase();
-    const qSite  = f_site.value.trim().toLowerCase();
-    const qDept  = f_dept.value.trim().toLowerCase();
-    const qWar   = f_warranty.value; // '', 'yes', 'no'
-    const qMaker = f_maker.value.trim().toLowerCase();
-    const qModel = f_model.value.trim().toLowerCase();
-    const qSerial= f_serial.value.trim().toLowerCase();
-    const qClass = f_class.value.trim().toUpperCase(); // A/B/C or ''
-
-    FILTERED = ALL.filter(a=>{
-      const okCode  = !qCode  || (a.ecriCode||'').toLowerCase().includes(qCode);
-      const okName  = !qName  || (a.ecriName||'').toLowerCase().includes(qName);
-      const okSite  = !qSite  || (a.siteName||'').toLowerCase() === qSite;
-      const okDept  = !qDept  || (a.deptName||'').toLowerCase() === qDept;
-      const okWar   = !qWar   || (a.warranty||'') === qWar;
-      const okMaker = !qMaker || (a.manufacturer||'').toLowerCase().includes(qMaker);
-      const okModel = !qModel || (a.model||'').toLowerCase().includes(qModel);
-      const okSerial= !qSerial|| (a.serial||'').toLowerCase().includes(qSerial);
-      const okClass = !qClass || (a.devClass||'').toUpperCase() === qClass;
-      return okCode && okName && okSite && okDept && okWar && okMaker && okModel && okSerial && okClass;
-    });
-
-    page = 1; // reset to first page on filter
-    render();
-  }
-
-  /* Pagination helpers */
-  function getPageItems(){
-    if(pageSizeSel.value === 'all') return FILTERED;
-    pageSize = parseInt(pageSizeSel.value || '20', 10);
-    const start = (page-1)*pageSize;
-    return FILTERED.slice(start, start + pageSize);
-  }
-  function updatePager(){
-    const total = FILTERED.length;
-    if(pageSizeSel.value === 'all'){
-      pageInfo.textContent = `Showing ${total} of ${total}`;
-      btnPrev.disabled = true; btnNext.disabled = true;
-      return;
-    }
-    const size = parseInt(pageSizeSel.value||'20', 10);
-    const pages = Math.max(1, Math.ceil(total / size));
-    if(page > pages) page = pages;
-    const start = (page-1)*size + 1;
-    const end   = Math.min(total, page*size);
-    pageInfo.textContent = `Showing ${start}-${end} of ${total} (Page ${page}/${pages})`;
-    btnPrev.disabled = (page<=1);
-    btnNext.disabled = (page>=pages);
-  }
-
-  /* Render table */
-  function render(){
-    tbody.innerHTML = '';
-    const items = getPageItems();
-    if(items.length === 0){
-      tbody.innerHTML = `<tr><td colspan="13" class="p-4 text-center text-slate-500">No equipment found.</td></tr>`;
-      updatePager();
-      return;
-    }
-    // header checkbox reflect current page
-    chkAll.checked = items.every(x=> SELECTED.has(x.id));
-
-    items.forEach((a, idx)=>{
-      const tr = document.createElement('tr');
-      tr.className = 'border-b border-slate-200';
-      const rowNum = (pageSizeSel.value==='all') ? (idx+1) : ((page-1)*parseInt(pageSizeSel.value||'20',10) + idx + 1);
-      tr.innerHTML = `
-        <td class="p-2 text-center">
-          <input type="checkbox" data-id="${escapeHtml(a.id)}" ${SELECTED.has(a.id)?'checked':''}>
-        </td>
-        <td class="p-2 text-center">${rowNum}</td>
-        <td class="p-2 mono whitespace-nowrap">${escapeHtml(a.control)}</td>
-        <td class="p-2 mono">${escapeHtml(a.ecriCode||'')}</td>
-        <td class="p-2">${escapeHtml(a.ecriName||'')}</td>
-        <td class="p-2">${escapeHtml(a.siteName||'')}</td>
-        <td class="p-2">${escapeHtml(a.deptName||'')}</td>
-        <td class="p-2">${escapeHtml(a.manufacturer||'')}</td>
-        <td class="p-2">${escapeHtml(a.model||'')}</td>
-        <td class="p-2 mono">${escapeHtml(a.serial||'')}</td>
-        <td class="p-2">${a.warranty==='yes' ? '<span class="badge">Yes</span>' : (a.warranty==='no' ? '<span class="badge">No</span>' : '')}</td>
-        <td class="p-2">${escapeHtml(a.devClass||'')}</td>
-        <td class="p-2">
-          <div class="flex flex-wrap gap-2">
-            <a class="px-2 py-1 rounded bg-sky-600 hover:bg-sky-700 text-white text-xs" href="../assets/view.html?id=${encodeURIComponent(a.id)}">View</a>
-            <a class="px-2 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-xs" href="../assets/edit.html?id=${encodeURIComponent(a.id)}">Edit</a>
-            <button class="px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-xs" data-del="${escapeHtml(a.id)}">Delete</button>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    // attach row events
-    tbody.querySelectorAll('input[type=checkbox][data-id]').forEach(cb=>{
-      cb.addEventListener('change', (e)=>{
-        const id = e.target.dataset.id;
-        if(e.target.checked) SELECTED.add(id); else SELECTED.delete(id);
-        updateSelectedUI();
-      });
-    });
-    tbody.querySelectorAll('button[data-del]').forEach(btn=>{
-      btn.addEventListener('click', async ()=>{
-        const id = btn.dataset.del;
-        if(!confirm(`Delete equipment ${id}?`)) return;
-        try{
-          await deleteDoc(doc(db,'Equipment', id));
-          SELECTED.delete(id);
-          // remove from ALL
-          ALL = ALL.filter(x=> x.id !== id);
-          applyFilters();
-        }catch(err){ alert('Delete error: '+(err.message||err)); }
-      });
-    });
-
-    updatePager();
-  }
-
-  function updateSelectedUI(){
-    selCount.textContent = SELECTED.size;
-    btnDeleteSelected.disabled = (SELECTED.size===0);
-    // also update header checkbox state for current page
-    const items = getPageItems();
-    chkAll.checked = items.length>0 && items.every(x=> SELECTED.has(x.id));
-  }
-
-  /* Bulk delete */
-  btnDeleteSelected.addEventListener('click', async ()=>{
-    if(SELECTED.size===0) return;
-    if(!confirm(`Delete ${SELECTED.size} selected equipment?`)) return;
-    try{
-      const ids = [...SELECTED];
-      for(const id of ids){
-        await deleteDoc(doc(db,'Equipment', id));
-        ALL = ALL.filter(x=> x.id !== id);
-      }
-      SELECTED.clear();
-      applyFilters();
-      alert('Deleted successfully.');
-    }catch(e){
-      alert('Bulk delete error: '+(e.message||e));
-    }
-  });
-
-  /* Header checkbox (current page only) */
-  chkAll.addEventListener('change', ()=>{
-    const items = getPageItems();
-    if(chkAll.checked){
-      items.forEach(x=> SELECTED.add(x.id));
-    }else{
-      items.forEach(x=> SELECTED.delete(x.id));
-    }
-    render(); // refresh check states
-    updateSelectedUI();
-  });
-
-  /* Pager buttons */
-  pageSizeSel.addEventListener('change', ()=>{ page=1; render(); });
-  btnPrev.addEventListener('click', ()=>{ if(page>1){ page--; render(); }});
-  btnNext.addEventListener('click', ()=>{ page++; render(); });
-
-  /* Filters events */
-  [f_ecriCode, f_ecriName, f_maker, f_model, f_serial].forEach(inp=>{
-    inp.addEventListener('input', applyFilters);
-  });
-  [f_warranty, f_class].forEach(sel=>{
-    sel.addEventListener('change', applyFilters);
-  });
-  f_site.addEventListener('change', ()=>{
-    fillDepartmentsForSelectedSite();
-    applyFilters();
-  });
-  f_dept.addEventListener('change', applyFilters);
-
-  btnReset.addEventListener('click', ()=>{
-    f_ecriCode.value = '';
-    f_ecriName.value = '';
-    f_site.value = '';
-    f_dept.innerHTML = '<option value="">Department: All</option>';
-    f_dept.disabled = true;
-    f_warranty.value = '';
-    f_maker.value = '';
-    f_model.value = '';
-    f_serial.value = '';
-    f_class.value = '';
-    pageSizeSel.value = '20';
-    page = 1;
-    applyFilters();
-  });
-
+function bindUI(){
+ [f_ecriCode,f_ecriName,f_maker,f_model,f_serial].forEach(i=>i.addEventListener('input',applyFilters)); [f_warranty,f_class].forEach(s=>s.addEventListener('change',applyFilters)); f_site.addEventListener('change',()=>{fillDepartmentsForSelectedSite();applyFilters();}); f_dept.addEventListener('change',applyFilters); btnReset.addEventListener('click',()=>{[f_ecriCode,f_ecriName,f_maker,f_model,f_serial].forEach(i=>i.value=''); [f_warranty,f_class].forEach(s=>s.value=''); f_site.value=''; f_dept.innerHTML='<option value="">Department: All</option>'; f_dept.disabled=true; pageSizeSel.value='20'; page=1; applyFilters();}); pageSizeSel.addEventListener('change',()=>{page=1;render();}); btnPrev.addEventListener('click',()=>{if(page>1){page--;render();}}); btnNext.addEventListener('click',()=>{page++;render();});
+}
 </script>
 </body>
 </html>
