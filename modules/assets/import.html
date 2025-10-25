@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>استيراد الأصول إلى Firestore</title>
+<title>استيراد الأجهزة (Equipment) إلى Firestore</title>
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <style>
   :root{--bg:#0b1220;--card:#111827;--muted:#94a3b8;--text:#e5e7eb;--ok:#10b981;--err:#ef4444;--info:#3b82f6}
@@ -27,12 +27,12 @@
   .note{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.4);padding:10px;border-radius:10px}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
 </style>
-  <link rel="stylesheet" href="../css/theme-light.css">
+<link rel="stylesheet" href="../css/theme-light.css">
 </head>
 <body>
 <div class="wrap">
   <div class="card">
-    <h1>استيراد الأصول إلى Firestore</h1>
+    <h1>استيراد الأجهزة إلى Firestore (مجموعة Equipment)</h1>
 
     <div class="note">
       استخدم هذا النموذج لتجهيز الملف بدون لخبطة في الأعمدة:
@@ -40,16 +40,16 @@
         <button class="btn sec" id="tplXlsx">تحميل نموذج (Excel)</button>
         <button class="btn sec" id="tplCsv">تحميل نموذج (CSV)</button>
       </div>
-      الأعمدة القياسية: <b>Control Number</b>, <b>Site</b>, <b>Department</b>, <b>Location</b>,
-      <b>PM Date</b>, <b>Next Date</b>, <b>Technician</b>,
-      <b>Name</b>, <b>Brand</b>, <b>Serial</b>.
-      (لو <b>Next Date</b> فاضي هيتحسب تلقائيًا = +6 شهور من PM Date)
+      الأعمدة الأساسية: <b>Control</b> (إجباري)، <b>SiteId</b>، <b>DeptCode</b>، 
+      <b>ECRICode</b>، <b>ECRIName</b>، <b>Manufacturer</b>، <b>Model</b>، <b>Serial</b>،
+      <b>Warranty</b>، <b>DevClass</b>، <b>LastPM</b>، <b>NextPM</b>، <b>PMPeriodMonths</b>…
+      (يمكن ترك <b>NextPM</b> فارغ ليُحتسب تلقائيًا من <b>PMPeriodMonths + LastPM</b>).
     </div>
 
     <div class="row">
       <input type="file" id="file" accept=".xlsx,.xls,.csv"/>
       <label><input type="checkbox" id="dry" checked> تشغيل كتجربة (بدون كتابة)</label>
-      <label>المجموعة: <input id="collection" value="assets" style="min-width:160px"></label>
+      <label>المجموعة: <input id="collection" value="Equipment" style="min-width:160px"></label>
       <button class="btn sec" id="parseBtn">قراءة الملف</button>
     </div>
     <div id="status" class="muted">لم يتم تحميل ملف بعد.</div>
@@ -76,14 +76,14 @@
   </div>
 </div>
 
-<!-- SheetJS لقراءة/إنشاء Excel -->
+<!-- SheetJS -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
 import { getFirestore, collection, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-/* ==== Firebase Config (مشروعك) ==== */
+/* ==== Firebase ==== */
 const firebaseConfig = {
   apiKey: "AIzaSyDegk1oK0xV8TgrZcwbkRLA2VgzkGK_1MM",
   authDomain: "pmqrtabuk.firebaseapp.com",
@@ -131,58 +131,83 @@ function downloadCSV(filename, rows){
 function downloadXLSX(filename, rows){
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Assets');
+  XLSX.utils.book_append_sheet(wb, ws, 'Equipment');
   XLSX.writeFile(wb, filename);
 }
 
-/* == نموذج محدّث يحتوي الأعمدة الجديدة == */
-const TEMPLATE_HEADERS = ["Control Number","Site","Department","Location","PM Date","Next Date","Technician","Name","Brand","Serial"];
+/* == نموذج محدث لمخطط Equipment == */
+const TEMPLATE_HEADERS = [
+  "Control","SiteId","SiteName","DeptCode","DeptName","RoomId",
+  "ECRICode","ECRIName","Manufacturer","Model","Serial",
+  "Warranty","DevClass","Price","Supplier","ContractNo",
+  "CommissioningDate","PMPeriodMonths","LastPM","NextPM"
+];
 const TEMPLATE_SAMPLE = [{
-  "Control Number":"AS-0001",
-  "Site":"Mobile Team",
-  "Department":"Elsada",
-  "Location":"OR-1 (اختياري)",
-  "PM Date":"2025-09-25",
-  "Next Date":"",               // اتركه فاضي لو تحب يتحسب تلقائيًا
-  "Technician":"Ahmed",
-  "Name":"Infusion Pump",
-  "Brand":"B Braun",
-  "Serial":"SN12345"
+  "Control":"MT/RWDA/001",
+  "SiteId":"MT",
+  "SiteName":"الفريق المتحرك",
+  "DeptCode":"RWDA",
+  "DeptName":"الرومضه - تبوك",
+  "RoomId":"1",
+  "ECRICode":"1000",
+  "ECRIName":"Linear Videoscope ( ULTRASOUND )",
+  "Manufacturer":"GENERAL ELECTRIC",
+  "Model":"V100",
+  "Serial":"GE-001",
+  "Warranty":"yes",
+  "DevClass":"C",
+  "Price":"15000",
+  "Supplier":"GE Dealer",
+  "ContractNo":"",
+  "CommissioningDate":"2025-10-25",
+  "PMPeriodMonths":"3",
+  "LastPM":"2025-10-25",
+  "NextPM":""   /* اتركها فاضية ليُحسب تلقائياً = LastPM + PMPeriodMonths */
 }];
-tplXlsx.onclick = ()=> downloadXLSX('pm_assets_template.xlsx', TEMPLATE_SAMPLE);
-tplCsv.onclick  = ()=> downloadCSV('pm_assets_template.csv', TEMPLATE_SAMPLE);
+tplXlsx.onclick = ()=> downloadXLSX('equipment_template.xlsx', TEMPLATE_SAMPLE);
+tplCsv.onclick  = ()=> downloadCSV('equipment_template.csv', TEMPLATE_SAMPLE);
 
-/* ==== تطبيع الأعمدة & الاستيراد ==== */
-const ALIASES = {
-  control: new Set(['control number','control','controlnumber','رقم الجهاز','رقم التحكم','الكنترول','رقم الأصل','رقم الاصل']),
-  site: new Set(['site','الموقع','المستشفى','المنشأة','facility']),
-  department: new Set(['department','القسم','القسم/الوحدة','section']),
-  location: new Set(['location','الوصف','الوصف التفصيلي','الموقع الداخلي','الغرفة']),
-  pm_date: new Set(['pm date','pm_date','تاريخ الصيانة الوقائية','تاريخ pm','pmdate']),
-  next_date: new Set(['next date','next_date','الصيانة القادمة','تاريخ الصيانة القادمة','nextdate']),
-  tech: new Set(['technician','tech','القائم بالصيانة','الفني','الفني المسؤول','technican','technician name']),
-  // الجدد:
-  name: new Set(['name','اسم الجهاز','الاسم','device name','equipment name','اسم المعدة']),
-  brand: new Set(['brand','الماركة','الشركة المصنعة','manufacturer','make','الشركة','المُصنِّع']),
-  serial: new Set(['serial','serial no','serial number','sn','الرقم التسلسلي','رقم التسلسل','s/n'])
-};
+/* ==== Helpers ==== */
 function norm(s){ return String(s||'').trim().toLowerCase().replace(/ـ/g,''); }
-function guessTarget(h){
-  const n = norm(h);
-  for(const [t,set] of Object.entries(ALIASES)){ if(set.has(n)) return t; }
-  return null;
-}
 function toISO(d){
   if(d===undefined || d===null || d==='') return null;
   if(typeof d==='number'){ const unix = (d - 25569) * 86400 * 1000; return new Date(unix).toISOString().slice(0,10); }
   const dt = new Date(d); return isNaN(+dt) ? null : dt.toISOString().slice(0,10);
 }
-function addMonths(dateISO, m=6){ if(!dateISO) return null; const dt = new Date(dateISO); dt.setMonth(dt.getMonth()+m); return dt.toISOString().slice(0,10); }
-function safeId(s){ return String(s||'').trim().replace(/[\/#?\s]+/g,'-'); }
+function addMonthsISO(dateISO, m=6){ if(!dateISO) return null; const dt = new Date(dateISO); dt.setMonth(dt.getMonth()+Number(m||0)); return dt.toISOString().slice(0,10); }
+function safeIdFromControl(control){ return String(control||'').trim().replace(/[\/#?\s]+/g,'-'); }
 
-/* ==== قراءة الملف ==== */
+/* ==== Aliases (تعريف الأعمدة) ==== */
+const ALIASES = {
+  control:  new Set(['control','control number','رقم التحكم','رقم الجهاز','controlno','controlnumber']),
+  siteId:   new Set(['siteid','site id','site code','site_code','site','الموقع','كود الموقع']),
+  siteName: new Set(['sitename','site name','اسم الموقع']),
+  deptCode: new Set(['deptcode','department code','department','dept','القسم','كود القسم']),
+  deptName: new Set(['deptname','department name','اسم القسم']),
+  roomId:   new Set(['room','roomid','room id','الغرفة','رقم الغرفة']),
+  ecriCode: new Set(['ecricode','ecri code','ecri','code']),
+  ecriName: new Set(['ecriname','ecri name','اسم الايكري','ecri n']),
+  manufacturer: new Set(['manufacturer','brand','make','الشركة المصنعة','الماركة','الشركة']),
+  model:   new Set(['model','موديل','الطراز']),
+  serial:  new Set(['serial','serial no','serial number','s/n','sn','الرقم التسلسلي']),
+  warranty:new Set(['warranty','ضمان','داخل الضمان','in warranty']),
+  devClass:new Set(['devclass','class','الفئة','device class']),
+  price:   new Set(['price','cost','amount','السعر']),
+  supplier:new Set(['supplier','vendor','المورد']),
+  contractNo: new Set(['contract','contract no','contract number','رقم العقد']),
+  commissioningDate: new Set(['commissioning','commissioning date','start date','تاريخ التشغيل']),
+  pmPeriodMonths: new Set(['pmperiod','pm period','pm months','pmperiodmonths','عدد الشهور']),
+  lastPm:  new Set(['lastpm','pm date','last pm','pmdate','تاريخ الصيانة الوقائية']),
+  nextPm:  new Set(['nextpm','next pm','next date','الصيانة القادمة'])
+};
+function guessTarget(h){
+  const n = norm(h);
+  for(const [t,set] of Object.entries(ALIASES)){ if(set.has(n)) return t; }
+  return null;
+}
+
+/* ==== قراءة الملفات ==== */
 const readCSV = async (buf) => {
-  // مبدئيًا UTF-8 (لو عندك ملفات Windows-1256 قولي أضيف Smart Decoder)
   const text = new TextDecoder('utf-8').decode(buf);
   const wb = XLSX.read(text, {type:'string'});
   return wb.Sheets[wb.SheetNames[0]];
@@ -205,8 +230,13 @@ parseBtn.onclick = async ()=>{
     headers = Object.keys(rows[0]||{});
     if(headers.length===0){ statusEl.textContent='لا يوجد أعمدة في الشيت الأول.'; return; }
 
-    // خريطة مبدئية تشمل الأعمدة الجديدة
-    map = {control:null, site:null, department:null, location:null, pm_date:null, next_date:null, tech:null, name:null, brand:null, serial:null};
+    // خريطة مبدئية لكل الحقول
+    map = {
+      control:null, siteId:null, siteName:null, deptCode:null, deptName:null, roomId:null,
+      ecriCode:null, ecriName:null, manufacturer:null, model:null, serial:null,
+      warranty:null, devClass:null, price:null, supplier:null, contractNo:null,
+      commissioningDate:null, pmPeriodMonths:null, lastPm:null, nextPm:null
+    };
     headers.forEach(h=>{ const t = guessTarget(h); if(t && !map[t]) map[t]=h; });
 
     // واجهة المابينج
@@ -235,7 +265,7 @@ parseBtn.onclick = async ()=>{
 /* ==== المعاينة ==== */
 previewBtn.onclick = ()=>{
   const sample = rows.slice(0,10);
-  const cols = Object.values(map).filter(Boolean); // الأعمدة المختارة فقط
+  const cols = Object.values(map).filter(Boolean);
   if(cols.length===0){ previewEl.textContent='اختر أعمدة أولًا.'; previewCard.style.display='block'; return; }
   let html = '<table><thead><tr>';
   html += cols.map(c=>`<th>${c}</th>`).join('') + '</tr></thead><tbody>';
@@ -247,10 +277,9 @@ previewBtn.onclick = ()=>{
 
 /* ==== الاستيراد ==== */
 importBtn.onclick = async ()=>{
-  // نخلي control و pm_date إلزاميين زي ما هو، والباقي اختياري
-  const requiredMapKeys = ['control','pm_date'];
-  for(const r of requiredMapKeys){ if(!map[r]){ alert(`العمود الإجباري مفقود: ${r}`); return; } }
-  const coll = (document.getElementById('collection').value||'assets').trim();
+  // إجبار control
+  if(!map.control){ alert('العمود الإجباري مفقود: control'); return; }
+  const coll = (document.getElementById('collection').value||'Equipment').trim() || 'Equipment';
   const dry  = dryEl.checked;
 
   progressCard.style.display='block';
@@ -267,43 +296,69 @@ importBtn.onclick = async ()=>{
         const control = String(map.control? r[map.control] : '').trim();
         if(!control) throw new Error('Control فارغ');
 
-        const pm   = toISO(map.pm_date? r[map.pm_date] : null);
-        if(!pm) throw new Error('PM Date غير صالح');
-        let next   = toISO(map.next_date? r[map.next_date] : null) || addMonths(pm,6);
+        const siteId   = map.siteId   ? String(r[map.siteId]).trim()   : null;
+        const siteName = map.siteName ? String(r[map.siteName]).trim() : null;
+        const deptCode = map.deptCode ? String(r[map.deptCode]).trim() : null;
+        const deptName = map.deptName ? String(r[map.deptName]).trim() : null;
+        const roomId   = map.roomId   ? String(r[map.roomId]).trim()   : null;
 
-        // الحقول الاختيارية (ومنها الجداد)
-        const site = map.site? r[map.site] : null;
-        const dept = map.department? r[map.department] : null;
-        const loc  = map.location? r[map.location] : null;
-        const tech = map.tech? r[map.tech] : null;
+        const ecriCode = map.ecriCode ? String(r[map.ecriCode]).trim() : null;
+        const ecriName = map.ecriName ? String(r[map.ecriName]).trim() : null;
 
-        const name  = map.name?  String(r[map.name]  ?? '').trim() : null;
-        const brand = map.brand? String(r[map.brand] ?? '').trim() : null;
-        const serial= map.serial?String(r[map.serial]?? '').trim() : null;
+        const manufacturer = map.manufacturer ? String(r[map.manufacturer]).trim() : null;
+        const model        = map.model ? String(r[map.model]).trim() : null;
+        const serial       = map.serial ? String(r[map.serial]).trim() : null;
 
-        const data = {
-          control,
-          site: site || null,
-          department: dept || null,
-          location: loc || null,
-          pm_date: pm,
-          next_date: next || null,
-          tech: tech || null,
-          // الجُداد:
-          name: name || null,
-          brand: brand || null,
+        const warranty = map.warranty ? String(r[map.warranty]).trim().toLowerCase() : null; // yes/no
+        const devClass = map.devClass ? String(r[map.devClass]).trim().toUpperCase() : null; // A/B/C
+        const price    = map.price && r[map.price]!=='' ? Number(r[map.price]) : null;
+        const supplier = map.supplier ? String(r[map.supplier]).trim() : null;
+        const contractNo = map.contractNo ? String(r[map.contractNo]).trim() : null;
+
+        const commissioningDate = toISO(map.commissioningDate ? r[map.commissioningDate] : null);
+        const pmPeriodMonths = map.pmPeriodMonths && r[map.pmPeriodMonths]!=='' ? Number(r[map.pmPeriodMonths]) : null;
+        const lastPm = toISO(map.lastPm ? r[map.lastPm] : null);
+        let nextPm   = toISO(map.nextPm ? r[map.nextPm] : null);
+
+        // حساب NextPM لو مش موجود وكان فيه period + lastPM
+        if(!nextPm && lastPm && (pmPeriodMonths || pmPeriodMonths===0)){
+          nextPm = addMonthsISO(lastPm, pmPeriodMonths);
+        }
+
+        const payload = {
+          control,            // يُحفظ كحقل للعرض
+          siteId: siteId || null,
+          siteName: siteName || null,
+          departmentId: deptCode || null,
+          deptCode: deptCode || null,
+          departmentName: deptName || null,
+          roomId: roomId || null,
+          ecriCode: ecriCode || null,
+          ecriName: ecriName || null,
+          manufacturer: manufacturer || null,
+          model: model || null,
           serial: serial || null,
+          warranty: warranty || null,
+          devClass: devClass || null,
+          price: price ?? null,
+          supplier: supplier || null,
+          contractNo: contractNo || null,
+          commissioningDate: commissioningDate || '',
+          pmPeriodMonths: (pmPeriodMonths===0 || pmPeriodMonths) ? pmPeriodMonths : null,
+          lastPm: lastPm || '',
+          nextPm: nextPm || '',
           updatedAt: serverTimestamp()
         };
 
+        const refId = safeIdFromControl(control); // مثال: MT-RWDA-001
         if(!dry){
-          const ref = doc(collection(db, coll), safeId(control));
-          batch.set(ref, data, { merge: true }); // merge=true علشان ما نمسحش حقول قديمة بالخطأ
+          const ref = doc(collection(db, coll), refId);
+          batch.set(ref, payload, { merge: true });
         }
         ok++;
       }catch(e){
         fail++;
-        logEl.textContent += `❌ ${map.control? (rows[0] && r[map.control]) : ''} — ${e.message}\n`;
+        logEl.textContent += `❌ صف ${done+1}: ${e.message}\n`;
       }finally{
         done++;
       }
