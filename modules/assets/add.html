@@ -452,7 +452,10 @@
         data: [],
         getLabel: r => r.name || r.id,
         getValue: r => r.id,
-        onChange: (val)=>{ roomSelValue = val; }
+        onChange: async (val)=>{ roomSelValue = val; // optional: preview again after room pick
+          const siteCode = getSelectedSiteCode();
+          if (deptSelValue) await peekNextControl(siteCode, deptSelValue);
+        }
       });
     }
 
@@ -629,7 +632,9 @@
   /* ===== uniqueness + control generation ===== */
   async function reserveUnique(p){
     const key = `${p.ecriCode}|${p.manufacturer}|${p.model}|${p.serial}`.toUpperCase();
-    const uref = doc(db,'uniques','equipment', key);
+    // use a flat collection for uniqueness (even number of segments)
+    const safeKey = key.replaceAll('/', '_');
+    const uref = doc(db,'uniques_equipment', safeKey);
     await runTransaction(db, async (tx)=>{
       const s = await tx.get(uref);
       if(s.exists()) throw new Error('Duplicate serial for this device/manufacturer/model.');
@@ -651,7 +656,7 @@
   // ✅ Preview: قراءة الرقم التالي المتوقع بدون حجز
   async function peekNextControl(siteCode, deptCode){
     if(!siteCode || !deptCode){ control.value=''; return; }
-    const cRef = doc(db, 'counters', 'site', siteCode);
+    const cRef = doc(db,'counters', siteCode);
     let next = 1;
     const snap = await getDoc(cRef);
     if (snap.exists()) next = (snap.data().next || 1); else next = (await getMaxSeqForSite(siteCode)) + 1;
@@ -661,7 +666,7 @@
   // الحجز الفعلي عند الحفظ فقط
   async function generateControl(siteCode, deptCode){
     if(!siteCode || !deptCode) throw new Error('Missing site/department code.');
-    const cRef = doc(db,'counters','site', siteCode);
+    const cRef = doc(db,'counters', siteCode);
     const snap = await getDoc(cRef);
     if(!snap.exists()){
       const max = await getMaxSeqForSite(siteCode);
