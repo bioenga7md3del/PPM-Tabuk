@@ -373,7 +373,13 @@
     const qs = await getDocs(query(collection(db,'sites'), orderBy('name')));
     const items = qs.docs.map(d=> ({ id:d.id, ...d.data() }));
     siteSel.innerHTML = '<option value="">Select site…</option>' +
-      items.map(s=>`<option value="${escapeHtml(s.id)}" data-code="${escapeHtml(s.code||'')}">${escapeHtml(s.name||s.id)}</option>`).join('');
+      // ✅ document ID هو الكود الحقيقي للموقع
+      items.map(s=>`<option value="${escapeHtml(s.id)}" data-code="${escapeHtml(s.id)}">${escapeHtml(s.name||s.id)}</option>`).join('');
+  }
+
+  // ✅ helper: الكود المختار للموقع دائمًا من ال-doc ID
+  function getSelectedSiteCode(){
+    return siteSel.selectedOptions[0]?.dataset.code || siteSel.value || '';
   }
 
   // lightweight searchable select
@@ -434,7 +440,7 @@
           deptSelValue = val; deptCodeEl.textContent = item?.code || val;
           await loadRoomsForDept(val);
           // ✅ Preview control number فورًا بعد اختيار القسم
-          const siteCode = siteSel.selectedOptions[0]?.dataset.code || '';
+          const siteCode = getSelectedSiteCode();
           await peekNextControl(siteCode, val);
         }
       });
@@ -455,12 +461,12 @@
     deptSelValue=''; roomSelValue=''; deptCodeEl.textContent='—';
 
     const siteName = siteSel.selectedOptions[0]?.textContent?.trim() || '';
-    siteCodeEl.textContent = siteSel.selectedOptions[0]?.dataset.code || '—';
+    siteCodeEl.textContent = getSelectedSiteCode() || '—';
     if(!siteName) { control.value=''; return; }
 
     let qs = await getDocs(query(collection(db,'department'), where('siteName','==', siteName)));
     if(qs.empty){
-      const siteCode = siteSel.selectedOptions[0]?.dataset.code || '';
+      const siteCode = getSelectedSiteCode();
       if(siteCode){
         qs = await getDocs(query(collection(db,'department'), where('siteCode','==', siteCode)));
       }
@@ -486,7 +492,7 @@
   siteSel.addEventListener('change', async ()=>{
     await loadDepartmentsForSite();
     // لو كان فيه قسم مختار قبل كده (نادرًا)، حدّث المعاينة
-    const siteCode = siteSel.selectedOptions[0]?.dataset.code || '';
+    const siteCode = getSelectedSiteCode();
     if(deptSelValue) await peekNextControl(siteCode, deptSelValue);
   });
 
@@ -673,7 +679,7 @@
 
   /* ===== collect / validate / save ===== */
   function collectPayload(){
-    const siteCode = siteSel.selectedOptions[0]?.dataset.code || '';
+    const siteCode = getSelectedSiteCode();
     const siteName = siteSel.selectedOptions[0]?.textContent || '';
     const dep = DEPT_CACHE.find(d=> d.id === deptSelValue) || null;
 
