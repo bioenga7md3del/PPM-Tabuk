@@ -679,7 +679,7 @@
       seq = cur;
       tx.set(cRef, { next: cur+1 }, { merge:true });
     });
-    return `${siteCode}/${deptCode}/${String(seq).padStart(3,'0')}`;
+    return `${siteCode}-${deptCode}-${String(seq).padStart(3,'0')}`;
   }
 
   /* ===== collect / validate / save ===== */
