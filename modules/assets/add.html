@@ -51,7 +51,7 @@
           <select id="ecriName" class="field flex-1"></select>
           <button id="btnEcriAI" type="button" class="btn">🤖 AI Assist</button>
         </div>
-        <p class="hint">Loaded from <b>ecri_catalog</b> (name/code/search).</p>
+        <p class="hint">Loaded from <b>ecri_catalog</b> (name/code/search). If you type the code below, the name will auto-fill.</p>
       </div>
 
       <div>
@@ -115,7 +115,7 @@
         </div>
       </div>
 
-      <!-- NEW: Procurement fields -->
+      <!-- Procurement -->
       <div>
         <label class="block mb-1">PO Number</label>
         <input id="poNumber" class="field" placeholder="e.g. PO-2025-00123">
@@ -157,8 +157,8 @@
 
       <div>
         <label class="block mb-1">Control Number</label>
-        <input id="control" class="field mono" readonly placeholder="SITE/DEPT/###">
-        <div class="hint">Generated per site as <b>SiteCode/DeptCode/seq</b>. (Preview updates on selection; final reserved on Save)</div>
+        <input id="control" class="field mono" readonly placeholder="SITE-DEPT-###">
+        <div class="hint">Generated per site as <b>SiteCode-DeptCode-seq</b>. (Preview updates on selection; final reserved on Save)</div>
       </div>
     </div>
   </section>
@@ -243,7 +243,7 @@
   import { auth, db } from "/PPM-Tabuk/js/firebase.js";
   import { getStorage, ref as sref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
   import {
-    doc, getDoc, setDoc, collection, getDocs, addDoc, query, where, orderBy,
+    doc, getDoc, setDoc, collection, getDocs, query, where, orderBy,
     runTransaction, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
   import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -258,7 +258,7 @@
   const price = $('#price'), supplier = $('#supplier'), addSupplier = $('#addSupplier');
   const contractWrap = $('#contractWrap'), contractNo = $('#contractNo');
 
-  // NEW: procurement
+  // Procurement
   const poNumber = $('#poNumber');
   const invoiceNumber = $('#invoiceNumber');
 
@@ -282,6 +282,9 @@
   let DEPT_CACHE = [];   // {id(code), name, siteName}
   let ROOM_CACHE = [];   // {id, name, departmentCode}
   let deptSelValue = ''; let roomSelValue = '';
+
+  /* constants */
+  const CTRL_SEP = '-'; // ✅ dash separator for control numbers
 
   /* header hooks after include */
   document.addEventListener("partials:loaded", () => {
@@ -391,7 +394,7 @@
   }
   function getSelectedSiteCode(){ return siteSel.selectedOptions[0]?.dataset.code || siteSel.value || ''; }
 
-  // searchable select
+  // searchable select (vanilla)
   function createSearchSelect({container, placeholder='Type to search', data=[], getLabel, getValue, onChange}){
     container.innerHTML = `
       <div class="field flex items-center justify-between gap-2 cursor-text">
@@ -545,7 +548,7 @@
       container: wrap.firstElementChild,
       placeholder: 'Type to search',
       data: list.map(x=>({label:x, val:x})),
-      getLabel: x=>x.label, getValue:x=>x.val
+      getLabel: x=>x.label, getValue: x=>x.val
     });
     return {wrap, ss, input: wrap.querySelector('input')};
   }
@@ -634,7 +637,7 @@
   /* ===== uniqueness + control generation ===== */
   async function reserveUnique(p){
     const key = `${p.ecriCode}|${p.manufacturer}|${p.model}|${p.serial}`.toUpperCase();
-    const safeKey = key.replaceAll('/', '_'); // even segments collection
+    const safeKey = key.replaceAll('/', '_'); // even segments
     const uref = doc(db,'uniques_equipment', safeKey);
     await runTransaction(db, async (tx)=>{
       const s = await tx.get(uref);
@@ -647,8 +650,10 @@
     let max = 0;
     const qs = await getDocs(query(collection(db,'Equipment'), where('siteCode','==', siteCode)));
     qs.forEach(d=>{
-      const parts = String(d.data().control||'').split('/');
-      const n = parseInt(parts[2]||'0', 10);
+      const ctrl = String(d.data().control || '');
+      // يدعم القديم MT/RWDA/001 والجديد MT-RWDA-001
+      const parts = ctrl.split(/[/\-]/g);
+      const n = parseInt(parts[2] || '0', 10);
       if(!isNaN(n) && n>max) max=n;
     });
     return max;
@@ -660,11 +665,12 @@
     const cRef = doc(db,'counters', siteCode);
     let next = 1;
     const snap = await getDoc(cRef);
-    if (snap.exists()) next = (snap.data().next || 1); else next = (await getMaxSeqForSite(siteCode)) + 1;
-    control.value = `${siteCode}/${deptCode}/${String(next).padStart(3, '0')}`;
+    if (snap.exists()) next = (snap.data().next || 1);
+    else next = (await getMaxSeqForSite(siteCode)) + 1;
+    control.value = `${siteCode}${CTRL_SEP}${deptCode}${CTRL_SEP}${String(next).padStart(3, '0')}`;
   }
 
-  // Reserve on save
+  // Reserve on save (dash format)
   async function generateControl(siteCode, deptCode){
     if(!siteCode || !deptCode) throw new Error('Missing site/department code.');
     const cRef = doc(db,'counters', siteCode);
@@ -680,7 +686,7 @@
       seq = cur;
       tx.set(cRef, { next: cur+1 }, { merge:true });
     });
-    return `${siteCode}/${deptCode}/${String(seq).padStart(3,'0')}`;
+    return `${siteCode}${CTRL_SEP}${deptCode}${CTRL_SEP}${String(seq).padStart(3,'0')}`;
   }
 
   /* ===== collect / validate / save ===== */
@@ -699,10 +705,8 @@
       risk: risk.value || '',
       price: price.value? Number(price.value): null,
       supplier: supplier.value || '',
-      // NEW:
       poNumber: (poNumber.value || '').trim(),
       invoiceNumber: (invoiceNumber.value || '').trim(),
-      //
       contractNo: (devClass.value==='A'||devClass.value==='B') ? (contractNo.value||'') : '',
       siteId: siteSel.value || '',
       siteCode, siteName,
