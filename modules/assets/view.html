@@ -3,24 +3,26 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>PPM TABUK • Equipment View</title>
+  <title>PPM TABUK • View Equipment</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../../css/theme-light.css"/>
   <script src="../../js/theme.js" defer></script>
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+  <!-- QR & Barcode -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 
   <style>
     .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem}
-    .k{color:#64748b;font-size:.85rem}
-    .v{font-weight:700}
-    .chip{display:inline-flex;align-items:center;gap:.5rem;border:1px solid #e2e8f0;border-radius:12px;padding:.35rem .7rem;background:#f8fafc}
-    .tab{padding:.6rem 1rem;border-radius:.6rem;cursor:pointer}
-    .tab.active{background:#e2e8f0;font-weight:700}
-    .tab-panels>section{display:none}
-    .tab-panels>section.active{display:block}
-    @media print{ .no-print{display:none!important} body{background:#fff} .card{border:none} }
+    .field{padding:.6rem .8rem;border:1px solid #cbd5e1;border-radius:.8rem}
+    .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+    .grid-2{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:.75rem}
+    @media (min-width:1024px){.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    .row{display:grid;grid-template-columns:180px 1fr;gap:.5rem;align-items:center}
+    .badge{display:inline-flex;align-items:center;padding:.1rem .5rem;border-radius:999px;font-size:.75rem;border:1px solid #e2e8f0;background:#f8fafc}
+    .label{color:#475569;font-weight:600}
   </style>
 </head>
 <body>
@@ -28,140 +30,85 @@
 <header data-include="/PPM-Tabuk/partials/header.html?v=2"></header>
 
 <main class="w-full max-w-6xl mx-auto p-4 space-y-4">
-
-  <!-- Breadcrumb + actions -->
-  <section class="flex items-center justify-between no-print">
-    <nav class="text-sm text-slate-500">
-      <a href="../dashboard/index.html" class="hover:underline">Dashboard</a>
-      <span class="mx-2">/</span>
-      <a href="index.html" class="hover:underline">Equipment</a>
-      <span class="mx-2">/</span>
-      <span id="bcControl" class="text-slate-700 font-semibold"></span>
-    </nav>
+  <section class="flex flex-wrap items-center justify-between">
+    <h1 class="text-xl font-bold">Equipment Details</h1>
     <div class="flex gap-2">
-      <a id="editLink" href="#" class="btn">✏️ Edit</a>
-      <button id="btnPrintQR" class="btn">🖨️ Print QR</button>
-      <button id="btnPrintAll" class="btn btn-brand">🖨️ Print Equipment</button>
+      <a id="editLink" class="px-3 py-2 rounded bg-amber-500 hover:bg-amber-600 text-white">✏️ Edit</a>
+      <a href="index.html" class="px-3 py-2 rounded border">← Back</a>
     </div>
   </section>
 
-  <!-- Tabs -->
-  <section class="card p-3 no-print">
-    <div class="flex gap-2" id="tabs">
-      <button class="tab active" data-tab="t1">Equipment</button>
-      <button class="tab" data-tab="t2">Procurement / Installation</button>
-      <button class="tab" data-tab="t3">Equipment Stats</button>
+  <!-- Header block: Control + QR + Barcode -->
+  <section class="card p-4">
+    <div class="flex flex-col lg:flex-row items-start lg:items-center gap-4">
+      <div class="flex-1">
+        <div class="text-sm text-slate-500">Control Number</div>
+        <div id="ctl" class="mono text-2xl font-bold">—</div>
+        <div class="text-sm text-slate-500 mt-1">ECRI:
+          <span id="ecriCode" class="mono">—</span> — <span id="ecriName">—</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-6">
+        <div class="text-center">
+          <div class="text-xs text-slate-500 mb-1">QR</div>
+          <div id="qr"></div>
+        </div>
+        <div class="text-center">
+          <div class="text-xs text-slate-500 mb-1">Barcode</div>
+          <svg id="barcode"></svg>
+        </div>
+      </div>
     </div>
   </section>
 
-  <div class="tab-panels space-y-4">
+  <section class="grid-2">
+    <!-- General -->
+    <div class="card p-4 space-y-2">
+      <h2 class="font-semibold text-slate-800 mb-2">General</h2>
 
-    <!-- T1: Equipment -->
-    <section id="t1" class="active">
-      <div class="card p-4">
-        <div class="flex flex-col md:flex-row gap-6">
-          <!-- QR -->
-          <div class="flex flex-col items-center">
-            <div id="qrBox" class="w-[260px] h-[260px] border rounded-lg flex items-center justify-center"></div>
-            <div id="ctl" class="mt-2 font-mono text-slate-700"></div>
-          </div>
+      <div class="row"><div class="label">Manufacturer</div><div id="manufacturer">—</div></div>
+      <div class="row"><div class="label">Model</div><div id="model">—</div></div>
+      <div class="row"><div class="label">Serial</div><div id="serial" class="mono">—</div></div>
+      <div class="row"><div class="label">Class</div><div id="devClass" class="badge">—</div></div>
+      <div class="row"><div class="label">Risk</div><div id="risk" class="badge">—</div></div>
+      <div class="row"><div class="label">Price (SAR)</div><div id="price">—</div></div>
+      <div class="row"><div class="label">Supplier</div><div id="supplier">—</div></div>
 
-          <!-- quick cards -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 flex-1">
-            <div class="card p-3"><div class="k">Classification</div><div id="devClass" class="v">—</div></div>
-            <div class="card p-3"><div class="k">Model</div><div id="model" class="v">—</div></div>
-            <div class="card p-3"><div class="k">Serial Number</div><div id="serial" class="v font-mono">—</div></div>
-            <div class="card p-3"><div class="k">Site</div><div id="siteName" class="v">—</div></div>
-            <div class="card p-3"><div class="k">Department</div><div id="deptName" class="v">—</div></div>
-            <div class="card p-3"><div class="k">Room</div><div id="roomId" class="v">—</div></div>
-          </div>
-        </div>
+      <!-- ✅ Procurement -->
+      <div class="row"><div class="label">PO Number</div><div id="poNumber">—</div></div>
+      <div class="row"><div class="label">Invoice Number</div><div id="invoiceNumber">—</div></div>
 
-        <div class="mt-4 flex flex-wrap gap-2 no-print">
-          <span class="chip"><span class="k">ECRI</span><span class="v"><span id="ecriName">—</span> <span class="text-slate-400 font-mono" id="ecriCode"></span></span></span>
-          <span class="chip"><span class="k">Warranty</span><span class="v" id="warranty">—</span></span>
-          <span class="chip"><span class="k">Supplier</span><span class="v" id="supplier">—</span></span>
-          <span class="chip"><span class="k">Price</span><span class="v" id="price">—</span></span>
-        </div>
-      </div>
+      <div class="row"><div class="label">Maintenance Contract</div><div id="contractNo">—</div></div>
+    </div>
 
-      <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div class="card p-4 space-y-3">
-          <h3 class="font-semibold text-slate-800">Identity</h3>
-          <div class="grid grid-cols-2 gap-2 text-sm">
-            <div class="k">Device Name</div><div id="name" class="v">—</div>
-            <div class="k">Manufacturer</div><div id="manufacturer" class="v">—</div>
-            <div class="k">Model</div><div id="d_model" class="v">—</div>
-            <div class="k">Serial</div><div id="d_serial" class="v font-mono">—</div>
-            <div class="k">Device Class</div><div id="d_devClass" class="v">—</div>
-            <div class="k">Risk</div><div id="risk" class="v">—</div>
-          </div>
-        </div>
+    <!-- Location / Warranty / PM -->
+    <div class="card p-4 space-y-2">
+      <h2 class="font-semibold text-slate-800 mb-2">Location & PM</h2>
 
-        <div class="card p-4 space-y-3">
-          <h3 class="font-semibold text-slate-800">Location</h3>
-          <div class="grid grid-cols-2 gap-2 text-sm">
-            <div class="k">Site</div><div id="d_siteName" class="v">—</div>
-            <div class="k">Dept</div><div id="d_deptName" class="v">—</div>
-            <div class="k">Room</div><div id="d_roomId" class="v">—</div>
-            <div class="k">Control</div><div id="d_control" class="v font-mono">—</div>
-          </div>
-        </div>
+      <div class="row"><div class="label">Site</div><div><span id="siteName">—</span> <span class="mono text-slate-500" id="siteCode"></span></div></div>
+      <div class="row"><div class="label">Department</div><div><span id="departmentName">—</span> <span class="mono text-slate-500" id="deptCode"></span></div></div>
+      <div class="row"><div class="label">Room</div><div id="roomId">—</div></div>
 
-        <div class="card p-4 space-y-3">
-          <h3 class="font-semibold text-slate-800">PM / Warranty</h3>
-          <div class="grid grid-cols-2 gap-2 text-sm">
-            <div class="k">Warranty</div><div id="d_warranty" class="v">—</div>
-            <div class="k">Contract</div><div id="contractNo" class="v">—</div>
-            <div class="k">Commissioning</div><div id="commissioningDate" class="v">—</div>
-            <div class="k">PM Period</div><div id="pmPeriod" class="v">—</div>
-            <div class="k">Last PM</div><div id="lastPm" class="v">—</div>
-            <div class="k">Next PM</div><div id="nextPm" class="v">—</div>
-          </div>
-        </div>
-      </section>
+      <div class="row"><div class="label">Warranty</div><div id="warranty">—</div></div>
+      <div class="row"><div class="label">Commissioning</div><div id="commissioningDate">—</div></div>
+      <div class="row"><div class="label">PM Period</div><div id="pmPeriodMonths">—</div></div>
+      <div class="row"><div class="label">Last PM</div><div id="lastPm">—</div></div>
+      <div class="row"><div class="label">Next PM</div><div id="nextPm">—</div></div>
+    </div>
+  </section>
 
-      <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="card p-4 space-y-3">
-          <h3 class="font-semibold text-slate-800">Documents</h3>
-          <div id="docs" class="space-y-2 text-sm"></div>
-        </div>
-        <div class="card p-4 space-y-3">
-          <h3 class="font-semibold text-slate-800">Photos</h3>
-          <div id="imgs" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
-        </div>
-      </section>
-    </section>
+  <!-- Documents -->
+  <section class="card p-4 space-y-2">
+    <h2 class="font-semibold text-slate-800 mb-2">Documents</h2>
+    <div id="docs" class="space-y-2"></div>
+  </section>
 
-    <!-- T2: Procurement / Installation (placeholders) -->
-    <section id="t2">
-      <div class="card p-4 space-y-3">
-        <h3 class="font-semibold text-slate-800">Procurement / Installation</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-          <div><div class="k">PO Number</div><div id="poNumber" class="v">—</div></div>
-          <div><div class="k">Invoice Number</div><div id="invoiceNumber" class="v">—</div></div>
-          <div><div class="k">Supplier</div><div id="p_supplier" class="v">—</div></div>
-          <div><div class="k">Price</div><div id="p_price" class="v">—</div></div>
-          <div><div class="k">Commissioning</div><div id="p_commissioningDate" class="v">—</div></div>
-          <div><div class="k">Contract</div><div id="p_contractNo" class="v">—</div></div>
-        </div>
-      </div>
-    </section>
+  <!-- Photos -->
+  <section class="card p-4 space-y-2">
+    <h2 class="font-semibold text-slate-800 mb-2">Photos</h2>
+    <div id="imgs" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+  </section>
 
-    <!-- T3: Equipment Stats (placeholders) -->
-    <section id="t3">
-      <div class="card p-4 space-y-3">
-        <h3 class="font-semibold text-slate-800">Equipment Stats</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-          <div><div class="k">Total PMs</div><div id="st_totalPm" class="v">—</div></div>
-          <div><div class="k">Open Correctives</div><div id="st_openCm" class="v">—</div></div>
-          <div><div class="k">Uptime</div><div id="st_uptime" class="v">—</div></div>
-        </div>
-        <p class="text-slate-500 text-sm">* يمكن ربطها لاحقًا بجداول PM/CM لإظهار إحصائيات فعلية.</p>
-      </div>
-    </section>
-
-  </div>
 </main>
 
 <script type="module">
@@ -170,111 +117,150 @@
   import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
   const $ = s => document.querySelector(s);
-  const qs = new URLSearchParams(location.search);
-  const id = qs.get('id'); if(!id){ alert("Missing id"); throw new Error("Missing id"); }
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id'); // control number as doc id
 
-  // Tabs
-  document.getElementById('tabs').addEventListener('click', (e)=>{
-    const t = e.target.closest('.tab'); if(!t) return;
-    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-    t.classList.add('active');
-    const sel = t.dataset.tab;
-    document.querySelectorAll('.tab-panels>section').forEach(p=> p.classList.toggle('active', p.id===sel));
+  // Header actions
+  document.addEventListener("partials:loaded", ()=>{
+    $('#editLink').setAttribute('href', 'edit.html?id='+encodeURIComponent(id||''));
   });
-
-  const editLink = document.getElementById('editLink');
-  editLink.href = `edit.html?id=${encodeURIComponent(id)}`;
-
-  function setText(id, val){ const el = document.getElementById(id); if(el) el.textContent = val ?? '—'; }
-  function fmtMoney(v){ if(v==null || v==='') return '—'; const n=Number(v); return isFinite(n)? `${n.toLocaleString()} SAR` : String(v); }
-  function escapeHtml(s){return String(s??'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[m]));}
 
   onAuthStateChanged(auth, async (user)=>{
     if(!user){ location.replace("../../login.html"); return; }
     await load();
   });
 
+  function setText(id, val, fallback='—'){
+    const el = typeof id==='string' ? document.getElementById(id) : id;
+    if(!el) return;
+    el.textContent = (val ?? '') !== '' ? String(val) : fallback;
+  }
+
+  function fmtPrice(v){
+    if(v===null || v===undefined || v==='') return '—';
+    const n = Number(v); if(isNaN(n)) return String(v);
+    return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
   async function load(){
-    const snap = await getDoc(doc(db,'Equipment', id));
-    if(!snap.exists()){ alert('Equipment not found'); return; }
-    const x = snap.data();
+    try{
+      if(!id) throw new Error('Missing id.');
+      const snap = await getDoc(doc(db,'Equipment', id));
+      if(!snap.exists()) throw new Error('Not found.');
+      const x = snap.data();
 
-    // Head
-    document.getElementById('bcControl').textContent = x.control || id;
-    document.getElementById('ctl').textContent = x.control || id;
-    new QRCode(document.getElementById("qrBox"), {
-      text: x.control || id, width: 260, height: 260, correctLevel: QRCode.CorrectLevel.H
+      // Header
+      setText('ctl', x.control || id);
+      setText('ecriCode', x.ecriCode);
+      setText('ecriName', x.ecriName);
+
+      // General
+      setText('manufacturer', x.manufacturer);
+      setText('model', x.model);
+      setText('serial', x.serial);
+      setText('devClass', x.devClass);
+      setText('risk', x.risk);
+      $('#price').textContent = fmtPrice(x.price);
+      setText('supplier', x.supplier);
+
+      // ✅ Procurement
+      setText('poNumber', x.poNumber);
+      setText('invoiceNumber', x.invoiceNumber);
+
+      setText('contractNo', x.contractNo);
+
+      // Location / PM
+      setText('siteName', x.siteName);
+      setText('siteCode', x.siteCode);
+      setText('departmentName', x.departmentName);
+      setText('deptCode', x.deptCode);
+      setText('roomId', x.roomId);
+      setText('warranty', x.warranty==='yes' ? 'Yes' : (x.warranty==='no' ? 'No' : '—'));
+      setText('commissioningDate', x.commissioningDate);
+      setText('pmPeriodMonths', x.pmPeriodMonths===null||x.pmPeriodMonths===undefined||x.pmPeriodMonths==='' ? '—' :
+        (x.pmPeriodMonths===0 ? 'Daily' :
+         x.pmPeriodMonths===1 ? 'Monthly' :
+         x.pmPeriodMonths===3 ? 'Quarterly' :
+         x.pmPeriodMonths===6 ? 'Semiannual' :
+         x.pmPeriodMonths===12 ? 'Yearly' : x.pmPeriodMonths+' mo'));
+      setText('lastPm', x.lastPm);
+      setText('nextPm', x.nextPm);
+
+      // QR & Barcode
+      renderCodes(x.control || id);
+
+      // Docs
+      renderDocs(x.documents || []);
+      // Photos
+      renderImgs(x.images || []);
+    }catch(e){
+      alert('Error: '+(e.message||e));
+      console.error(e);
+    }
+  }
+
+  function renderCodes(ctrl){
+    // QR
+    const qrWrap = document.getElementById('qr');
+    qrWrap.innerHTML = '';
+    new QRCode(qrWrap, {
+      text: String(ctrl||''),
+      width: 96, height: 96
     });
-
-    // Quick
-    setText('devClass', x.devClass || '—');
-    setText('model', x.model || '—');
-    setText('serial', x.serial || '—');
-    setText('siteName', x.siteName || x.siteId || '—');
-    setText('deptName', x.departmentName || x.deptCode || '—');
-    setText('roomId', x.roomId || '—');
-    setText('ecriName', x.ecriName || '—');
-    setText('ecriCode', x.ecriCode ? `(#${x.ecriCode})` : '');
-    setText('warranty', x.warranty ? (x.warranty==='yes'?'Yes':'No') : '—');
-    setText('supplier', x.supplier || '—');
-    setText('price', fmtMoney(x.price));
-
-    // Identity
-    setText('name', x.ecriName || x.name || '—');
-    setText('manufacturer', x.manufacturer || '—');
-    setText('d_model', x.model || '—');
-    setText('d_serial', x.serial || '—');
-    setText('d_devClass', x.devClass || '—');
-    setText('risk', x.risk || '—');
-
-    // Location
-    setText('d_siteName', x.siteName || x.siteId || '—');
-    setText('d_deptName', x.departmentName || x.deptCode || '—');
-    setText('d_roomId', x.roomId || '—');
-    setText('d_control', x.control || id);
-
-    // PM/Warranty
-    setText('d_warranty', x.warranty ? (x.warranty==='yes'?'Yes':'No') : '—');
-    setText('contractNo', x.contractNo || '—');
-    setText('commissioningDate', x.commissioningDate || '—');
-    setText('pmPeriod', (x.pmPeriodMonths ?? '')!=='' ? `${x.pmPeriodMonths} mo.` : '—');
-    setText('lastPm', x.lastPm || '—');
-    setText('nextPm', x.nextPm || '—');
-
-    // Procurement placeholders
-    setText('p_supplier', x.supplier || '—');
-    setText('p_price', fmtMoney(x.price));
-    setText('p_commissioningDate', x.commissioningDate || '—');
-    setText('p_contractNo', x.contractNo || '—');
-
-    // Docs
-    const docs = Array.isArray(x.documents)? x.documents : [];
-    const docsBox = document.getElementById('docs');
-    docsBox.innerHTML = docs.length? '' : '<div class="text-slate-500">No documents.</div>';
-    docs.forEach(d=>{
-      const a = document.createElement('a'); a.href=d.url; a.target="_blank";
-      a.className="flex items-center justify-between border rounded-lg p-2 hover:bg-slate-50";
-      a.innerHTML = `<div><div class="font-medium">${escapeHtml(d.name||'file')}</div>
-                     <div class="text-xs text-slate-500">${escapeHtml(d.group||'Doc')} • ${(d.size? (d.size/1024).toFixed(1)+' KB' : '')}</div></div>
-                     <span class="text-slate-500">↗</span>`;
-      docsBox.appendChild(a);
-    });
-
-    // Images
-    const imgs = Array.isArray(x.images)? x.images : [];
-    const imgsBox = document.getElementById('imgs');
-    imgsBox.innerHTML = imgs.length? '' : '<div class="text-slate-500">No images.</div>';
-    imgs.forEach(im=>{
-      const w = document.createElement('a'); w.href = im.url; w.target="_blank";
-      w.className="block border rounded-lg overflow-hidden hover:opacity-90";
-      w.innerHTML = `<img src="${im.url}" alt="${escapeHtml(im.title||im.name||'')}" class="w-full h-40 object-cover">`;
-      imgsBox.appendChild(w);
+    // Barcode
+    JsBarcode("#barcode", String(ctrl||''), {
+      format: "code128",
+      displayValue: true,
+      fontSize: 12,
+      height: 48,
+      margin: 0
     });
   }
 
-  // Print
-  document.getElementById('btnPrintQR').addEventListener('click', ()=> window.print());
-  document.getElementById('btnPrintAll').addEventListener('click', ()=> window.print());
+  function renderDocs(list){
+    const box = document.getElementById('docs');
+    box.innerHTML = '';
+    if(!list.length){
+      box.innerHTML = '<div class="text-slate-500">No documents.</div>';
+      return;
+    }
+    list.forEach(d=>{
+      const row = document.createElement('div');
+      row.className = 'flex items-center justify-between border rounded-lg p-2';
+      row.innerHTML = `
+        <div>
+          <div class="font-semibold">${escapeHtml(d.group||'Document')}</div>
+          <div class="text-xs text-slate-500 mono">${escapeHtml(d.name||'')}</div>
+          <div class="text-xs text-slate-400">${((d.size||0)/1024).toFixed(1)} KB</div>
+        </div>
+        <a class="px-3 py-1 rounded bg-sky-600 hover:bg-sky-700 text-white" target="_blank" rel="noopener">Open</a>
+      `;
+      row.querySelector('a').href = d.url || '#';
+      box.appendChild(row);
+    });
+  }
+
+  function renderImgs(list){
+    const box = document.getElementById('imgs');
+    box.innerHTML = '';
+    if(!list.length){
+      box.innerHTML = '<div class="text-slate-500">No photos.</div>';
+      return;
+    }
+    list.forEach(img=>{
+      const card = document.createElement('a');
+      card.href = img.url || '#';
+      card.target = '_blank'; card.rel = 'noopener';
+      card.className = 'block border rounded-lg overflow-hidden hover:shadow';
+      card.innerHTML = `
+        <img src="${escapeHtml(img.url||'')}" alt="${escapeHtml(img.title||img.name||'')}" class="w-full h-36 object-cover">
+        <div class="p-2 text-sm">${escapeHtml(img.title||img.name||'')}</div>
+      `;
+      box.appendChild(card);
+    });
+  }
+
+  function escapeHtml(s){return String(s??'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[m]));}
 </script>
 </body>
 </html>
