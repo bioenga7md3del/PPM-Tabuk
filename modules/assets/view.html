@@ -9,20 +9,18 @@
   <link rel="stylesheet" href="../../css/theme-light.css"/>
   <script src="../../js/theme.js" defer></script>
   <script src="/PPM-Tabuk/js/include.js?v=2" defer></script>
-
-  <!-- QRCode lib (نفس المستخدمة غالبًا في صفحة QR) -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
   <style>
     .card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem}
-    .chip{display:inline-flex;align-items:center;gap:.5rem;border:1px solid #e2e8f0;border-radius:12px;padding:.4rem .7rem;background:#f8fafc}
     .k{color:#64748b;font-size:.85rem}
     .v{font-weight:700}
-    @media print{
-      .no-print{display:none!important}
-      body{background:#fff}
-      .card{border:none}
-    }
+    .chip{display:inline-flex;align-items:center;gap:.5rem;border:1px solid #e2e8f0;border-radius:12px;padding:.35rem .7rem;background:#f8fafc}
+    .tab{padding:.6rem 1rem;border-radius:.6rem;cursor:pointer}
+    .tab.active{background:#e2e8f0;font-weight:700}
+    .tab-panels>section{display:none}
+    .tab-panels>section.active{display:block}
+    @media print{ .no-print{display:none!important} body{background:#fff} .card{border:none} }
   </style>
 </head>
 <body>
@@ -31,7 +29,7 @@
 
 <main class="w-full max-w-6xl mx-auto p-4 space-y-4">
 
-  <!-- Breadcrumb / Actions -->
+  <!-- Breadcrumb + actions -->
   <section class="flex items-center justify-between no-print">
     <nav class="text-sm text-slate-500">
       <a href="../dashboard/index.html" class="hover:underline">Dashboard</a>
@@ -47,101 +45,123 @@
     </div>
   </section>
 
-  <!-- Header with QR + tabs (simple) -->
-  <section class="card p-4">
-    <div class="flex flex-col md:flex-row gap-6">
-      <!-- QR + control -->
-      <div class="flex flex-col items-center">
-        <div id="qrBox" class="w-[260px] h-[260px] border rounded-lg flex items-center justify-center"></div>
-        <div id="ctl" class="mt-2 font-mono text-slate-700"></div>
-      </div>
-
-      <!-- quick chips -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 flex-1">
-        <div class="card p-3">
-          <div class="k">Classification</div>
-          <div id="devClass" class="v">—</div>
-        </div>
-        <div class="card p-3">
-          <div class="k">Model</div>
-          <div id="model" class="v">—</div>
-        </div>
-        <div class="card p-3">
-          <div class="k">Serial Number</div>
-          <div id="serial" class="v font-mono">—</div>
-        </div>
-        <div class="card p-3">
-          <div class="k">Site</div>
-          <div id="siteName" class="v">—</div>
-        </div>
-        <div class="card p-3">
-          <div class="k">Department</div>
-          <div id="deptName" class="v">—</div>
-        </div>
-        <div class="card p-3">
-          <div class="k">Room</div>
-          <div id="roomId" class="v">—</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- action chips -->
-    <div class="mt-4 flex flex-wrap gap-2 no-print">
-      <span class="chip"><span class="k">ECRI</span><span class="v"><span id="ecriName">—</span> <span class="text-slate-400 font-mono" id="ecriCode"></span></span></span>
-      <span class="chip"><span class="k">Warranty</span><span class="v" id="warranty">—</span></span>
-      <span class="chip"><span class="k">Supplier</span><span class="v" id="supplier">—</span></span>
-      <span class="chip"><span class="k">Price</span><span class="v" id="price">—</span></span>
+  <!-- Tabs -->
+  <section class="card p-3 no-print">
+    <div class="flex gap-2" id="tabs">
+      <button class="tab active" data-tab="t1">Equipment</button>
+      <button class="tab" data-tab="t2">Procurement / Installation</button>
+      <button class="tab" data-tab="t3">Equipment Stats</button>
     </div>
   </section>
 
-  <!-- Details blocks -->
-  <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-    <div class="card p-4 space-y-3">
-      <h3 class="font-semibold text-slate-800">Identity</h3>
-      <div class="grid grid-cols-2 gap-2 text-sm">
-        <div class="k">Device Name</div><div id="name" class="v">—</div>
-        <div class="k">Manufacturer</div><div id="manufacturer" class="v">—</div>
-        <div class="k">Model</div><div id="d_model" class="v">—</div>
-        <div class="k">Serial</div><div id="d_serial" class="v font-mono">—</div>
-        <div class="k">Device Class</div><div id="d_devClass" class="v">—</div>
-        <div class="k">Risk</div><div id="risk" class="v">—</div>
-      </div>
-    </div>
+  <div class="tab-panels space-y-4">
 
-    <div class="card p-4 space-y-3">
-      <h3 class="font-semibold text-slate-800">Location</h3>
-      <div class="grid grid-cols-2 gap-2 text-sm">
-        <div class="k">Site</div><div id="d_siteName" class="v">—</div>
-        <div class="k">Dept</div><div id="d_deptName" class="v">—</div>
-        <div class="k">Room</div><div id="d_roomId" class="v">—</div>
-        <div class="k">Control</div><div id="d_control" class="v font-mono">—</div>
-      </div>
-    </div>
+    <!-- T1: Equipment -->
+    <section id="t1" class="active">
+      <div class="card p-4">
+        <div class="flex flex-col md:flex-row gap-6">
+          <!-- QR -->
+          <div class="flex flex-col items-center">
+            <div id="qrBox" class="w-[260px] h-[260px] border rounded-lg flex items-center justify-center"></div>
+            <div id="ctl" class="mt-2 font-mono text-slate-700"></div>
+          </div>
 
-    <div class="card p-4 space-y-3">
-      <h3 class="font-semibold text-slate-800">PM / Warranty</h3>
-      <div class="grid grid-cols-2 gap-2 text-sm">
-        <div class="k">Warranty</div><div id="d_warranty" class="v">—</div>
-        <div class="k">Contract</div><div id="contractNo" class="v">—</div>
-        <div class="k">Commissioning</div><div id="commissioningDate" class="v">—</div>
-        <div class="k">PM Period</div><div id="pmPeriod" class="v">—</div>
-        <div class="k">Last PM</div><div id="lastPm" class="v">—</div>
-        <div class="k">Next PM</div><div id="nextPm" class="v">—</div>
-      </div>
-    </div>
-  </section>
+          <!-- quick cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 flex-1">
+            <div class="card p-3"><div class="k">Classification</div><div id="devClass" class="v">—</div></div>
+            <div class="card p-3"><div class="k">Model</div><div id="model" class="v">—</div></div>
+            <div class="card p-3"><div class="k">Serial Number</div><div id="serial" class="v font-mono">—</div></div>
+            <div class="card p-3"><div class="k">Site</div><div id="siteName" class="v">—</div></div>
+            <div class="card p-3"><div class="k">Department</div><div id="deptName" class="v">—</div></div>
+            <div class="card p-3"><div class="k">Room</div><div id="roomId" class="v">—</div></div>
+          </div>
+        </div>
 
-  <!-- Documents & Photos -->
-  <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-    <div class="card p-4 space-y-3">
-      <h3 class="font-semibold text-slate-800">Documents</h3>
-      <div id="docs" class="space-y-2 text-sm"></div>
-    </div>
-    <div class="card p-4 space-y-3">
-      <h3 class="font-semibold text-slate-800">Photos</h3>
-      <div id="imgs" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
-    </div>
-  </section>
+        <div class="mt-4 flex flex-wrap gap-2 no-print">
+          <span class="chip"><span class="k">ECRI</span><span class="v"><span id="ecriName">—</span> <span class="text-slate-400 font-mono" id="ecriCode"></span></span></span>
+          <span class="chip"><span class="k">Warranty</span><span class="v" id="warranty">—</span></span>
+          <span class="chip"><span class="k">Supplier</span><span class="v" id="supplier">—</span></span>
+          <span class="chip"><span class="k">Price</span><span class="v" id="price">—</span></span>
+        </div>
+      </div>
+
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="card p-4 space-y-3">
+          <h3 class="font-semibold text-slate-800">Identity</h3>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div class="k">Device Name</div><div id="name" class="v">—</div>
+            <div class="k">Manufacturer</div><div id="manufacturer" class="v">—</div>
+            <div class="k">Model</div><div id="d_model" class="v">—</div>
+            <div class="k">Serial</div><div id="d_serial" class="v font-mono">—</div>
+            <div class="k">Device Class</div><div id="d_devClass" class="v">—</div>
+            <div class="k">Risk</div><div id="risk" class="v">—</div>
+          </div>
+        </div>
+
+        <div class="card p-4 space-y-3">
+          <h3 class="font-semibold text-slate-800">Location</h3>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div class="k">Site</div><div id="d_siteName" class="v">—</div>
+            <div class="k">Dept</div><div id="d_deptName" class="v">—</div>
+            <div class="k">Room</div><div id="d_roomId" class="v">—</div>
+            <div class="k">Control</div><div id="d_control" class="v font-mono">—</div>
+          </div>
+        </div>
+
+        <div class="card p-4 space-y-3">
+          <h3 class="font-semibold text-slate-800">PM / Warranty</h3>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div class="k">Warranty</div><div id="d_warranty" class="v">—</div>
+            <div class="k">Contract</div><div id="contractNo" class="v">—</div>
+            <div class="k">Commissioning</div><div id="commissioningDate" class="v">—</div>
+            <div class="k">PM Period</div><div id="pmPeriod" class="v">—</div>
+            <div class="k">Last PM</div><div id="lastPm" class="v">—</div>
+            <div class="k">Next PM</div><div id="nextPm" class="v">—</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card p-4 space-y-3">
+          <h3 class="font-semibold text-slate-800">Documents</h3>
+          <div id="docs" class="space-y-2 text-sm"></div>
+        </div>
+        <div class="card p-4 space-y-3">
+          <h3 class="font-semibold text-slate-800">Photos</h3>
+          <div id="imgs" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
+        </div>
+      </section>
+    </section>
+
+    <!-- T2: Procurement / Installation (placeholders) -->
+    <section id="t2">
+      <div class="card p-4 space-y-3">
+        <h3 class="font-semibold text-slate-800">Procurement / Installation</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+          <div><div class="k">PO Number</div><div id="poNumber" class="v">—</div></div>
+          <div><div class="k">Invoice Number</div><div id="invoiceNumber" class="v">—</div></div>
+          <div><div class="k">Supplier</div><div id="p_supplier" class="v">—</div></div>
+          <div><div class="k">Price</div><div id="p_price" class="v">—</div></div>
+          <div><div class="k">Commissioning</div><div id="p_commissioningDate" class="v">—</div></div>
+          <div><div class="k">Contract</div><div id="p_contractNo" class="v">—</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- T3: Equipment Stats (placeholders) -->
+    <section id="t3">
+      <div class="card p-4 space-y-3">
+        <h3 class="font-semibold text-slate-800">Equipment Stats</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+          <div><div class="k">Total PMs</div><div id="st_totalPm" class="v">—</div></div>
+          <div><div class="k">Open Correctives</div><div id="st_openCm" class="v">—</div></div>
+          <div><div class="k">Uptime</div><div id="st_uptime" class="v">—</div></div>
+        </div>
+        <p class="text-slate-500 text-sm">* يمكن ربطها لاحقًا بجداول PM/CM لإظهار إحصائيات فعلية.</p>
+      </div>
+    </section>
+
+  </div>
 </main>
 
 <script type="module">
@@ -151,15 +171,23 @@
 
   const $ = s => document.querySelector(s);
   const qs = new URLSearchParams(location.search);
-  const id = qs.get('id');               // مثال: MT-RWDA-001 (doc id)
-  if(!id){ alert("Missing id"); throw new Error("Missing id"); }
+  const id = qs.get('id'); if(!id){ alert("Missing id"); throw new Error("Missing id"); }
 
-  // عناصر
-  const editLink = $('#editLink');
+  // Tabs
+  document.getElementById('tabs').addEventListener('click', (e)=>{
+    const t = e.target.closest('.tab'); if(!t) return;
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    const sel = t.dataset.tab;
+    document.querySelectorAll('.tab-panels>section').forEach(p=> p.classList.toggle('active', p.id===sel));
+  });
+
+  const editLink = document.getElementById('editLink');
   editLink.href = `edit.html?id=${encodeURIComponent(id)}`;
 
   function setText(id, val){ const el = document.getElementById(id); if(el) el.textContent = val ?? '—'; }
   function fmtMoney(v){ if(v==null || v==='') return '—'; const n=Number(v); return isFinite(n)? `${n.toLocaleString()} SAR` : String(v); }
+  function escapeHtml(s){return String(s??'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[m]));}
 
   onAuthStateChanged(auth, async (user)=>{
     if(!user){ location.replace("../../login.html"); return; }
@@ -171,17 +199,14 @@
     if(!snap.exists()){ alert('Equipment not found'); return; }
     const x = snap.data();
 
-    // عنوان + QR + كنترول
-    $('#bcControl').textContent = x.control || id;
-    $('#ctl').textContent = x.control || id;
+    // Head
+    document.getElementById('bcControl').textContent = x.control || id;
+    document.getElementById('ctl').textContent = x.control || id;
     new QRCode(document.getElementById("qrBox"), {
-      text: x.control || id,
-      width: 260,
-      height: 260,
-      correctLevel: QRCode.CorrectLevel.H
+      text: x.control || id, width: 260, height: 260, correctLevel: QRCode.CorrectLevel.H
     });
 
-    // الهيدر السريع
+    // Quick
     setText('devClass', x.devClass || '—');
     setText('model', x.model || '—');
     setText('serial', x.serial || '—');
@@ -216,52 +241,39 @@
     setText('lastPm', x.lastPm || '—');
     setText('nextPm', x.nextPm || '—');
 
-    // Documents
+    // Procurement placeholders
+    setText('p_supplier', x.supplier || '—');
+    setText('p_price', fmtMoney(x.price));
+    setText('p_commissioningDate', x.commissioningDate || '—');
+    setText('p_contractNo', x.contractNo || '—');
+
+    // Docs
     const docs = Array.isArray(x.documents)? x.documents : [];
     const docsBox = document.getElementById('docs');
-    if(docs.length===0){
-      docsBox.innerHTML = '<div class="text-slate-500">No documents.</div>';
-    }else{
-      docsBox.innerHTML = '';
-      docs.forEach(d=>{
-        const a = document.createElement('a');
-        a.href = d.url; a.target = "_blank";
-        a.className = "flex items-center justify-between border rounded-lg p-2 hover:bg-slate-50";
-        a.innerHTML = `
-          <div>
-            <div class="font-medium">${escapeHtml(d.name||'file')}</div>
-            <div class="text-xs text-slate-500">${escapeHtml(d.group||'Doc')} • ${(d.size? (d.size/1024).toFixed(1)+' KB' : '')}</div>
-          </div>
-          <span class="text-slate-500">↗</span>
-        `;
-        docsBox.appendChild(a);
-      });
-    }
+    docsBox.innerHTML = docs.length? '' : '<div class="text-slate-500">No documents.</div>';
+    docs.forEach(d=>{
+      const a = document.createElement('a'); a.href=d.url; a.target="_blank";
+      a.className="flex items-center justify-between border rounded-lg p-2 hover:bg-slate-50";
+      a.innerHTML = `<div><div class="font-medium">${escapeHtml(d.name||'file')}</div>
+                     <div class="text-xs text-slate-500">${escapeHtml(d.group||'Doc')} • ${(d.size? (d.size/1024).toFixed(1)+' KB' : '')}</div></div>
+                     <span class="text-slate-500">↗</span>`;
+      docsBox.appendChild(a);
+    });
 
     // Images
     const imgs = Array.isArray(x.images)? x.images : [];
     const imgsBox = document.getElementById('imgs');
-    if(imgs.length===0){
-      imgsBox.innerHTML = '<div class="text-slate-500">No images.</div>';
-    }else{
-      imgsBox.innerHTML = '';
-      imgs.forEach(im=>{
-        const w = document.createElement('a');
-        w.href = im.url; w.target = "_blank";
-        w.className = "block border rounded-lg overflow-hidden hover:opacity-90";
-        w.innerHTML = `<img src="${im.url}" alt="${escapeHtml(im.title||im.name||'')}" class="w-full h-40 object-cover">`;
-        imgsBox.appendChild(w);
-      });
-    }
+    imgsBox.innerHTML = imgs.length? '' : '<div class="text-slate-500">No images.</div>';
+    imgs.forEach(im=>{
+      const w = document.createElement('a'); w.href = im.url; w.target="_blank";
+      w.className="block border rounded-lg overflow-hidden hover:opacity-90";
+      w.innerHTML = `<img src="${im.url}" alt="${escapeHtml(im.title||im.name||'')}" class="w-full h-40 object-cover">`;
+      imgsBox.appendChild(w);
+    });
   }
 
-  function escapeHtml(s){return String(s??'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[m]));}
-
-  // طباعة
-  document.getElementById('btnPrintQR').addEventListener('click', ()=>{
-    // نطبع فقط الكيو آر + الكنترول (ببساطة: نفتح Print والـCSS يخفي الباقي إن أردت تعديل لاحقًا)
-    window.print();
-  });
+  // Print
+  document.getElementById('btnPrintQR').addEventListener('click', ()=> window.print());
   document.getElementById('btnPrintAll').addEventListener('click', ()=> window.print());
 </script>
 </body>
