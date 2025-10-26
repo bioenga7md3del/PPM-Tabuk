@@ -56,7 +56,6 @@
 
       <div>
         <label class="block mb-1">ECRI Code</label>
-        <!-- قابل للكتابة: لو كتبت كود، هيجيب الاسم تلقائي -->
         <input id="ecriCode" class="field mono" placeholder="type code or auto from name">
       </div>
 
@@ -114,6 +113,17 @@
           <select id="supplier" class="field flex-1"></select>
           <button id="addSupplier" type="button" class="btn">+ New</button>
         </div>
+      </div>
+
+      <!-- NEW: Procurement fields -->
+      <div>
+        <label class="block mb-1">PO Number</label>
+        <input id="poNumber" class="field" placeholder="e.g. PO-2025-00123">
+      </div>
+
+      <div>
+        <label class="block mb-1">Invoice Number</label>
+        <input id="invoiceNumber" class="field" placeholder="e.g. INV-987654">
       </div>
 
       <div id="contractWrap" class="hidden">
@@ -248,6 +258,10 @@
   const price = $('#price'), supplier = $('#supplier'), addSupplier = $('#addSupplier');
   const contractWrap = $('#contractWrap'), contractNo = $('#contractNo');
 
+  // NEW: procurement
+  const poNumber = $('#poNumber');
+  const invoiceNumber = $('#invoiceNumber');
+
   const siteSel = $('#site'); const siteCodeEl = $('#siteCode');
   const deptBox = document.getElementById('deptBox');
   const roomBox = document.getElementById('roomBox');
@@ -371,18 +385,13 @@
   /* ===== Sites / Departments / Rooms ===== */
   async function loadSites(){
     const qs = await getDocs(query(collection(db,'sites'), orderBy('name')));
-    const items = qs.docs.map(d=> ({ id:d.id, ...d.data() }));
+    const items = qs.docs.map(d=> ({ id:d.id, ...d.data() })); // id هو الكود
     siteSel.innerHTML = '<option value="">Select site…</option>' +
-      // ✅ document ID هو الكود الحقيقي للموقع
       items.map(s=>`<option value="${escapeHtml(s.id)}" data-code="${escapeHtml(s.id)}">${escapeHtml(s.name||s.id)}</option>`).join('');
   }
+  function getSelectedSiteCode(){ return siteSel.selectedOptions[0]?.dataset.code || siteSel.value || ''; }
 
-  // ✅ helper: الكود المختار للموقع دائمًا من ال-doc ID
-  function getSelectedSiteCode(){
-    return siteSel.selectedOptions[0]?.dataset.code || siteSel.value || '';
-  }
-
-  // lightweight searchable select
+  // searchable select
   function createSearchSelect({container, placeholder='Type to search', data=[], getLabel, getValue, onChange}){
     container.innerHTML = `
       <div class="field flex items-center justify-between gap-2 cursor-text">
@@ -439,7 +448,6 @@
         onChange: async (val, item)=>{
           deptSelValue = val; deptCodeEl.textContent = item?.code || val;
           await loadRoomsForDept(val);
-          // ✅ Preview control number فورًا بعد اختيار القسم
           const siteCode = getSelectedSiteCode();
           await peekNextControl(siteCode, val);
         }
@@ -452,10 +460,7 @@
         data: [],
         getLabel: r => r.name || r.id,
         getValue: r => r.id,
-        onChange: async (val)=>{ roomSelValue = val; // optional: preview again after room pick
-          const siteCode = getSelectedSiteCode();
-          if (deptSelValue) await peekNextControl(siteCode, deptSelValue);
-        }
+        onChange: async (val)=>{ roomSelValue = val; const siteCode = getSelectedSiteCode(); if (deptSelValue) await peekNextControl(siteCode, deptSelValue); }
       });
     }
 
@@ -474,13 +479,11 @@
         qs = await getDocs(query(collection(db,'department'), where('siteCode','==', siteCode)));
       }
     }
-    DEPT_CACHE = qs.docs.map(d=> ({
-      id: d.id, name: d.data().name || d.id, code: d.id, siteName
-    })).sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+    DEPT_CACHE = qs.docs.map(d=> ({ id: d.id, name: d.data().name || d.id, code: d.id, siteName }))
+      .sort((a,b)=> (a.name||'').localeCompare(b.name||''));
 
     deptSS.setData(DEPT_CACHE);
-    // عند تغيير الموقع فقط، امسح الـPreview لحد ما القسم يتحدد
-    control.value='';
+    control.value=''; // clear preview until dept chosen
   }
 
   async function loadRoomsForDept(deptCode){
@@ -494,7 +497,6 @@
 
   siteSel.addEventListener('change', async ()=>{
     await loadDepartmentsForSite();
-    // لو كان فيه قسم مختار قبل كده (نادرًا)، حدّث المعاينة
     const siteCode = getSelectedSiteCode();
     if(deptSelValue) await peekNextControl(siteCode, deptSelValue);
   });
@@ -632,8 +634,7 @@
   /* ===== uniqueness + control generation ===== */
   async function reserveUnique(p){
     const key = `${p.ecriCode}|${p.manufacturer}|${p.model}|${p.serial}`.toUpperCase();
-    // use a flat collection for uniqueness (even number of segments)
-    const safeKey = key.replaceAll('/', '_');
+    const safeKey = key.replaceAll('/', '_'); // even segments collection
     const uref = doc(db,'uniques_equipment', safeKey);
     await runTransaction(db, async (tx)=>{
       const s = await tx.get(uref);
@@ -653,7 +654,7 @@
     return max;
   }
 
-  // ✅ Preview: قراءة الرقم التالي المتوقع بدون حجز
+  // Preview without reservation
   async function peekNextControl(siteCode, deptCode){
     if(!siteCode || !deptCode){ control.value=''; return; }
     const cRef = doc(db,'counters', siteCode);
@@ -663,7 +664,7 @@
     control.value = `${siteCode}/${deptCode}/${String(next).padStart(3, '0')}`;
   }
 
-  // الحجز الفعلي عند الحفظ فقط
+  // Reserve on save
   async function generateControl(siteCode, deptCode){
     if(!siteCode || !deptCode) throw new Error('Missing site/department code.');
     const cRef = doc(db,'counters', siteCode);
@@ -679,7 +680,7 @@
       seq = cur;
       tx.set(cRef, { next: cur+1 }, { merge:true });
     });
-    return `${siteCode}-${deptCode}-${String(seq).padStart(3,'0')}`;
+    return `${siteCode}/${deptCode}/${String(seq).padStart(3,'0')}`;
   }
 
   /* ===== collect / validate / save ===== */
@@ -698,6 +699,10 @@
       risk: risk.value || '',
       price: price.value? Number(price.value): null,
       supplier: supplier.value || '',
+      // NEW:
+      poNumber: (poNumber.value || '').trim(),
+      invoiceNumber: (invoiceNumber.value || '').trim(),
+      //
       contractNo: (devClass.value==='A'||devClass.value==='B') ? (contractNo.value||'') : '',
       siteId: siteSel.value || '',
       siteCode, siteName,
@@ -717,7 +722,7 @@
     if(!p.ecriName && !p.ecriCode) throw new Error('Select ECRI or type its code.');
     if(p.ecriCode && !p.ecriName){
       const m = ECRI_CACHE.find(x=> String(x.code)===String(p.ecriCode));
-      if(m) p.ecriName = m.name; // توفيق الاسم من الكود
+      if(m) p.ecriName = m.name;
     }
     if(!p.manufacturer) throw new Error('Select manufacturer.');
     if(!p.model) throw new Error('Select model.');
@@ -757,7 +762,7 @@
   }
 
   function bindUI(){
-    btnSave.addEventListener('click', onSave);
+    document.getElementById('btnSave').addEventListener('click', onSave);
   }
 
   /* AI Assist (local on ECRI_CACHE.search/name) */
@@ -786,7 +791,7 @@
     return scored;
   }
 
-  aiSuggest?.addEventListener('click', ()=>{
+  document.getElementById('aiSuggest')?.addEventListener('click', ()=>{
     aiResults.innerHTML=''; aiStatus.textContent='Thinking…';
     const items = localSuggest(aiDesc.value, 8);
     aiStatus.textContent = items.length? '' : 'No suggestions.';
